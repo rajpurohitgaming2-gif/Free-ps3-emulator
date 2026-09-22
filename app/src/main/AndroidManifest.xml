@@ -1,14 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application
-        android:theme="@style/AppTheme"
+        android:theme="@android:style/Theme.NoTitleBar.Fullscreen"
         android:label="Free PS3 Emulator">
         <activity
-            android:name=".MainActivity"
+            android:name="com.freeps3emulator.MainActivity"
             android:screenOrientation="landscape"
             android:exported="true">
             <intent-filter>
-                <action android:name="android.intent.action.MAIN"/>
-                <category android:name="android.intent.category.LAUNCHER"/>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
     </application>
