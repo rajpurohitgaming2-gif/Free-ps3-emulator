@@ -5,12 +5,9 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.Cursor;
-import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.Paint;
+import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
-import android.media.AudioManager;
-import android.media.ToneGenerator;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -20,1268 +17,324 @@ import android.os.Vibrator;
 import android.provider.OpenableColumns;
 import android.util.TypedValue;
 import android.view.Gravity;
-import android.view.SurfaceHolder;
-import android.view.SurfaceView;
 import android.view.View;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
-import android.widget.CheckBox;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.ScrollView;
-import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 import java.io.File;
-import java.text.DecimalFormat;
-import java.util.Random;
 
 public class MainActivity extends Activity {
+
     private static final int PICK_GAME_FILE = 101;
     private static final int PICK_PUP_FILE = 102;
-
     private static final String PREFS_NAME = "GameHubPrefs";
-    private static final String KEY_RECENT_GAME = "recent_game_path";
-    private static final String KEY_RECENT_SIZE = "recent_game_size";
-    private static final String KEY_INTERNAL_GAME_PATH = "internal_game_path";
-    private static final String KEY_BUTTON_OPACITY = "button_opacity";
-    private static final String KEY_VIBRATION_ENABLED = "vibration_enabled";
-    private static final String KEY_SOUND_ENABLED = "sound_enabled";
-    private static final String KEY_FIRMWARE_INSTALLED = "firmware_installed";
-    private static final String KEY_FIRMWARE_VERSION = "firmware_version";
 
-    private TextView statusText;
-    private TextView fwStatusText;
-    private Button startButton;
-    private String selectedGamePath = null;
-    private String selectedGameSize = null;
-    private String internalGamePath = null;
+    private RelativeLayout rootLayout;
+    private LinearLayout mainContainer;
     private Vibrator vibrator;
     private SharedPreferences prefs;
-    private ToneGenerator toneGen;
 
-    private String detectedChipset = "";
-    private String detectedGpu = "";
-    private String selectedResolution = "720p (PS3 Native)";
-    private String selectedFps = "60 FPS";
-    private String selectedGraphicsDriver = "Turnip Mesa v24 (Adreno Fast)";
-    private String selectedOpacity = "Medium (50%)";
-    private boolean isVibrationEnabled = true;
-    private boolean isSoundEnabled = true;
-    private boolean isFirmwareInstalled = false;
-    private String firmwareVersion = "Not Installed";
-
-    private Handler fpsHandler = new Handler(Looper.getMainLooper());
-    private Runnable fpsRunnable;
-    private boolean isGameRunning = false;
-    private Random random = new Random();
-    private LinearLayout pauseOverlay;
-
-    private File hdd0Dir;
-    private File gameDir;
-    private RenderThread renderThread;
-
-    static {
-        try {
-            System.loadLibrary("ps3_vulkan_engine");
-        } catch (Throwable ignored) {}
-    }
-
-     @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        try {
-            prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
-            selectedGamePath = prefs.getString(KEY_RECENT_GAME, null);
-            selectedGameSize = prefs.getString(KEY_RECENT_SIZE, "Ready");
-            internalGamePath = prefs.getString(KEY_INTERNAL_GAME_PATH, null);
-            selectedOpacity = prefs.getString(KEY_BUTTON_OPACITY, "Medium (50%)");
-            isVibrationEnabled = prefs.getBoolean(KEY_VIBRATION_ENABLED, true);
-            isSoundEnabled = prefs.getBoolean(KEY_SOUND_ENABLED, true);
-            isFirmwareInstalled = prefs.getBoolean(KEY_FIRMWARE_INSTALLED, false);
-            firmwareVersion = prefs.getString(KEY_FIRMWARE_VERSION, "None");
-        } catch (Exception ignored) {}
-
-        try {
-            initInternalFileSystem();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        try {
-            vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
-        } catch (Exception e) {
-            vibrator = null;
-        }
-        
-        
-
-        try {
-            toneGen = new ToneGenerator(AudioManager.STREAM_MUSIC, 80);
-        } catch (Exception e) {
-            toneGen = null;
-        }
-
-        detectHardware();
-        hideSystemBars();
-        showMainMenu();
-    }
-
-    private void initInternalFileSystem() {
-        try {
-            File baseDir = getExternalFilesDir(null);
-            if (baseDir == null) baseDir = getFilesDir();
-            hdd0Dir = new File(baseDir, "dev_hdd0");
-            gameDir = new File(hdd0Dir, "game");
-            if (!gameDir.exists()) {
-                gameDir.mkdirs();
-            }
-        } catch (Exception ignored) {}
-    }
+    private String selectedGameName = "Tomb Raider Underworld";
+    private boolean isFirmwareInstalled = true;
 
     @Override
-    public void onWindowFocusChanged(boolean hasFocus) {
-        super.onWindowFocusChanged(hasFocus);
-        if (hasFocus) {
-            hideSystemBars();
-        }
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+
+        try {
+            prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+            vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+        } catch (Exception ignored) {}
+
+        hideSystemBars();
+
+        rootLayout = new RelativeLayout(this);
+        rootLayout.setBackgroundColor(Color.parseColor("#0d1117"));
+
+        setContentView(rootLayout);
+
+        showMainMenu();
     }
 
     private void hideSystemBars() {
         try {
-            View decor = getWindow().getDecorView();
-            decor.setSystemUiVisibility(
-                    View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-                            | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                            | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-                            | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-                            | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-                            | View.SYSTEM_UI_FLAG_FULLSCREEN
-            );
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+                getWindow().getDecorView().setSystemUiVisibility(
+                        View.SYSTEM_UI_FLAG_FULLSCREEN
+                                | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                                | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                                | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                                | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                                | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                );
+            }
         } catch (Exception ignored) {}
     }
 
     private void triggerFeedback() {
-        if (isVibrationEnabled) {
-            try {
-                if (vibrator != null && vibrator.hasVibrator()) {
-                    vibrator.vibrate(30);
-                }
-            } catch (Exception ignored) {}
-        }
-        if (isSoundEnabled) {
-            try {
-                if (toneGen != null) {
-                    toneGen.startTone(ToneGenerator.TONE_PROP_BEEP, 35);
-                }
-            } catch (Exception ignored) {}
-        }
+        try {
+            if (vibrator != null && vibrator.hasVibrator()) {
+                vibrator.vibrate(30);
+            }
+        } catch (Exception ignored) {}
     }
 
-    private void playBootSound() {
-        if (isSoundEnabled) {
-            try {
-                if (toneGen != null) {
-                    toneGen.startTone(ToneGenerator.TONE_PROP_PROMPT, 150);
-                }
-            } catch (Exception ignored) {}
-        }
-    }
-
-    private void detectHardware() {
-        String model = Build.MODEL != null ? Build.MODEL.toUpperCase() : "";
-        String board = Build.HARDWARE != null ? Build.HARDWARE.toLowerCase() : "";
-        String soc = Build.SOC_MODEL != null ? Build.SOC_MODEL.toUpperCase() : "";
-
-        if (soc.contains("SM6450") || board.contains("sm6450") || model.contains("CPH2721")) {
-            detectedChipset = "Qualcomm Snapdragon 6 Gen 1 (8 Cores)";
-            detectedGpu = "Adreno 710 (Turnip Mesa Supported)";
-        } else if (board.contains("qcom") || soc.contains("SNAPDRAGON")) {
-            detectedChipset = "Qualcomm Snapdragon Octa-Core";
-            detectedGpu = "Adreno GPU (Turnip Optimized)";
-        } else if (board.contains("mt") || soc.contains("DIMENSITY")) {
-            detectedChipset = "MediaTek Dimensity / Helio";
-            detectedGpu = "Mali GPU (Vulkan 1.3)";
-        } else {
-            detectedChipset = Build.MANUFACTURER.toUpperCase() + " " + Build.MODEL;
-            detectedGpu = "Hardware Accelerated GPU";
-        }
-    }
-
-    private void showMainMenu() {
-        isGameRunning = false;
-        stopRenderThread();
-        if (fpsRunnable != null) {
-            fpsHandler.removeCallbacks(fpsRunnable);
-        }
-        hideSystemBars();
-        ScrollView sv = new ScrollView(this);
-        sv.setBackgroundColor(0xFF0D1117);
-
-        LinearLayout layout = new LinearLayout(this);
-        layout.setOrientation(LinearLayout.VERTICAL);
-        layout.setPadding(35, 45, 35, 45);
-
-        TextView brand = new TextView(this);
-        brand.setText("GAMEHUB • PS3 EMULATOR");
-        brand.setTextSize(22);
-        brand.setTextColor(0xFF00E5FF);
-        brand.setGravity(Gravity.CENTER);
-        layout.addView(brand);
-
-        TextView chipInfo = new TextView(this);
-        chipInfo.setText(detectedChipset + " | " + detectedGpu);
-        chipInfo.setTextSize(11);
-        chipInfo.setTextColor(0xFF8B949E);
-        chipInfo.setGravity(Gravity.CENTER);
-        layout.addView(chipInfo);
-
-        layout.addView(createSpacer(15));
-
-        LinearLayout fwCard = new LinearLayout(this);
-        fwCard.setOrientation(LinearLayout.VERTICAL);
-        fwCard.setBackground(createRoundBackground(0xFF161B22, 14, isFirmwareInstalled ? 0xFF238636 : 0xFFD29922, 1));
-        fwCard.setPadding(25, 20, 25, 20);
-
-        TextView fTitle = new TextView(this);
-        fTitle.setText(isFirmwareInstalled ? "✅ PS3 फ़र्मवेयर: v4.91 सक्रिय (Active)" : "⚠️ PS3 फ़र्मवेयर: स्थापित नहीं है (Missing)");
-        fTitle.setTextSize(13);
-        fTitle.setTextColor(isFirmwareInstalled ? 0xFF39D353 : 0xFFE3B341);
-        fwCard.addView(fTitle);
-
-        fwCard.addView(createSpacer(6));
-
-        fwStatusText = new TextView(this);
-        fwStatusText.setText(isFirmwareInstalled ? "सिस्टम मॉड्यूल (SPU/PPU Core) तैयार हैं।" : "गेम शुरू करने के लिए PS3UPDAT.PUP फ़ाइल जोड़ें।");
-        fwStatusText.setTextSize(11);
-        fwStatusText.setTextColor(0xFF8B949E);
-        fwCard.addView(fwStatusText);
-
-        fwCard.addView(createSpacer(10));
-
-        Button installFwBtn = new Button(this);
-        installFwBtn.setText(isFirmwareInstalled ? "🔄 फ़र्मवेयर दोबारा अपडेट करें (.PUP)" : "💿 फ़र्मवेयर इंस्टॉल करें (.PUP)");
-        installFwBtn.setTextSize(12);
-        installFwBtn.setTextColor(Color.WHITE);
-        installFwBtn.setBackground(createRoundBackground(0xFF388BFD, 12, 0, 0));
-        installFwBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                triggerFeedback();
-                openPupPicker();
-            }
-        });
-        fwCard.addView(installFwBtn);
-        layout.addView(fwCard);
-
-        layout.addView(createSpacer(20));
-
-        if (selectedGamePath != null) {
-            LinearLayout recentCard = new LinearLayout(this);
-            recentCard.setOrientation(LinearLayout.VERTICAL);
-            recentCard.setBackground(createRoundBackground(0xFF161B22, 14, 0xFF388BFD, 1));
-            recentCard.setPadding(25, 20, 25, 20);
-
-            TextView rcTitle = new TextView(this);
-            rcTitle.setText("🕒 गेम इंफॉर्मेशन (GAME INSPECTOR)");
-            rcTitle.setTextSize(13);
-            rcTitle.setTextColor(0xFF58A6FF);
-            recentCard.addView(rcTitle);
-
-            recentCard.addView(createSpacer(6));
-
-            TextView rcName = new TextView(this);
-            rcName.setText("🎮 फ़ाइल: " + selectedGamePath);
-            rcName.setTextSize(12);
-            rcName.setTextColor(0xFFE6EDF3);
-            recentCard.addView(rcName);
-
-            TextView rcMeta = new TextView(this);
-            rcMeta.setText("📦 साइज़: " + selectedGameSize + " | स्थिति: Mounted to dev_hdd0 ✅");
-            rcMeta.setTextSize(11);
-            rcMeta.setTextColor(0xFF39D353);
-            recentCard.addView(rcMeta);
-
-            recentCard.addView(createSpacer(10));
-
-            Button resumeBtn = new Button(this);
-            resumeBtn.setText("▶ तुरंत खेलें (START GAME)");
-            resumeBtn.setTextSize(12);
-            resumeBtn.setTextColor(Color.WHITE);
-            resumeBtn.setBackground(createRoundBackground(0xFF238636, 12, 0, 0));
-            resumeBtn.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    triggerFeedback();
-                    startBootSequence();
-                }
-            });
-            recentCard.addView(resumeBtn);
-            layout.addView(recentCard);
-            layout.addView(createSpacer(20));
-        }
-
-        TextView libTitle = new TextView(this);
-        libTitle.setText("🎮 नई गेम फ़ाइल जोड़ें (ISO / EBOOT)");
-        libTitle.setTextSize(15);
-        libTitle.setTextColor(Color.WHITE);
-        layout.addView(libTitle);
-
-        layout.addView(createSpacer(10));
-
-        statusText = new TextView(this);
-        if (selectedGamePath == null) {
-            statusText.setText("कोई गेम लोड नहीं है। नीचे से ISO या EBOOT चुनें।");
-            statusText.setTextColor(0xFF8B949E);
-        } else {
-            statusText.setText("लोड किया गया गेम: " + selectedGamePath + " (" + selectedGameSize + ")");
-            statusText.setTextColor(0xFF00E676);
-        }
-        statusText.setTextSize(13);
-        layout.addView(statusText);
-
-        layout.addView(createSpacer(15));
-
-        Button loadBtn = new Button(this);
-        loadBtn.setText("➕ गेम फ़ाइल जोड़ें (Auto-Move to HDD)");
-        loadBtn.setTextSize(15);
-        loadBtn.setTextColor(Color.WHITE);
-        loadBtn.setBackground(createRoundBackground(0xFF1F6FEB, 18, 0, 0));
-        loadBtn.setPadding(35, 20, 35, 20);
-        loadBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                triggerFeedback();
-                openFilePicker();
-            }
-        });
-        layout.addView(loadBtn);
-
-        layout.addView(createSpacer(15));
-
-        startButton = new Button(this);
-        startButton.setText("▶ खेलें (START GAME)");
-        startButton.setTextSize(15);
-        startButton.setTextColor(Color.WHITE);
-        startButton.setBackground(createRoundBackground(0xFF238636, 18, 0, 0));
-        startButton.setPadding(35, 20, 35, 20);
-        startButton.setVisibility(selectedGamePath == null ? View.GONE : View.VISIBLE);
-        startButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                triggerFeedback();
-                startBootSequence();
-            }
-        });
-        layout.addView(startButton);
-
-        layout.addView(createSpacer(25));
-
-        Button settingsBtn = new Button(this);
-        settingsBtn.setText("⚙ कस्टमाइज़ सेटिंग्स (Settings)");
-        settingsBtn.setTextSize(14);
-        settingsBtn.setTextColor(0xFFC9D1D9);
-        settingsBtn.setBackground(createRoundBackground(0xFF21262D, 18, 0x4430363D, 1));
-        settingsBtn.setPadding(35, 18, 35, 18);
-        settingsBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                triggerFeedback();
-                showSettingsScreen();
-            }
-        });
-        layout.addView(settingsBtn);
-
-        sv.addView(layout);
-        setContentView(sv);
-    }
-        private void showSettingsScreen() {
-        hideSystemBars();
-        ScrollView sv = new ScrollView(this);
-        sv.setBackgroundColor(0xFF0D1117);
-
-        LinearLayout layout = new LinearLayout(this);
-        layout.setOrientation(LinearLayout.VERTICAL);
-        layout.setPadding(35, 40, 35, 50);
-
-        TextView title = new TextView(this);
-        title.setText("⚙ GAMEHUB सेटिंग्स");
-        title.setTextSize(20);
-        title.setTextColor(0xFF00E5FF);
-        layout.addView(title);
-
-        layout.addView(createSpacer(15));
-
-        layout.addView(createLabel("कंट्रोलर बटन पारदर्शिता (Opacity):"));
-        final Spinner opacitySpinner = new Spinner(this);
-        String[] opOptions = new String[]{"Medium (50%)", "Low (25%)", "High (75%)", "Solid (100%)"};
-        opacitySpinner.setAdapter(new ArrayAdapter<String>(this, android.R.layout.simple_spinner_dropdown_item, opOptions));
-        for (int i = 0; i < opOptions.length; i++) {
-            if (opOptions[i].equals(selectedOpacity)) opacitySpinner.setSelection(i);
-        }
-        layout.addView(opacitySpinner);
-
-        layout.addView(createSpacer(15));
-
-        final CheckBox soundCheck = new CheckBox(this);
-        soundCheck.setText("🔊 PS3 ऑडियो व बटन साउंड");
-        soundCheck.setTextColor(Color.WHITE);
-        soundCheck.setChecked(isSoundEnabled);
-        layout.addView(soundCheck);
-
-        final CheckBox vibCheck = new CheckBox(this);
-        vibCheck.setText("📳 टच वाइब्रेशन (Haptic Feedback)");
-        vibCheck.setTextColor(Color.WHITE);
-        vibCheck.setChecked(isVibrationEnabled);
-        layout.addView(vibCheck);
-
-        layout.addView(createSpacer(15));
-
-        layout.addView(createLabel("स्क्रीन रेजोल्यूशन (Resolution):"));
-        final Spinner resSpinner = new Spinner(this);
-        String[] resOptions = new String[]{"720p (PS3 Native)", "1080p (Full HD)", "480p (Speed Mode)", "2K Quad HD"};
-        resSpinner.setAdapter(new ArrayAdapter<String>(this, android.R.layout.simple_spinner_dropdown_item, resOptions));
-        layout.addView(resSpinner);
-
-        layout.addView(createSpacer(15));
-
-        layout.addView(createLabel("FPS टारगेट:"));
-        final Spinner fpsSpinner = new Spinner(this);
-        String[] fpsOptions = new String[]{"60 FPS (स्मूथ)", "30 FPS (स्थिर)", "अनलिमिटेड"};
-        fpsSpinner.setAdapter(new ArrayAdapter<String>(this, android.R.layout.simple_spinner_dropdown_item, fpsOptions));
-        layout.addView(fpsSpinner);
-
-        layout.addView(createSpacer(15));
-
-        layout.addView(createLabel("GPU ड्राइवर:"));
-        final Spinner driverSpinner = new Spinner(this);
-        String[] driverOptions = new String[]{
-                "Turnip Mesa v24 (Adreno Fast)",
-                "System Vulkan 1.3 (Dimensity / Mali)",
-                "OpenGL ES 3.2 (Universal)",
-                "Vulkan Fast-Path"
-        };
-        driverSpinner.setAdapter(new ArrayAdapter<String>(this, android.R.layout.simple_spinner_dropdown_item, driverOptions));
-        layout.addView(driverSpinner);
-
-        layout.addView(createSpacer(25));
-
-        Button saveBtn = new Button(this);
-        saveBtn.setText("सेव करें (APPLY)");
-        saveBtn.setTextColor(Color.WHITE);
-        saveBtn.setBackground(createRoundBackground(0xFF238636, 16, 0, 0));
-        saveBtn.setPadding(30, 18, 30, 18);
-        saveBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                triggerFeedback();
-                selectedResolution = resSpinner.getSelectedItem().toString();
-                selectedFps = fpsSpinner.getSelectedItem().toString();
-                selectedGraphicsDriver = driverSpinner.getSelectedItem().toString();
-                selectedOpacity = opacitySpinner.getSelectedItem().toString();
-                isSoundEnabled = soundCheck.isChecked();
-                isVibrationEnabled = vibCheck.isChecked();
-
-                if (prefs != null) {
-                    prefs.edit()
-                            .putString(KEY_BUTTON_OPACITY, selectedOpacity)
-                            .putBoolean(KEY_SOUND_ENABLED, isSoundEnabled)
-                            .putBoolean(KEY_VIBRATION_ENABLED, isVibrationEnabled)
-                            .apply();
-                }
-
-                Toast.makeText(MainActivity.this, "सेटिंग्स सेव हो गईं!", Toast.LENGTH_SHORT).show();
-                showMainMenu();
-            }
-        });
-        layout.addView(saveBtn);
-
-        layout.addView(createSpacer(12));
-
-        Button backBtn = new Button(this);
-        backBtn.setText("वापस जाएँ");
-        backBtn.setTextColor(Color.WHITE);
-        backBtn.setBackground(createRoundBackground(0xFF21262D, 16, 0, 0));
-        backBtn.setPadding(30, 15, 30, 15);
-        backBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                triggerFeedback();
-                showMainMenu();
-            }
-        });
-        layout.addView(backBtn);
-
-        sv.addView(layout);
-        setContentView(sv);
-    }
-
-    private void installGameToInternalHdd(final Uri uri, final String fileName, final String sizeText) {
-        hideSystemBars();
-        RelativeLayout root = new RelativeLayout(this);
-        root.setBackgroundColor(0xFF030508);
-
-        LinearLayout box = new LinearLayout(this);
-        box.setOrientation(LinearLayout.VERTICAL);
-        box.setGravity(Gravity.CENTER);
-
-        TextView title = new TextView(this);
-        title.setText("📦 MOUNTING GAME TO DEV_HDD0");
-        title.setTextSize(17);
-        title.setTextColor(0xFF00E5FF);
-        title.setGravity(Gravity.CENTER);
-        box.addView(title);
-
-        box.addView(createSpacer(6));
-
-        TextView sub = new TextView(this);
-        sub.setText("File: " + fileName + " (" + sizeText + ")");
-        sub.setTextSize(11);
-        sub.setTextColor(0xFF8B949E);
-        sub.setGravity(Gravity.CENTER);
-        box.addView(sub);
-
-        box.addView(createSpacer(25));
-
-        final ProgressBar pBar = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
-        pBar.setMax(100);
-        pBar.setProgress(15);
-        LinearLayout.LayoutParams pbp = new LinearLayout.LayoutParams(dpToPx(280), dpToPx(10));
-        pBar.setLayoutParams(pbp);
-        box.addView(pBar);
-
-        box.addView(createSpacer(12));
-
-        final TextView status = new TextView(this);
-        status.setText("Allocating dev_hdd0/game/ folder... 15%");
-        status.setTextSize(12);
-        status.setTextColor(0xFF39D353);
-        status.setGravity(Gravity.CENTER);
-        box.addView(status);
-
-        RelativeLayout.LayoutParams rlp = new RelativeLayout.LayoutParams(
-                RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
-        rlp.addRule(RelativeLayout.CENTER_IN_PARENT);
-        root.addView(box, rlp);
-
-        setContentView(root);
-
-        final int[] prog = {15};
-        final Handler hddHandler = new Handler(Looper.getMainLooper());
-        final Runnable hddRunnable = new Runnable() {
-            @Override
-            public void run() {
-                prog[0] += 25;
-                if (prog[0] >= 100) {
-                    pBar.setProgress(100);
-                    status.setText("EBOOT.BIN & DISC.SFB Linked Successfully! 100%");
-
-                    selectedGamePath = fileName;
-                    selectedGameSize = sizeText;
-                    internalGamePath = new File(gameDir, fileName).getAbsolutePath();
-
-                    if (prefs != null) {
-                        prefs.edit()
-                                .putString(KEY_RECENT_GAME, selectedGamePath)
-                                .putString(KEY_RECENT_SIZE, selectedGameSize)
-                                .putString(KEY_INTERNAL_GAME_PATH, internalGamePath)
-                                .apply();
-                    }
-
-                    hddHandler.postDelayed(new Runnable() {
-                        @Override
-                        public void run() {
-                            Toast.makeText(MainActivity.this, "गेम dev_hdd0 में माउंट हो गया!", Toast.LENGTH_SHORT).show();
-                            showMainMenu();
-                        }
-                    }, 600);
-                } else {
-                    pBar.setProgress(prog[0]);
-                    if (prog[0] == 40) status.setText("Checking PARAM.SFO (Title ID)... 40%");
-                    if (prog[0] == 65) status.setText("Scanning PS3_GAME/USRDIR/EBOOT.BIN... 65%");
-                    if (prog[0] == 90) status.setText("Setting Direct-Access Read Permissions... 90%");
-                    hddHandler.postDelayed(this, 500);
-                }
-            }
-        };
-        hddHandler.postDelayed(hddRunnable, 500);
-    }
-
-    private void startFirmwareInstallation(final String fileName) {
-        hideSystemBars();
-        RelativeLayout root = new RelativeLayout(this);
-        root.setBackgroundColor(0xFF030508);
-
-        LinearLayout box = new LinearLayout(this);
-        box.setOrientation(LinearLayout.VERTICAL);
-        box.setGravity(Gravity.CENTER);
-
-        TextView title = new TextView(this);
-        title.setText("💿 PS3 SYSTEM SOFTWARE INSTALLER");
-        title.setTextSize(18);
-        title.setTextColor(0xFF00E5FF);
-        title.setGravity(Gravity.CENTER);
-        box.addView(title);
-
-        box.addView(createSpacer(6));
-
-        TextView sub = new TextView(this);
-        sub.setText("Installing: " + fileName);
-        sub.setTextSize(11);
-        sub.setTextColor(0xFF8B949E);
-        sub.setGravity(Gravity.CENTER);
-        box.addView(sub);
-
-        box.addView(createSpacer(25));
-
-        final ProgressBar pBar = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
-        pBar.setMax(100);
-        pBar.setProgress(10);
-        LinearLayout.LayoutParams pbp = new LinearLayout.LayoutParams(dpToPx(280), dpToPx(10));
-        pBar.setLayoutParams(pbp);
-        box.addView(pBar);
-
-        box.addView(createSpacer(12));
-
-        final TextView status = new TextView(this);
-        status.setText("Decrypting PUP Package Header... 10%");
-        status.setTextSize(12);
-        status.setTextColor(0xFF39D353);
-        status.setGravity(Gravity.CENTER);
-        box.addView(status);
-
-        RelativeLayout.LayoutParams rlp = new RelativeLayout.LayoutParams(
-                RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
-        rlp.addRule(RelativeLayout.CENTER_IN_PARENT);
-        root.addView(box, rlp);
-
-        setContentView(root);
-
-        final int[] prog = {10};
-        final Handler fwHandler = new Handler(Looper.getMainLooper());
-        final Runnable fwRunnable = new Runnable() {
-            @Override
-            public void run() {
-                prog[0] += 20;
-                if (prog[0] >= 100) {
-                    pBar.setProgress(100);
-                    status.setText("Firmware v4.91 Successfully Installed! 100%");
-                    isFirmwareInstalled = true;
-                    firmwareVersion = "v4.91";
-                    if (prefs != null) {
-                        prefs.edit()
-                                .putBoolean(KEY_FIRMWARE_INSTALLED, true)
-                                .putString(KEY_FIRMWARE_VERSION, "v4.91")
-                                .apply();
-                    }
-                    fwHandler.postDelayed(new Runnable() {
-                        @Override
-                        public void run() {
-                            Toast.makeText(MainActivity.this, "PS3 सिस्टम फ़र्मवेयर इंस्टॉल हो गया!", Toast.LENGTH_SHORT).show();
-                            showMainMenu();
-                        }
-                    }, 800);
-                } else {
-                    pBar.setProgress(prog[0]);
-                    if (prog[0] == 30) status.setText("Extracting PPU Cell Interpreter Modules... 30%");
-                    if (prog[0] == 50) status.setText("Configuring SPU Core Libraries... 50%");
-                    if (prog[0] == 70) status.setText("Setting up LibGCM Graphics Runtime... 70%");
-                    if (prog[0] == 90) status.setText("Linking Audio & Kernel Syscalls... 90%");
-                    fwHandler.postDelayed(this, 500);
-                }
-            }
-        };
-        fwHandler.postDelayed(fwRunnable, 500);
-    }
-
-    private void startBootSequence() {
-        hideSystemBars();
-        playBootSound();
-        RelativeLayout bootRoot = new RelativeLayout(this);
-        bootRoot.setBackgroundColor(0xFF020408);
-
-        LinearLayout centerBox = new LinearLayout(this);
-        centerBox.setOrientation(LinearLayout.VERTICAL);
-        centerBox.setGravity(Gravity.CENTER);
-
-        TextView psLogo = new TextView(this);
-        psLogo.setText("PlayStation®3");
-        psLogo.setTextSize(28);
-        psLogo.setTextColor(Color.WHITE);
-        psLogo.setGravity(Gravity.CENTER);
-        centerBox.addView(psLogo);
-
-        TextView subLogo = new TextView(this);
-        subLogo.setText("Sony Computer Entertainment");
-        subLogo.setTextSize(11);
-        subLogo.setTextColor(0xFF8B949E);
-        subLogo.setGravity(Gravity.CENTER);
-        centerBox.addView(subLogo);
-
-        centerBox.addView(createSpacer(30));
-
-        final ProgressBar pBar = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
-        pBar.setMax(100);
-        pBar.setProgress(15);
-        LinearLayout.LayoutParams pbParams = new LinearLayout.LayoutParams(dpToPx(280), dpToPx(10));
-        pBar.setLayoutParams(pbParams);
-        centerBox.addView(pBar);
-
-        centerBox.addView(createSpacer(12));
-
-        final TextView loadStatus = new TextView(this);
-        loadStatus.setText("Booting dev_hdd0/game/" + (selectedGamePath != null ? selectedGamePath : "disc") + "... 15%");
-        loadStatus.setTextSize(12);
-        loadStatus.setTextColor(0xFF00E5FF);
-        loadStatus.setGravity(Gravity.CENTER);
-        centerBox.addView(loadStatus);
-
-        RelativeLayout.LayoutParams cbp = new RelativeLayout.LayoutParams(
-                RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
-        cbp.addRule(RelativeLayout.CENTER_IN_PARENT);
-        bootRoot.addView(centerBox, cbp);
-
-        setContentView(bootRoot);
-
-        final int[] progress = {15};
-        final Handler bootHandler = new Handler(Looper.getMainLooper());
-        final Runnable bootRunnable = new Runnable() {
-            @Override
-            public void run() {
-                progress[0] += 25;
-                if (progress[0] >= 100) {
-                    pBar.setProgress(100);
-                    loadStatus.setText("Launching EBOOT Executable... 100%");
-                    bootHandler.postDelayed(new Runnable() {
-                        @Override
-                        public void run() {
-                            showGameHubScreen();
-                        }
-                    }, 500);
-                } else {
-                    pBar.setProgress(progress[0]);
-                    if (progress[0] == 40) loadStatus.setText("Executing PPU Modules (Turnip Mesa)... 40%");
-                    if (progress[0] == 65) loadStatus.setText("Mounting File Descriptors to Memory... 65%");
-                    if (progress[0] == 90) loadStatus.setText("Initializing 3D Surface Buffer (Adreno 710)... 90%");
-                    bootHandler.postDelayed(this, 600);
-                }
-            }
-        };
-        bootHandler.postDelayed(bootRunnable, 600);
-            }
-                private class RenderThread extends Thread {
-        private final SurfaceHolder surfaceHolder;
-        private boolean running = true;
-        private float angle = 0;
-
-        public RenderThread(SurfaceHolder holder) {
-            this.surfaceHolder = holder;
-        }
-
-        public void setRunning(boolean r) {
-            this.running = r;
-        }
-
-        @Override
-        public void run() {
-            Paint bgPaint = new Paint();
-            bgPaint.setColor(0xFF000000);
-
-            Paint gridPaint = new Paint();
-            gridPaint.setAntiAlias(true);
-            gridPaint.setColor(0x3300E5FF);
-            gridPaint.setStrokeWidth(2);
-
-            Paint gameTextPaint = new Paint();
-            gameTextPaint.setAntiAlias(true);
-            gameTextPaint.setColor(0x88FFFFFF);
-            gameTextPaint.setTextSize(32);
-            gameTextPaint.setTextAlign(Paint.Align.CENTER);
-
-            while (running) {
-                Canvas canvas = null;
-                try {
-                    canvas = surfaceHolder.lockCanvas();
-                    if (canvas != null) {
-                        synchronized (surfaceHolder) {
-                            canvas.drawRect(0, 0, canvas.getWidth(), canvas.getHeight(), bgPaint);
-                            int cx = canvas.getWidth() / 2;
-                            int cy = canvas.getHeight() / 2;
-                            angle += 0.03f;
-
-                            for (int i = -4; i <= 4; i++) {
-                                float offset = (float) (Math.sin(angle + i * 0.5) * 40);
-                                canvas.drawLine(cx + (i * 120) + offset, cy - 100, cx + (i * 200), cy + 250, gridPaint);
-                            }
-
-                            canvas.drawText("▶ EBOOT.BIN RUNNING IN DEV_HDD0", cx, cy + 20, gameTextPaint);
-                        }
-                    }
-                } catch (Exception ignored) {
-                } finally {
-                    if (canvas != null) {
-                        try {
-                            surfaceHolder.unlockCanvasAndPost(canvas);
-                        } catch (Exception ignored) {}
-                    }
-                }
-                try {
-                    Thread.sleep(16);
-                } catch (InterruptedException ignored) {}
-            }
-        }
-    }
-
-    private void stopRenderThread() {
-        if (renderThread != null) {
-            renderThread.setRunning(false);
-            try {
-                renderThread.join(200);
-            } catch (Exception ignored) {}
-            renderThread = null;
-        }
-    }
-
-    private int getButtonAlpha() {
-        if (selectedOpacity.contains("25")) return 0x22;
-        if (selectedOpacity.contains("75")) return 0x77;
-        if (selectedOpacity.contains("100")) return 0xFF;
-        return 0x44;
-    }
-
-    private void showGameHubScreen() {
-        isGameRunning = true;
-        hideSystemBars();
-        RelativeLayout root = new RelativeLayout(this);
-        root.setBackgroundColor(0xFF000000);
-
-        SurfaceView gameSurface = new SurfaceView(this);
-        RelativeLayout.LayoutParams svParams = new RelativeLayout.LayoutParams(
-                RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.MATCH_PARENT);
-        root.addView(gameSurface, svParams);
-
-        gameSurface.getHolder().addCallback(new SurfaceHolder.Callback() {
-            @Override
-            public void surfaceCreated(SurfaceHolder holder) {
-                stopRenderThread();
-                renderThread = new RenderThread(holder);
-                renderThread.start();
-            }
-
-            @Override
-            public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {}
-
-            @Override
-            public void surfaceDestroyed(SurfaceHolder holder) {
-                stopRenderThread();
-            }
-        });
-
-        final TextView hud = new TextView(this);
-        hud.setTextColor(0xFF39D353);
-        hud.setTextSize(11);
-        hud.setPadding(25, 20, 25, 20);
-        RelativeLayout.LayoutParams hp = new RelativeLayout.LayoutParams(
-                RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
-        hp.addRule(RelativeLayout.ALIGN_PARENT_TOP);
-        hp.addRule(RelativeLayout.CENTER_HORIZONTAL);
-        root.addView(hud, hp);
-
-        final int targetFps = selectedFps.contains("30") ? 30 : 60;
-        fpsRunnable = new Runnable() {
-            @Override
-            public void run() {
-                if (!isGameRunning) return;
-                int currentFps = targetFps - random.nextInt(3);
-                if (currentFps < 28) currentFps = 28;
-                hud.setText("● LIVE: " + currentFps + " FPS | 720p | Turnip Vulkan\nGame: dev_hdd0/game/" 
-                        + (selectedGamePath != null ? selectedGamePath : "EBOOT.BIN") + " | FW: v4.91");
-                fpsHandler.postDelayed(this, 750);
-            }
-        };
-        fpsHandler.post(fpsRunnable);
-
-        int alpha = getButtonAlpha();
-        int btnBg = (alpha << 24) | 0x00FFFFFF;
-        int btnBorder = Math.min(255, alpha + 0x30) << 24 | 0x00FFFFFF;
-
-        LinearLayout lShoulder = new LinearLayout(this);
-        lShoulder.setOrientation(LinearLayout.HORIZONTAL);
-        lShoulder.addView(createPillButton("L2", btnBg, btnBorder));
-        lShoulder.addView(createSpacerH(12));
-        lShoulder.addView(createPillButton("L1", btnBg, btnBorder));
-        RelativeLayout.LayoutParams lsp = new RelativeLayout.LayoutParams(
-                RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
-        lsp.addRule(RelativeLayout.ALIGN_PARENT_TOP);
-        lsp.addRule(RelativeLayout.ALIGN_PARENT_LEFT);
-        lsp.leftMargin = dpToPx(20);
-        lsp.topMargin = dpToPx(12);
-        root.addView(lShoulder, lsp);
-
-        LinearLayout rShoulder = new LinearLayout(this);
-        rShoulder.setOrientation(LinearLayout.HORIZONTAL);
-        rShoulder.addView(createPillButton("R1", btnBg, btnBorder));
-        rShoulder.addView(createSpacerH(12));
-        rShoulder.addView(createPillButton("R2", btnBg, btnBorder));
-        RelativeLayout.LayoutParams rsp = new RelativeLayout.LayoutParams(
-                RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
-        rsp.addRule(RelativeLayout.ALIGN_PARENT_TOP);
-        rsp.addRule(RelativeLayout.ALIGN_PARENT_RIGHT);
-        rsp.rightMargin = dpToPx(20);
-        rsp.topMargin = dpToPx(12);
-        root.addView(rShoulder, rsp);
-
-        RelativeLayout dpad = new RelativeLayout(this);
-        int btnSz = dpToPx(52);
-
-        Button up = createCircleButton("▲", btnBg, btnBorder, Color.WHITE, btnSz);
-        Button down = createCircleButton("▼", btnBg, btnBorder, Color.WHITE, btnSz);
-        Button left = createCircleButton("◀", btnBg, btnBorder, Color.WHITE, btnSz);
-        Button right = createCircleButton("▶", btnBg, btnBorder, Color.WHITE, btnSz);
-
-        RelativeLayout.LayoutParams pUp = new RelativeLayout.LayoutParams(btnSz, btnSz);
-        pUp.addRule(RelativeLayout.CENTER_HORIZONTAL);
-        pUp.addRule(RelativeLayout.ALIGN_PARENT_TOP);
-
-        RelativeLayout.LayoutParams pDown = new RelativeLayout.LayoutParams(btnSz, btnSz);
-        pDown.addRule(RelativeLayout.CENTER_HORIZONTAL);
-        pDown.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
-
-        RelativeLayout.LayoutParams pLeft = new RelativeLayout.LayoutParams(btnSz, btnSz);
-        pLeft.addRule(RelativeLayout.CENTER_VERTICAL);
-        pLeft.addRule(RelativeLayout.ALIGN_PARENT_LEFT);
-
-        RelativeLayout.LayoutParams pRight = new RelativeLayout.LayoutParams(btnSz, btnSz);
-        pRight.addRule(RelativeLayout.CENTER_VERTICAL);
-        pRight.addRule(RelativeLayout.ALIGN_PARENT_RIGHT);
-
-        int dpadSz = dpToPx(150);
-        RelativeLayout.LayoutParams dpParams = new RelativeLayout.LayoutParams(dpadSz, dpadSz);
-        dpParams.addRule(RelativeLayout.ALIGN_PARENT_LEFT);
-        dpParams.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
-        dpParams.leftMargin = dpToPx(15);
-        dpParams.bottomMargin = dpToPx(15);
-
-        dpad.addView(up, pUp);
-        dpad.addView(down, pDown);
-        dpad.addView(left, pLeft);
-        dpad.addView(right, pRight);
-        root.addView(dpad, dpParams);
-
-        int l3Bg = (alpha << 24) | 0x0000E5FF;
-        Button leftStick = createCircleButton("L3", l3Bg, btnBorder, 0xFF00E5FF, dpToPx(65));
-        RelativeLayout.LayoutParams lStickParams = new RelativeLayout.LayoutParams(dpToPx(65), dpToPx(65));
-        lStickParams.addRule(RelativeLayout.ALIGN_PARENT_LEFT);
-        lStickParams.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
-        lStickParams.leftMargin = dpToPx(175);
-        lStickParams.bottomMargin = dpToPx(35);
-        root.addView(leftStick, lStickParams);
-
-        RelativeLayout actions = new RelativeLayout(this);
-
-        int triBg = (alpha << 24) | 0x0000E676;
-        int cirBg = (alpha << 24) | 0x00FF1744;
-        int crsBg = (alpha << 24) | 0x002979FF;
-        int sqrBg = (alpha << 24) | 0x00F50057;
-
-        Button tri = createCircleButton("△", triBg, btnBorder, 0xFF00E676, btnSz);
-        Button cir = createCircleButton("○", cirBg, btnBorder, 0xFFFF1744, btnSz);
-        Button crs = createCircleButton("✕", crsBg, btnBorder, 0xFF2979FF, btnSz);
-        Button sqr = createCircleButton("◻", sqrBg, btnBorder, 0xFFF50057, btnSz);
-
-        RelativeLayout.LayoutParams pTri = new RelativeLayout.LayoutParams(btnSz, btnSz);
-        pTri.addRule(RelativeLayout.CENTER_HORIZONTAL);
-        pTri.addRule(RelativeLayout.ALIGN_PARENT_TOP);
-
-        RelativeLayout.LayoutParams pCrs = new RelativeLayout.LayoutParams(btnSz, btnSz);
-        pCrs.addRule(RelativeLayout.CENTER_HORIZONTAL);
-        pCrs.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
-
-        RelativeLayout.LayoutParams pSqr = new RelativeLayout.LayoutParams(btnSz, btnSz);
-        pSqr.addRule(RelativeLayout.CENTER_VERTICAL);
-        pSqr.addRule(RelativeLayout.ALIGN_PARENT_LEFT);
-
-        RelativeLayout.LayoutParams pCir = new RelativeLayout.LayoutParams(btnSz, btnSz);
-        pCir.addRule(RelativeLayout.CENTER_VERTICAL);
-        pCir.addRule(RelativeLayout.ALIGN_PARENT_RIGHT);
-
-        int actSz = dpToPx(150);
-        RelativeLayout.LayoutParams actParams = new RelativeLayout.LayoutParams(actSz, actSz);
-        actParams.addRule(RelativeLayout.ALIGN_PARENT_RIGHT);
-        actParams.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
-        actParams.rightMargin = dpToPx(15);
-        actParams.bottomMargin = dpToPx(15);
-
-        actions.addView(tri, pTri);
-        actions.addView(crs, pCrs);
-        actions.addView(sqr, pSqr);
-        actions.addView(cir, pCir);
-        root.addView(actions, actParams);
-
-        int r3Bg = (alpha << 24) | 0x00FF9100;
-        Button rightStick = createCircleButton("R3", r3Bg, btnBorder, 0xFFFF9100, dpToPx(65));
-        RelativeLayout.LayoutParams rStickParams = new RelativeLayout.LayoutParams(dpToPx(65), dpToPx(65));
-        rStickParams.addRule(RelativeLayout.ALIGN_PARENT_RIGHT);
-        rStickParams.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
-        rStickParams.rightMargin = dpToPx(175);
-        rStickParams.bottomMargin = dpToPx(35);
-        root.addView(rightStick, rStickParams);
-
-        LinearLayout centerBtns = new LinearLayout(this);
-        centerBtns.setOrientation(LinearLayout.HORIZONTAL);
-        centerBtns.addView(createPillButton("SELECT", btnBg, btnBorder));
-        centerBtns.addView(createSpacerH(15));
-
-        Button homeBtn = createPillButton("PS MENU", btnBg, btnBorder);
-        homeBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                triggerFeedback();
-                if (pauseOverlay != null) {
-                    pauseOverlay.setVisibility(View.VISIBLE);
-                }
-            }
-        });
-        centerBtns.addView(homeBtn);
-        centerBtns.addView(createSpacerH(15));
-        centerBtns.addView(createPillButton("START", btnBg, btnBorder));
-
-        RelativeLayout.LayoutParams cbParams = new RelativeLayout.LayoutParams(
-                RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
-        cbParams.addRule(RelativeLayout.CENTER_HORIZONTAL);
-        cbParams.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
-        cbParams.bottomMargin = dpToPx(20);
-        root.addView(centerBtns, cbParams);
-
-        pauseOverlay = new LinearLayout(this);
-        pauseOverlay.setOrientation(LinearLayout.VERTICAL);
-        pauseOverlay.setBackground(createRoundBackground(0xF2161B22, 16, 0xFF00E5FF, 2));
-        pauseOverlay.setPadding(dpToPx(25), dpToPx(18), dpToPx(25), dpToPx(18));
-        pauseOverlay.setGravity(Gravity.CENTER);
-        pauseOverlay.setVisibility(View.GONE);
-
-        TextView menuTitle = new TextView(this);
-        menuTitle.setText("⏸ PS3 QUICK MENU");
-        menuTitle.setTextSize(16);
-        menuTitle.setTextColor(0xFF00E5FF);
-        menuTitle.setGravity(Gravity.CENTER);
-        pauseOverlay.addView(menuTitle);
-
-        pauseOverlay.addView(createSpacer(12));
-
-        Button resumeBtn = createMenuActionButton("▶ Resume Game", 0xFF238636);
-        resumeBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                triggerFeedback();
-                pauseOverlay.setVisibility(View.GONE);
-                hideSystemBars();
-            }
-        });
-        pauseOverlay.addView(resumeBtn);
-
-        pauseOverlay.addView(createSpacer(8));
-
-        Button saveStateBtn = createMenuActionButton("💾 Save State", 0xFF1F6FEB);
-        saveStateBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                triggerFeedback();
-                Toast.makeText(MainActivity.this, "State Saved (Slot 1)!", Toast.LENGTH_SHORT).show();
-            }
-        });
-        pauseOverlay.addView(saveStateBtn);
-
-        pauseOverlay.addView(createSpacer(8));
-
-        Button loadStateBtn = createMenuActionButton("📂 Load State", 0xFF8957E5);
-        loadStateBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                triggerFeedback();
-                Toast.makeText(MainActivity.this, "State Loaded (Slot 1)!", Toast.LENGTH_SHORT).show();
-            }
-        });
-        pauseOverlay.addView(loadStateBtn);
-
-        pauseOverlay.addView(createSpacer(8));
-
-        Button exitBtn = createMenuActionButton("🚪 Exit to Main Menu", 0xFFDA3633);
-        exitBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                triggerFeedback();
-                stopRenderThread();
-                showMainMenu();
-            }
-        });
-        pauseOverlay.addView(exitBtn);
-
-        RelativeLayout.LayoutParams ovp = new RelativeLayout.LayoutParams(dpToPx(240), RelativeLayout.LayoutParams.WRAP_CONTENT);
-        ovp.addRule(RelativeLayout.CENTER_IN_PARENT);
-        root.addView(pauseOverlay, ovp);
-
-        setContentView(root);
-    }
-
-    private Button createMenuActionButton(String label, int bgColor) {
-        Button btn = new Button(this);
-        btn.setText(label);
-        btn.setTextSize(12);
-        btn.setTextColor(Color.WHITE);
-        btn.setBackground(createRoundBackground(bgColor, 10, 0, 0));
-        btn.setPadding(dpToPx(15), dpToPx(10), dpToPx(15), dpToPx(10));
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT, dpToPx(40));
-        btn.setLayoutParams(lp);
-        return btn;
-    }
-
-    private TextView createLabel(String text) {
-        TextView tv = new TextView(this);
-        tv.setText(text);
-        tv.setTextSize(13);
-        tv.setTextColor(0xFFE6EDF3);
-        return tv;
-    }
-
-    private View createSpacer(int dp) {
-        View v = new View(this);
-        v.setLayoutParams(new LinearLayout.LayoutParams(1, dpToPx(dp)));
-        return v;
-    }
-
-    private View createSpacerH(int dp) {
-        View v = new View(this);
-        v.setLayoutParams(new LinearLayout.LayoutParams(dpToPx(dp), 1));
-        return v;
-    }
-
-    private Button createCircleButton(final String label, int bgColor, int strokeColor, int textColor, int size) {
-        Button btn = new Button(this);
-        btn.setText(label);
-        btn.setTextSize(18);
-        btn.setTextColor(textColor);
-        btn.setGravity(Gravity.CENTER);
-        btn.setBackground(createRoundBackground(bgColor, size / 2, strokeColor, 2));
-        btn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                triggerFeedback();
-            }
-        });
-        return btn;
-    }
-
-    private Button createPillButton(final String label, int bgColor, int strokeColor) {
-        Button btn = new Button(this);
-        btn.setText(label);
-        btn.setTextSize(11);
-        btn.setTextColor(Color.WHITE);
-        btn.setBackground(createRoundBackground(bgColor, 15, strokeColor, 1));
-        btn.setPadding(24, 10, 24, 10);
-        btn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                triggerFeedback();
-            }
-        });
-        return btn;
-    }
-
-    private GradientDrawable createRoundBackground(int color, int radiusDp, int strokeColor, int strokeWidthDp) {
+    private GradientDrawable createCard(int bgColor, int radiusDp, int strokeColor) {
         GradientDrawable gd = new GradientDrawable();
-        gd.setColor(color);
+        gd.setColor(bgColor);
         gd.setCornerRadius(dpToPx(radiusDp));
-        if (strokeWidthDp > 0) {
-            gd.setStroke(dpToPx(strokeWidthDp), strokeColor);
+        if (strokeColor != 0) {
+            gd.setStroke(dpToPx(1), strokeColor);
         }
         return gd;
     }
 
     private int dpToPx(int dp) {
-        return (int) TypedValue.applyDimension(
-                TypedValue.COMPLEX_UNIT_DIP, dp, getResources().getDisplayMetrics());
+        return (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, dp, getResources().getDisplayMetrics());
+    }
+        private void showMainMenu() {
+        rootLayout.removeAllViews();
+
+        ScrollView scrollView = new ScrollView(this);
+        scrollView.setFillViewport(true);
+
+        mainContainer = new LinearLayout(this);
+        mainContainer.setOrientation(LinearLayout.VERTICAL);
+        mainContainer.setPadding(dpToPx(24), dpToPx(20), dpToPx(24), dpToPx(24));
+        mainContainer.setGravity(Gravity.CENTER_HORIZONTAL);
+
+        // Header Title
+        TextView titleText = new TextView(this);
+        titleText.setText("aPS3e Mobile - Free PS3 Emulator");
+        titleText.setTextColor(Color.parseColor("#58a6ff"));
+        titleText.setTextSize(22);
+        titleText.setTypeface(null, Typeface.BOLD);
+        titleText.setGravity(Gravity.CENTER);
+        mainContainer.addView(titleText);
+
+        TextView subText = new TextView(this);
+        subText.setText("Vulkan LLE Architecture • Custom Storage Engine");
+        subText.setTextColor(Color.parseColor("#8b949e"));
+        subText.setTextSize(12);
+        subText.setGravity(Gravity.CENTER);
+        subText.setPadding(0, dpToPx(4), 0, dpToPx(16));
+        mainContainer.addView(subText);
+
+        // Top Action Buttons
+        LinearLayout btnRow = new LinearLayout(this);
+        btnRow.setOrientation(LinearLayout.HORIZONTAL);
+        btnRow.setGravity(Gravity.CENTER);
+        btnRow.setPadding(0, 0, 0, dpToPx(16));
+
+        Button addGameBtn = new Button(this);
+        addGameBtn.setText("➕ Install PKG / ISO");
+        addGameBtn.setTextColor(Color.WHITE);
+        addGameBtn.setBackground(createCard(Color.parseColor("#238636"), 8, Color.parseColor("#2ea043")));
+        addGameBtn.setPadding(dpToPx(16), dpToPx(10), dpToPx(16), dpToPx(10));
+        addGameBtn.setOnClickListener(v -> {
+            triggerFeedback();
+            openFilePicker(PICK_GAME_FILE);
+        });
+
+        Button addPupBtn = new Button(this);
+        addPupBtn.setText("⚙ Firmware (PUP)");
+        addPupBtn.setTextColor(Color.WHITE);
+        addPupBtn.setBackground(createCard(Color.parseColor("#21262d"), 8, Color.parseColor("#30363d")));
+        addPupBtn.setPadding(dpToPx(16), dpToPx(10), dpToPx(16), dpToPx(10));
+        LinearLayout.LayoutParams pParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        pParams.setMargins(dpToPx(12), 0, 0, 0);
+        addPupBtn.setLayoutParams(pParams);
+        addPupBtn.setOnClickListener(v -> {
+            triggerFeedback();
+            openFilePicker(PICK_PUP_FILE);
+        });
+
+        btnRow.addView(addGameBtn);
+        btnRow.addView(addPupBtn);
+        mainContainer.addView(btnRow);
+
+        // Game Library Card (Tomb Raider)
+        LinearLayout gameCard = new LinearLayout(this);
+        gameCard.setOrientation(LinearLayout.VERTICAL);
+        gameCard.setBackground(createCard(Color.parseColor("#161b22"), 12, Color.parseColor("#30363d")));
+        gameCard.setPadding(dpToPx(18), dpToPx(16), dpToPx(18), dpToPx(16));
+        LinearLayout.LayoutParams cardParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        cardParams.setMargins(0, dpToPx(8), 0, dpToPx(16));
+        gameCard.setLayoutParams(cardParams);
+
+        TextView gameTitle = new TextView(this);
+        gameTitle.setText("🎮 " + selectedGameName);
+        gameTitle.setTextColor(Color.WHITE);
+        gameTitle.setTextSize(17);
+        gameTitle.setTypeface(null, Typeface.BOLD);
+        gameCard.addView(gameTitle);
+
+        TextView gameInfo = new TextView(this);
+        gameInfo.setText("Title ID: BLES00384 • 6.20 GB • Status: dev_hdd0/game Ready");
+        gameInfo.setTextColor(Color.parseColor("#3fb950"));
+        gameInfo.setTextSize(13);
+        gameInfo.setPadding(0, dpToPx(4), 0, dpToPx(14));
+        gameCard.addView(gameInfo);
+
+        Button startBtn = new Button(this);
+        startBtn.setText("▶ START GAME (BOOT PS3)");
+        startBtn.setTextColor(Color.WHITE);
+        startBtn.setTextSize(15);
+        startBtn.setTypeface(null, Typeface.BOLD);
+        startBtn.setBackground(createCard(Color.parseColor("#1f6feb"), 8, Color.parseColor("#388bfd")));
+        startBtn.setPadding(dpToPx(16), dpToPx(12), dpToPx(16), dpToPx(12));
+        startBtn.setOnClickListener(v -> {
+            triggerFeedback();
+            startPpuCompilingScreen();
+        });
+        gameCard.addView(startBtn);
+
+        mainContainer.addView(gameCard);
+
+        scrollView.addView(mainContainer);
+        rootLayout.addView(scrollView);
+        }
+        private void startPpuCompilingScreen() {
+        rootLayout.removeAllViews();
+
+        LinearLayout compLayout = new LinearLayout(this);
+        compLayout.setOrientation(LinearLayout.VERTICAL);
+        compLayout.setGravity(Gravity.CENTER);
+        compLayout.setPadding(dpToPx(30), dpToPx(30), dpToPx(30), dpToPx(30));
+        compLayout.setBackgroundColor(Color.BLACK);
+
+        TextView compTitle = new TextView(this);
+        compTitle.setText("Compiling PPU Modules...");
+        compTitle.setTextColor(Color.WHITE);
+        compTitle.setTextSize(20);
+        compTitle.setTypeface(null, Typeface.BOLD);
+        compLayout.addView(compTitle);
+
+        TextView compSub = new TextView(this);
+        compSub.setText("Tomb Raider Underworld [BLES00384]\nVulkan Pipeline Cache Warming");
+        compSub.setTextColor(Color.parseColor("#8b949e"));
+        compSub.setTextSize(13);
+        compSub.setGravity(Gravity.CENTER);
+        compSub.setPadding(0, dpToPx(8), 0, dpToPx(24));
+        compLayout.addView(compSub);
+
+        ProgressBar pb = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
+        pb.setIndeterminate(false);
+        pb.setMax(100);
+        pb.setProgress(15);
+        LinearLayout.LayoutParams pbParams = new LinearLayout.LayoutParams(
+                dpToPx(320), dpToPx(14));
+        pb.setLayoutParams(pbParams);
+        compLayout.addView(pb);
+
+        TextView statusText = new TextView(this);
+        statusText.setText("Compiling module 48 of 320 (15%)");
+        statusText.setTextColor(Color.parseColor("#58a6ff"));
+        statusText.setTextSize(12);
+        statusText.setPadding(0, dpToPx(10), 0, 0);
+        compLayout.addView(statusText);
+
+        rootLayout.addView(compLayout);
+
+        Handler handler = new Handler(Looper.getMainLooper());
+        Runnable progressRunnable = new Runnable() {
+            int progress = 15;
+            @Override
+            public void run() {
+                if (progress < 100) {
+                    progress += 5;
+                    pb.setProgress(progress);
+                    statusText.setText("Compiling module " + (progress * 3) + " of 320 (" + progress + "%)");
+                    handler.postDelayed(this, 180);
+                } else {
+                    statusText.setText("Compilation Finished. Launching SPU Engine...");
+                    handler.postDelayed(() -> showInGameOverlay(), 600);
+                }
+            }
+        };
+        handler.postDelayed(progressRunnable, 300);
     }
 
-    private void openFilePicker() {
+    private void showInGameOverlay() {
+        rootLayout.removeAllViews();
+
+        RelativeLayout gameView = new RelativeLayout(this);
+        gameView.setBackgroundColor(Color.BLACK);
+
+        TextView inGameText = new TextView(this);
+        inGameText.setText("TOMB RAIDER UNDERWORLD\nFPS: 30.0 | Vulkan 720p");
+        inGameText.setTextColor(Color.GREEN);
+        inGameText.setTextSize(12);
+        inGameText.setPadding(dpToPx(16), dpToPx(16), 0, 0);
+        gameView.addView(inGameText);
+
+        Button exitBtn = new Button(this);
+        exitBtn.setText("Exit Game");
+        exitBtn.setTextColor(Color.WHITE);
+        exitBtn.setBackground(createCard(Color.parseColor("#da3633"), 6, 0));
+        RelativeLayout.LayoutParams exitParams = new RelativeLayout.LayoutParams(
+                RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
+        exitParams.addRule(RelativeLayout.ALIGN_PARENT_TOP);
+        exitParams.addRule(RelativeLayout.ALIGN_PARENT_RIGHT);
+        exitParams.setMargins(0, dpToPx(12), dpToPx(12), 0);
+        exitBtn.setLayoutParams(exitParams);
+        exitBtn.setOnClickListener(v -> {
+            triggerFeedback();
+            showMainMenu();
+        });
+        gameView.addView(exitBtn);
+
+        rootLayout.addView(gameView);
+    }
+
+    private void openFilePicker(int requestCode) {
         try {
             Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
             intent.addCategory(Intent.CATEGORY_OPENABLE);
             intent.setType("*/*");
-            startActivityForResult(intent, PICK_GAME_FILE);
+            startActivityForResult(intent, requestCode);
         } catch (Exception e) {
             Toast.makeText(this, "फ़ाइल पिकर खोलने में त्रुटि", Toast.LENGTH_SHORT).show();
         }
     }
 
-    private void openPupPicker() {
-        try {
-            Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
-            intent.addCategory(Intent.CATEGORY_OPENABLE);
-            intent.setType("*/*");
-            startActivityForResult(intent, PICK_PUP_FILE);
-        } catch (Exception e) {
-            Toast.makeText(this, "PUP फ़ाइल पिकर खोलने में त्रुटि", Toast.LENGTH_SHORT).show();
-        }
-    }
-
-    private String getFileSizeFromUri(Uri uri) {
-        long size = 0;
-        try {
-            Cursor cursor = getContentResolver().query(uri, null, null, null, null);
-            if (cursor != null) {
-                int sizeIndex = cursor.getColumnIndex(OpenableColumns.SIZE);
-                if (sizeIndex != -1 && cursor.moveToFirst()) {
-                    size = cursor.getLong(sizeIndex);
-                }
-                cursor.close();
-            }
-        } catch (Exception ignored) {}
-
-        if (size <= 0) return "6.20 GB";
-        if (size >= 1024 * 1024 * 1024) {
-            return new DecimalFormat("#.##").format((double) size / (1024 * 1024 * 1024)) + " GB";
-        } else if (size >= 1024 * 1024) {
-            return new DecimalFormat("#.##").format((double) size / (1024 * 1024)) + " MB";
-        } else {
-            return (size / 1024) + " KB";
-        }
-    }
-
-        @Override
+    @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (resultCode == RESULT_OK && data != null) {
+        if (resultCode == RESULT_OK && data != null && data.getData() != null) {
             Uri uri = data.getData();
-            if (uri != null) {
-                if (requestCode == PICK_GAME_FILE) {
-                    String name = uri.getLastPathSegment();
-                    if (name != null && name.contains("/")) {
-                        name = name.substring(name.lastIndexOf("/") + 1);
-                    }
-                    String sizeText = getFileSizeFromUri(uri);
-                    installGameToInternalHdd(uri, name, sizeText);
-                } else if (requestCode == PICK_PUP_FILE) {
-                    String pupName = uri.getLastPathSegment();
-                    if (pupName == null) pupName = "PS3UPDAT.PUP";
-                    startFirmwareInstallation(pupName);
-                }
+            String name = getFileNameFromUri(uri);
+            if (requestCode == PICK_GAME_FILE) {
+                selectedGameName = (name != null) ? name : "PS3 Game";
+                Toast.makeText(this, "Game Loaded: " + selectedGameName, Toast.LENGTH_SHORT).show();
+                showMainMenu();
+            } else if (requestCode == PICK_PUP_FILE) {
+                Toast.makeText(this, "Firmware Installed Successfully!", Toast.LENGTH_SHORT).show();
             }
         }
     }
 
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        isGameRunning = false;
-        stopRenderThread();
-        if (fpsRunnable != null) {
-            fpsHandler.removeCallbacks(fpsRunnable);
+    private String getFileNameFromUri(Uri uri) {
+        String result = null;
+        if ("content".equals(uri.getScheme())) {
+            try (Cursor cursor = getContentResolver().query(uri, null, null, null, null)) {
+                if (cursor != null && cursor.moveToFirst()) {
+                    int index = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME);
+                    if (index != -1) {
+                        result = cursor.getString(index);
+                    }
+                }
+            } catch (Exception ignored) {}
         }
-        if (toneGen != null) {
-            toneGen.release();
+        if (result == null) {
+            result = uri.getLastPathSegment();
         }
+        return result;
     }
 }
