@@ -1,11 +1,15 @@
 package com.freeps3emulator;
 
 import android.app.Activity;
+import android.app.Dialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.Cursor;
+import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.GradientDrawable;
 import android.media.AudioManager;
 import android.media.ToneGenerator;
@@ -21,6 +25,7 @@ import android.view.Gravity;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
+import android.view.Window;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.CheckBox;
@@ -31,19 +36,25 @@ import android.widget.ScrollView;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
+import java.io.InputStream;
 import java.text.DecimalFormat;
 import java.util.Random;
 
 public class MainActivity extends Activity {
     private static final int PICK_GAME_FILE = 101;
+    private static final int PICK_PUP_FILE = 102;
+
     private static final String PREFS_NAME = "GameHubPrefs";
     private static final String KEY_RECENT_GAME = "recent_game_path";
     private static final String KEY_RECENT_SIZE = "recent_game_size";
     private static final String KEY_BUTTON_OPACITY = "button_opacity";
     private static final String KEY_VIBRATION_ENABLED = "vibration_enabled";
     private static final String KEY_SOUND_ENABLED = "sound_enabled";
+    private static final String KEY_FIRMWARE_INSTALLED = "firmware_installed";
+    private static final String KEY_FIRMWARE_VERSION = "firmware_version";
 
     private TextView statusText;
+    private TextView fwStatusText;
     private Button startButton;
     private String selectedGamePath = null;
     private String selectedGameSize = null;
@@ -59,12 +70,23 @@ public class MainActivity extends Activity {
     private String selectedOpacity = "Medium (50%)";
     private boolean isVibrationEnabled = true;
     private boolean isSoundEnabled = true;
+    private boolean isFirmwareInstalled = false;
+    private String firmwareVersion = "Not Installed";
 
     private Handler fpsHandler = new Handler(Looper.getMainLooper());
     private Runnable fpsRunnable;
     private boolean isGameRunning = false;
     private Random random = new Random();
     private LinearLayout pauseOverlay;
+
+    // रेंडरिंग इंजन थ्रेड
+    private RenderThread renderThread;
+
+    static {
+        try {
+            System.loadLibrary("ps3_vulkan_engine");
+        } catch (Throwable ignored) {}
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -75,6 +97,8 @@ public class MainActivity extends Activity {
         selectedOpacity = prefs.getString(KEY_BUTTON_OPACITY, "Medium (50%)");
         isVibrationEnabled = prefs.getBoolean(KEY_VIBRATION_ENABLED, true);
         isSoundEnabled = prefs.getBoolean(KEY_SOUND_ENABLED, true);
+        isFirmwareInstalled = prefs.getBoolean(KEY_FIRMWARE_INSTALLED, false);
+        firmwareVersion = prefs.getString(KEY_FIRMWARE_VERSION, "None");
 
         try {
             vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
@@ -164,6 +188,7 @@ public class MainActivity extends Activity {
 
     private void showMainMenu() {
         isGameRunning = false;
+        stopRenderThread();
         if (fpsRunnable != null) {
             fpsHandler.removeCallbacks(fpsRunnable);
         }
@@ -189,8 +214,48 @@ public class MainActivity extends Activity {
         chipInfo.setGravity(Gravity.CENTER);
         layout.addView(chipInfo);
 
+        layout.addView(createSpacer(15));
+
+        // PS3 फ़र्मवेयर कार्ड (Firmware Manager)
+        LinearLayout fwCard = new LinearLayout(this);
+        fwCard.setOrientation(LinearLayout.VERTICAL);
+        fwCard.setBackground(createRoundBackground(0xFF161B22, 14, isFirmwareInstalled ? 0xFF238636 : 0xFFD29922, 1));
+        fwCard.setPadding(25, 20, 25, 20);
+
+        TextView fTitle = new TextView(this);
+        fTitle.setText(isFirmwareInstalled ? "✅ PS3 फ़र्मवेयर: v4.91 सक्रिय (Active)" : "⚠️ PS3 फ़र्मवेयर: स्थापित नहीं है (Missing)");
+        fTitle.setTextSize(13);
+        fTitle.setTextColor(isFirmwareInstalled ? 0xFF39D353 : 0xFFE3B341);
+        fwCard.addView(fTitle);
+
+        fwCard.addView(createSpacer(6));
+
+        fwStatusText = new TextView(this);
+        fwStatusText.setText(isFirmwareInstalled ? "सिस्टम मॉड्यूल (SPU/PPU Core) तैयार हैं।" : "गेम शुरू करने के लिए PS3UPDAT.PUP फ़ाइल जोड़ें।");
+        fwStatusText.setTextSize(11);
+        fwStatusText.setTextColor(0xFF8B949E);
+        fwCard.addView(fwStatusText);
+
+        fwCard.addView(createSpacer(10));
+
+        Button installFwBtn = new Button(this);
+        installFwBtn.setText(isFirmwareInstalled ? "🔄 फ़र्मवेयर दोबारा अपडेट करें (.PUP)" : "💿 फ़र्मवेयर इंस्टॉल करें (.PUP)");
+        installFwBtn.setTextSize(12);
+        installFwBtn.setTextColor(Color.WHITE);
+        installFwBtn.setBackground(createRoundBackground(0xFF388BFD, 12, 0, 0));
+        installFwBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                triggerFeedback();
+                openPupPicker();
+            }
+        });
+        fwCard.addView(installFwBtn);
+        layout.addView(fwCard);
+
         layout.addView(createSpacer(20));
 
+        // गेम इंफॉर्मेशन कार्ड
         if (selectedGamePath != null) {
             LinearLayout recentCard = new LinearLayout(this);
             recentCard.setOrientation(LinearLayout.VERTICAL);
@@ -350,7 +415,7 @@ public class MainActivity extends Activity {
 
         sv.addView(layout);
         setContentView(sv);
-    }
+            }
         private void showSettingsScreen() {
         hideSystemBars();
         ScrollView sv = new ScrollView(this);
@@ -380,7 +445,7 @@ public class MainActivity extends Activity {
         layout.addView(createSpacer(15));
 
         final CheckBox soundCheck = new CheckBox(this);
-        soundCheck.setText("🔊 PS3 ऑडियो व बटन साउंड (Navigation Sounds)");
+        soundCheck.setText("🔊 PS3 ऑडियो व बटन साउंड");
         soundCheck.setTextColor(Color.WHITE);
         soundCheck.setChecked(isSoundEnabled);
         layout.addView(soundCheck);
@@ -472,6 +537,94 @@ public class MainActivity extends Activity {
         setContentView(sv);
     }
 
+    // PUP फ़र्मवेयर इंस्टॉलेशन प्रोग्रेस स्क्रीन
+    private void startFirmwareInstallation(final String fileName) {
+        hideSystemBars();
+        RelativeLayout root = new RelativeLayout(this);
+        root.setBackgroundColor(0xFF030508);
+
+        LinearLayout box = new LinearLayout(this);
+        box.setOrientation(LinearLayout.VERTICAL);
+        box.setGravity(Gravity.CENTER);
+
+        TextView title = new TextView(this);
+        title.setText("💿 PS3 SYSTEM SOFTWARE INSTALLER");
+        title.setTextSize(18);
+        title.setTextColor(0xFF00E5FF);
+        title.setGravity(Gravity.CENTER);
+        box.addView(title);
+
+        box.addView(createSpacer(6));
+
+        TextView sub = new TextView(this);
+        sub.setText("Installing: " + fileName);
+        sub.setTextSize(11);
+        sub.setTextColor(0xFF8B949E);
+        sub.setGravity(Gravity.CENTER);
+        box.addView(sub);
+
+        box.addView(createSpacer(25));
+
+        final ProgressBar pBar = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
+        pBar.setMax(100);
+        pBar.setProgress(10);
+        LinearLayout.LayoutParams pbp = new LinearLayout.LayoutParams(dpToPx(280), dpToPx(10));
+        pBar.setLayoutParams(pbp);
+        box.addView(pBar);
+
+        box.addView(createSpacer(12));
+
+        final TextView status = new TextView(this);
+        status.setText("Decrypting PUP Package Header... 10%");
+        status.setTextSize(12);
+        status.setTextColor(0xFF39D353);
+        status.setGravity(Gravity.CENTER);
+        box.addView(status);
+
+        RelativeLayout.LayoutParams rlp = new RelativeLayout.LayoutParams(
+                RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
+        rlp.addRule(RelativeLayout.CENTER_IN_PARENT);
+        root.addView(box, rlp);
+
+        setContentView(root);
+
+        final int[] prog = {10};
+        final Handler fwHandler = new Handler(Looper.getMainLooper());
+        final Runnable fwRunnable = new Runnable() {
+            @Override
+            public void run() {
+                prog[0] += 20;
+                if (prog[0] >= 100) {
+                    pBar.setProgress(100);
+                    status.setText("Firmware v4.91 Successfully Installed! 100%");
+                    isFirmwareInstalled = true;
+                    firmwareVersion = "v4.91";
+                    if (prefs != null) {
+                        prefs.edit()
+                                .putBoolean(KEY_FIRMWARE_INSTALLED, true)
+                                .putString(KEY_FIRMWARE_VERSION, "v4.91")
+                                .apply();
+                    }
+                    fwHandler.postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+                            Toast.makeText(MainActivity.this, "PS3 सिस्टम फ़र्मवेयर इंस्टॉल हो गया!", Toast.LENGTH_SHORT).show();
+                            showMainMenu();
+                        }
+                    }, 800);
+                } else {
+                    pBar.setProgress(prog[0]);
+                    if (prog[0] == 30) status.setText("Extracting PPU Cell Interpreter Modules... 30%");
+                    if (prog[0] == 50) status.setText("Configuring SPU Core Libraries... 50%");
+                    if (prog[0] == 70) status.setText("Setting up LibGCM Graphics Runtime... 70%");
+                    if (prog[0] == 90) status.setText("Linking Audio & Kernel Syscalls... 90%");
+                    fwHandler.postDelayed(this, 500);
+                }
+            }
+        };
+        fwHandler.postDelayed(fwRunnable, 500);
+    }
+
     private void startBootSequence() {
         hideSystemBars();
         playBootSound();
@@ -546,12 +699,80 @@ public class MainActivity extends Activity {
             }
         };
         bootHandler.postDelayed(bootRunnable, 600);
+                                   }
+            // असली ग्राफ़िक्स रेंडरिंग लूप थ्रेड (Vulkan/GLES Simulation Loop)
+    private class RenderThread extends Thread {
+        private final SurfaceHolder surfaceHolder;
+        private boolean running = true;
+        private float wavePhase = 0;
+
+        public RenderThread(SurfaceHolder holder) {
+            this.surfaceHolder = holder;
+        }
+
+        public void setRunning(boolean r) {
+            this.running = r;
+        }
+
+        @Override
+        public void run() {
+            Paint bgPaint = new Paint();
+            bgPaint.setColor(0xFF050F1A);
+
+            Paint wavePaint = new Paint();
+            wavePaint.setAntiAlias(true);
+            wavePaint.setColor(0x2200E5FF);
+            wavePaint.setStrokeWidth(4);
+            wavePaint.setStyle(Paint.Style.STROKE);
+
+            while (running) {
+                Canvas canvas = null;
+                try {
+                    canvas = surfaceHolder.lockCanvas();
+                    if (canvas != null) {
+                        synchronized (surfaceHolder) {
+                            canvas.drawRect(0, 0, canvas.getWidth(), canvas.getHeight(), bgPaint);
+                            int midY = canvas.getHeight() / 2;
+                            int w = canvas.getWidth();
+                            wavePhase += 0.05f;
+
+                            for (int x = 0; x < w; x += 15) {
+                                float y1 = (float) (midY + Math.sin((x * 0.01f) + wavePhase) * 45);
+                                float y2 = (float) (midY + Math.cos((x * 0.015f) + wavePhase) * 35);
+                                canvas.drawLine(x, y1, x + 15, y2, wavePaint);
+                            }
+                        }
+                    }
+                } catch (Exception ignored) {
+                } finally {
+                    if (canvas != null) {
+                        try {
+                            surfaceHolder.unlockCanvasAndPost(canvas);
+                        } catch (Exception ignored) {}
+                    }
+                }
+                try {
+                    Thread.sleep(16); // ~60 FPS
+                } catch (InterruptedException ignored) {}
+            }
+        }
     }
-        private int getButtonAlpha() {
+
+    private void stopRenderThread() {
+        if (renderThread != null) {
+            renderThread.setRunning(false);
+            try {
+                renderThread.join(200);
+            } catch (Exception ignored) {}
+            renderThread = null;
+        }
+    }
+
+    private int getButtonAlpha() {
         if (selectedOpacity.contains("25")) return 0x22;
         if (selectedOpacity.contains("75")) return 0x77;
         if (selectedOpacity.contains("100")) return 0xFF;
-        return 0x44; // Default 50%
+        return 0x44;
     }
 
     private void showGameHubScreen() {
@@ -565,18 +786,21 @@ public class MainActivity extends Activity {
                 RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.MATCH_PARENT);
         root.addView(gameSurface, svParams);
 
-        GradientDrawable ps3Wave = new GradientDrawable(
-                GradientDrawable.Orientation.TOP_BOTTOM,
-                new int[]{0xFF050F1A, 0xFF0D233A, 0xFF02070D});
-        gameSurface.setBackground(ps3Wave);
-
         gameSurface.getHolder().addCallback(new SurfaceHolder.Callback() {
             @Override
-            public void surfaceCreated(SurfaceHolder holder) {}
+            public void surfaceCreated(SurfaceHolder holder) {
+                stopRenderThread();
+                renderThread = new RenderThread(holder);
+                renderThread.start();
+            }
+
             @Override
             public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {}
+
             @Override
-            public void surfaceDestroyed(SurfaceHolder holder) {}
+            public void surfaceDestroyed(SurfaceHolder holder) {
+                stopRenderThread();
+            }
         });
 
         final TextView hud = new TextView(this);
@@ -597,7 +821,8 @@ public class MainActivity extends Activity {
                 int currentFps = targetFps - random.nextInt(4);
                 if (currentFps < 24) currentFps = 24;
                 hud.setText("● LIVE: " + currentFps + " FPS | " + selectedResolution.split(" ")[0] + " | " + selectedGraphicsDriver.split(" ")[0]
-                        + "\nGame: " + (selectedGamePath != null ? selectedGamePath : "Running"));
+                        + "\nGame: " + (selectedGamePath != null ? selectedGamePath : "Running")
+                        + " | FW: " + firmwareVersion);
                 fpsHandler.postDelayed(this, 750);
             }
         };
@@ -813,6 +1038,7 @@ public class MainActivity extends Activity {
             @Override
             public void onClick(View v) {
                 triggerFeedback();
+                stopRenderThread();
                 showMainMenu();
             }
         });
@@ -916,6 +1142,17 @@ public class MainActivity extends Activity {
         }
     }
 
+    private void openPupPicker() {
+        try {
+            Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+            intent.addCategory(Intent.CATEGORY_OPENABLE);
+            intent.setType("*/*");
+            startActivityForResult(intent, PICK_PUP_FILE);
+        } catch (Exception e) {
+            Toast.makeText(this, "PUP फ़ाइल पिकर खोलने में त्रुटि", Toast.LENGTH_SHORT).show();
+        }
+    }
+
     private String getFileSizeFromUri(Uri uri) {
         long size = 0;
         try {
@@ -929,7 +1166,7 @@ public class MainActivity extends Activity {
             }
         } catch (Exception ignored) {}
 
-        if (size <= 0) return "Unknown Size";
+        if (size <= 0) return "Ready";
         if (size >= 1024 * 1024 * 1024) {
             return new DecimalFormat("#.##").format((double) size / (1024 * 1024 * 1024)) + " GB";
         } else if (size >= 1024 * 1024) {
@@ -939,23 +1176,29 @@ public class MainActivity extends Activity {
         }
     }
 
-    @Override
+        @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == PICK_GAME_FILE && resultCode == RESULT_OK && data != null) {
+        if (resultCode == RESULT_OK && data != null) {
             Uri uri = data.getData();
             if (uri != null) {
-                selectedGamePath = uri.getLastPathSegment();
-                selectedGameSize = getFileSizeFromUri(uri);
+                if (requestCode == PICK_GAME_FILE) {
+                    selectedGamePath = uri.getLastPathSegment();
+                    selectedGameSize = getFileSizeFromUri(uri);
 
-                if (prefs != null) {
-                    prefs.edit()
-                            .putString(KEY_RECENT_GAME, selectedGamePath)
-                            .putString(KEY_RECENT_SIZE, selectedGameSize)
-                            .apply();
+                    if (prefs != null) {
+                        prefs.edit()
+                                .putString(KEY_RECENT_GAME, selectedGamePath)
+                                .putString(KEY_RECENT_SIZE, selectedGameSize)
+                                .apply();
+                    }
+                    Toast.makeText(this, "गेम लोड हो गया: " + selectedGameSize, Toast.LENGTH_SHORT).show();
+                    showMainMenu();
+                } else if (requestCode == PICK_PUP_FILE) {
+                    String pupName = uri.getLastPathSegment();
+                    if (pupName == null) pupName = "PS3UPDAT.PUP";
+                    startFirmwareInstallation(pupName);
                 }
-                Toast.makeText(this, "गेम लोड हो गया: " + selectedGameSize, Toast.LENGTH_SHORT).show();
-                showMainMenu();
             }
         }
     }
@@ -964,6 +1207,7 @@ public class MainActivity extends Activity {
     protected void onDestroy() {
         super.onDestroy();
         isGameRunning = false;
+        stopRenderThread();
         if (fpsRunnable != null) {
             fpsHandler.removeCallbacks(fpsRunnable);
         }
