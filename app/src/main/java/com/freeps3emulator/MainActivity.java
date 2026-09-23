@@ -34,8 +34,6 @@ import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.InputStream;
 import java.text.DecimalFormat;
 import java.util.Random;
 
@@ -390,7 +388,7 @@ public class MainActivity extends Activity {
         sv.addView(layout);
         setContentView(sv);
     }
-            private void showSettingsScreen() {
+        private void showSettingsScreen() {
         hideSystemBars();
         ScrollView sv = new ScrollView(this);
         sv.setBackgroundColor(0xFF0D1117);
@@ -511,7 +509,6 @@ public class MainActivity extends Activity {
         setContentView(sv);
     }
 
-    // ऑटो गेम फ़ाइल लिंकर व डिस्क माउंटर
     private void installGameToInternalHdd(final Uri uri, final String fileName, final String sizeText) {
         hideSystemBars();
         RelativeLayout root = new RelativeLayout(this);
@@ -764,7 +761,7 @@ public class MainActivity extends Activity {
             }
         };
         bootHandler.postDelayed(bootRunnable, 600);
-                                                 }
+            }
                 private class RenderThread extends Thread {
         private final SurfaceHolder surfaceHolder;
         private boolean running = true;
@@ -781,7 +778,7 @@ public class MainActivity extends Activity {
         @Override
         public void run() {
             Paint bgPaint = new Paint();
-            bgPaint.setColor(0xFF000000); // PS3 Native In-Game True Black
+            bgPaint.setColor(0xFF000000);
 
             Paint gridPaint = new Paint();
             gridPaint.setAntiAlias(true);
@@ -805,7 +802,6 @@ public class MainActivity extends Activity {
                             int cy = canvas.getHeight() / 2;
                             angle += 0.03f;
 
-                            // 3D Perspective Grid Simulation
                             for (int i = -4; i <= 4; i++) {
                                 float offset = (float) (Math.sin(angle + i * 0.5) * 40);
                                 canvas.drawLine(cx + (i * 120) + offset, cy - 100, cx + (i * 200), cy + 250, gridPaint);
@@ -1246,53 +1242,12 @@ public class MainActivity extends Activity {
         }
     }
 
-        @Override
+    @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (resultCode == RESULT_OK && data != null) {
             Uri uri = data.getData();
-            if (uri != null) {
-                if (requestCode == PICK_GAME_FILE) {
-                    String name = uri.getLastPathSegment();
-                    if (name != null && name.contains("/")) {
-                        name = name.substring(name.lastIndexOf("/") + 1);
-                    }
-                    String sizeText = getFileSizeFromUri(uri);
-                    installGameToInternalHdd(uri, name, sizeText);
-                } else if (requestCode == PICK_PUP_FILE) {
-                    String pupName = uri.getLastPathSegment();
-                    if (pupName == null) pupName = "PS3UPDAT.PUP";
-                    startFirmwareInstallation(pupName);
-                }
-            }
-        }
-    }
-
-        @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        if (resultCode == RESULT_OK && data != null) {
-            Uri uri = data.getData();
-            if (uri != null) {
-                if (requestCode == PICK_GAME_FILE) {
-                    String name = uri.getLastPathSegment();
-                    if (name != null && name.contains("/")) {
-                        name = name.substring(name.lastIndexOf("/") + 1);
-                    }
-                    String sizeText = getFileSizeFromUri(uri);
-                    installGameToInternalHdd(uri, name, sizeText);
-                } else if (requestCode == PICK_PUP_FILE) {
-                    String pupName = uri.getLastPathSegment();
-                    if (pupName == null) pupName = "PS3UPDAT.PUP";
-                    startFirmwareInstallation(pupName);
-                }
-            }
-            @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        if (resultCode == RESULT_OK && data != null) {
-            Uri uri = data.getData();
-            if (uri != null) {
+            if (uri != nul
                 if (requestCode == PICK_GAME_FILE) {
                     String name = uri.getLastPathSegment();
                     if (name != null && name.contains("/")) {
@@ -1321,7 +1276,4 @@ public class MainActivity extends Activity {
             toneGen.release();
         }
     }
-        }
-        
-
 }
