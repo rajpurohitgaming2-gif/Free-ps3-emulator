@@ -292,7 +292,7 @@ public class MainActivity extends Activity {
             }
         };
         handler.postDelayed(progressRunnable, 200);
-    }
+                           }
         private void showInGameScreen() {
         rootLayout.removeAllViews();
 
@@ -326,14 +326,14 @@ public class MainActivity extends Activity {
 
         gameView.addView(topBar);
 
-        // New Style Virtual Touch Controls
+        // Interactive Virtual Touch Controls
         createVirtualControls(gameView);
 
         rootLayout.addView(gameView);
     }
 
     private void createVirtualControls(RelativeLayout gameView) {
-        // Triggers Left: LT, LB, L3
+        // === बाएं कंधे के बटन (LT, LB, L3) ===
         Button ltBtn = createRectTriggerButton("LT");
         setAbsolutePos(ltBtn, dpToPx(30), dpToPx(30), dpToPx(55), dpToPx(32));
         gameView.addView(ltBtn);
@@ -346,7 +346,7 @@ public class MainActivity extends Activity {
         setAbsolutePos(l3Btn, dpToPx(30), dpToPx(130), dpToPx(36), dpToPx(36));
         gameView.addView(l3Btn);
 
-        // Triggers Right: RT, RB, R3
+        // === दाएं कंधे के बटन (RT, RB, R3) ===
         Button rtBtn = createRectTriggerButton("RT");
         setAbsoluteAlignRight(rtBtn, dpToPx(30), dpToPx(30), dpToPx(55), dpToPx(32));
         gameView.addView(rtBtn);
@@ -359,22 +359,22 @@ public class MainActivity extends Activity {
         setAbsoluteAlignRight(r3Btn, dpToPx(30), dpToPx(130), dpToPx(36), dpToPx(36));
         gameView.addView(r3Btn);
 
-        // Left Analog Joystick
-        FrameLayout leftStick = createJoystickCircle();
-        setAbsoluteAlignBottomLeft(leftStick, dpToPx(35), dpToPx(25), dpToPx(100), dpToPx(100));
+        // === बायाँ मूविंग एनालॉग जॉयस्टिक ===
+        FrameLayout leftStick = createMovableJoystick();
+        setAbsoluteAlignBottomLeft(leftStick, dpToPx(35), dpToPx(25), dpToPx(110), dpToPx(110));
         gameView.addView(leftStick);
 
-        // Cross D-Pad
-        FrameLayout dpad = createCrossDPad();
-        setAbsoluteAlignBottomLeft(dpad, dpToPx(145), dpToPx(35), dpToPx(85), dpToPx(85));
+        // === काम करने वाला 4 डिब्बे वाला क्रॉस D-Pad ===
+        RelativeLayout dpad = createFunctionalDPad();
+        setAbsoluteAlignBottomLeft(dpad, dpToPx(155), dpToPx(35), dpToPx(90), dpToPx(90));
         gameView.addView(dpad);
 
-        // Right Analog Joystick
-        FrameLayout rightStick = createJoystickCircle();
-        setAbsoluteAlignBottomRight(rightStick, dpToPx(145), dpToPx(35), dpToPx(100), dpToPx(100));
+        // === दायाँ मूविंग एनालॉग जॉयस्टिक ===
+        FrameLayout rightStick = createMovableJoystick();
+        setAbsoluteAlignBottomRight(rightStick, dpToPx(155), dpToPx(35), dpToPx(110), dpToPx(110));
         gameView.addView(rightStick);
 
-        // ABXY Action Buttons
+        // === X, Y, A, B एक्शन बटन ===
         RelativeLayout abxyBox = new RelativeLayout(this);
         setAbsoluteAlignBottomRight(abxyBox, dpToPx(25), dpToPx(20), dpToPx(120), dpToPx(120));
 
@@ -384,7 +384,7 @@ public class MainActivity extends Activity {
         abxyBox.addView(createABXYButton("B", 80, 40));
         gameView.addView(abxyBox);
 
-        // Center Menu Buttons (Back / Menu)
+        // === नीचे बीच के मेन्यू बटन ===
         LinearLayout centerMenu = new LinearLayout(this);
         centerMenu.setOrientation(LinearLayout.HORIZONTAL);
         RelativeLayout.LayoutParams cParams = new RelativeLayout.LayoutParams(
@@ -403,6 +403,99 @@ public class MainActivity extends Activity {
         centerMenu.addView(selectBtn);
         centerMenu.addView(menuBtn);
         gameView.addView(centerMenu);
+    }
+
+    // अंगूठे के साथ ऊपर-नीचे और चारों तरफ घूमने वाला जॉयस्टिक
+    private FrameLayout createMovableJoystick() {
+        FrameLayout base = new FrameLayout(this);
+        base.setBackground(createCard(Color.argb(25, 255, 255, 255), 55, Color.argb(70, 255, 255, 255)));
+
+        View thumb = new View(this);
+        thumb.setBackground(createCard(Color.argb(60, 255, 255, 255), 26, Color.argb(120, 255, 255, 255)));
+        int thumbSize = dpToPx(52);
+        FrameLayout.LayoutParams thumbParams = new FrameLayout.LayoutParams(thumbSize, thumbSize);
+        thumbParams.gravity = Gravity.CENTER;
+        base.addView(thumb, thumbParams);
+
+        int maxRadius = dpToPx(30);
+
+        base.setOnTouchListener((v, event) -> {
+            switch (event.getActionMasked()) {
+                case MotionEvent.ACTION_DOWN:
+                    triggerFeedback();
+                    thumb.getBackground().setAlpha(200);
+                case MotionEvent.ACTION_MOVE:
+                    float centerX = base.getWidth() / 2.0f;
+                    float centerY = base.getHeight() / 2.0f;
+                    float dx = event.getX() - centerX;
+                    float dy = event.getY() - centerY;
+                    double distance = Math.sqrt(dx * dx + dy * dy);
+
+                    if (distance > maxRadius) {
+                        dx = (float) (dx / distance * maxRadius);
+                        dy = (float) (dy / distance * maxRadius);
+                    }
+
+                    thumb.setTranslationX(dx);
+                    thumb.setTranslationY(dy);
+                    return true;
+
+                case MotionEvent.ACTION_UP:
+                case MotionEvent.ACTION_CANCEL:
+                    thumb.animate().translationX(0).translationY(0).setDuration(120).start();
+                    thumb.getBackground().setAlpha(60);
+                    return true;
+            }
+            return true;
+        });
+
+        return base;
+    }
+
+    // 4 डिब्बे वाला D-Pad
+    private RelativeLayout createFunctionalDPad() {
+        RelativeLayout dpad = new RelativeLayout(this);
+
+        FrameLayout visualCross = new FrameLayout(this);
+        View hBar = new View(this);
+        hBar.setBackground(createCard(Color.argb(30, 255, 255, 255), 6, Color.argb(70, 255, 255, 255)));
+        FrameLayout.LayoutParams hp = new FrameLayout.LayoutParams(dpToPx(90), dpToPx(30));
+        hp.gravity = Gravity.CENTER;
+        visualCross.addView(hBar, hp);
+
+        View vBar = new View(this);
+        vBar.setBackground(createCard(Color.argb(30, 255, 255, 255), 6, Color.argb(70, 255, 255, 255)));
+        FrameLayout.LayoutParams vp = new FrameLayout.LayoutParams(dpToPx(30), dpToPx(90));
+        vp.gravity = Gravity.CENTER;
+        visualCross.addView(vBar, vp);
+
+        dpad.addView(visualCross);
+
+        dpad.addView(createDPadDirButton(dpToPx(30), 0, dpToPx(30), dpToPx(30))); // UP
+        dpad.addView(createDPadDirButton(dpToPx(30), dpToPx(60), dpToPx(30), dpToPx(30))); // DOWN
+        dpad.addView(createDPadDirButton(0, dpToPx(30), dpToPx(30), dpToPx(30))); // LEFT
+        dpad.addView(createDPadDirButton(dpToPx(60), dpToPx(30), dpToPx(30), dpToPx(30))); // RIGHT
+
+        return dpad;
+    }
+
+    private View createDPadDirButton(int x, int y, int w, int h) {
+        View v = new View(this);
+        RelativeLayout.LayoutParams p = new RelativeLayout.LayoutParams(w, h);
+        p.setMargins(x, y, 0, 0);
+        v.setLayoutParams(p);
+        v.setBackground(createCard(Color.TRANSPARENT, 4, 0));
+
+        v.setOnTouchListener((view, event) -> {
+            if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                triggerFeedback();
+                v.setBackground(createCard(Color.argb(120, 88, 166, 255), 4, Color.WHITE));
+            } else if (event.getAction() == MotionEvent.ACTION_UP || event.getAction() == MotionEvent.ACTION_CANCEL) {
+                v.setBackground(createCard(Color.TRANSPARENT, 4, 0));
+            }
+            return true;
+        });
+        return v;
     }
 
     private Button createRectTriggerButton(String text) {
@@ -455,45 +548,6 @@ public class MainActivity extends Activity {
         btn.setPadding(0, 0, 0, 0);
         setupTouchHighlight(btn);
         return btn;
-    }
-
-    private FrameLayout createJoystickCircle() {
-        FrameLayout frame = new FrameLayout(this);
-        frame.setBackground(createCard(Color.argb(20, 255, 255, 255), 50, Color.argb(70, 255, 255, 255)));
-
-        View thumb = new View(this);
-        thumb.setBackground(createCard(Color.argb(40, 255, 255, 255), 25, Color.argb(100, 255, 255, 255)));
-        FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(dpToPx(50), dpToPx(50));
-        params.gravity = Gravity.CENTER;
-        frame.addView(thumb, params);
-
-        frame.setOnTouchListener((v, event) -> {
-            if (event.getAction() == MotionEvent.ACTION_DOWN) triggerFeedback();
-            return true;
-        });
-        return frame;
-    }
-
-    private FrameLayout createCrossDPad() {
-        FrameLayout frame = new FrameLayout(this);
-
-        View hBar = new View(this);
-        hBar.setBackground(createCard(Color.argb(35, 255, 255, 255), 6, Color.argb(80, 255, 255, 255)));
-        FrameLayout.LayoutParams hp = new FrameLayout.LayoutParams(dpToPx(85), dpToPx(30));
-        hp.gravity = Gravity.CENTER;
-        frame.addView(hBar, hp);
-
-        View vBar = new View(this);
-        vBar.setBackground(createCard(Color.argb(35, 255, 255, 255), 6, Color.argb(80, 255, 255, 255)));
-        FrameLayout.LayoutParams vp = new FrameLayout.LayoutParams(dpToPx(30), dpToPx(85));
-        vp.gravity = Gravity.CENTER;
-        frame.addView(vBar, vp);
-
-        frame.setOnTouchListener((v, event) -> {
-            if (event.getAction() == MotionEvent.ACTION_DOWN) triggerFeedback();
-            return true;
-        });
-        return frame;
     }
 
     private void setupTouchHighlight(Button btn) {
@@ -581,5 +635,5 @@ public class MainActivity extends Activity {
         }
         return result;
     }
-    }
-                
+            }
+            
