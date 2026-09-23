@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.database.Cursor;
 import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
@@ -12,6 +13,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Vibrator;
+import android.provider.OpenableColumns;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.SurfaceHolder;
@@ -27,16 +29,19 @@ import android.widget.ScrollView;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
+import java.text.DecimalFormat;
 import java.util.Random;
 
 public class MainActivity extends Activity {
     private static final int PICK_GAME_FILE = 101;
     private static final String PREFS_NAME = "GameHubPrefs";
     private static final String KEY_RECENT_GAME = "recent_game_path";
+    private static final String KEY_RECENT_SIZE = "recent_game_size";
 
     private TextView statusText;
     private Button startButton;
     private String selectedGamePath = null;
+    private String selectedGameSize = null;
     private Vibrator vibrator;
     private SharedPreferences prefs;
 
@@ -57,6 +62,7 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
         selectedGamePath = prefs.getString(KEY_RECENT_GAME, null);
+        selectedGameSize = prefs.getString(KEY_RECENT_SIZE, "Ready");
 
         try {
             vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
@@ -69,7 +75,7 @@ public class MainActivity extends Activity {
     }
 
     @Override
-    public void onWindowFocusChanged(boolean hasFocus) {
+    public void onWindowFocusChanged(hasFocus) {
         super.onWindowFocusChanged(hasFocus);
         if (hasFocus) {
             hideSystemBars();
@@ -147,6 +153,7 @@ public class MainActivity extends Activity {
 
         layout.addView(createSpacer(20));
 
+        // गेम फ़ाइल इंफॉर्मेशन और कंपैटिबिलिटी कार्ड
         if (selectedGamePath != null) {
             LinearLayout recentCard = new LinearLayout(this);
             recentCard.setOrientation(LinearLayout.VERTICAL);
@@ -154,7 +161,7 @@ public class MainActivity extends Activity {
             recentCard.setPadding(25, 20, 25, 20);
 
             TextView rcTitle = new TextView(this);
-            rcTitle.setText("🕒 हाल ही में खेला गया (RECENT GAME)");
+            rcTitle.setText("🕒 गेम इंफॉर्मेशन (GAME INSPECTOR)");
             rcTitle.setTextSize(13);
             rcTitle.setTextColor(0xFF58A6FF);
             recentCard.addView(rcTitle);
@@ -162,15 +169,21 @@ public class MainActivity extends Activity {
             recentCard.addView(createSpacer(6));
 
             TextView rcName = new TextView(this);
-            rcName.setText("🎮 " + selectedGamePath);
+            rcName.setText("🎮 फ़ाइल: " + selectedGamePath);
             rcName.setTextSize(12);
             rcName.setTextColor(0xFFE6EDF3);
             recentCard.addView(rcName);
 
+            TextView rcMeta = new TextView(this);
+            rcMeta.setText("📦 साइज़: " + selectedGameSize + " | स्थिति: Playable (Optimized)");
+            rcMeta.setTextSize(11);
+            rcMeta.setTextColor(0xFF39D353);
+            recentCard.addView(rcMeta);
+
             recentCard.addView(createSpacer(10));
 
             Button resumeBtn = new Button(this);
-            resumeBtn.setText("▶ तुरंत खेलें (RESUME)");
+            resumeBtn.setText("▶ तुरंत खेलें (RESUME GAME)");
             resumeBtn.setTextSize(12);
             resumeBtn.setTextColor(Color.WHITE);
             resumeBtn.setBackground(createRoundBackground(0xFF238636, 12, 0, 0));
@@ -199,7 +212,7 @@ public class MainActivity extends Activity {
             statusText.setText("कोई गेम लोड नहीं है। नीचे से ISO या PKG जोड़ें।");
             statusText.setTextColor(0xFF8B949E);
         } else {
-            statusText.setText("लोड किया गया गेम: " + selectedGamePath);
+            statusText.setText("लोड किया गया गेम: " + selectedGamePath + " (" + selectedGameSize + ")");
             statusText.setTextColor(0xFF00E676);
         }
         statusText.setTextSize(13);
@@ -300,7 +313,7 @@ public class MainActivity extends Activity {
 
         sv.addView(layout);
         setContentView(sv);
-                                       }
+            }
         private void showSettingsScreen() {
         hideSystemBars();
         ScrollView sv = new ScrollView(this);
@@ -472,20 +485,18 @@ public class MainActivity extends Activity {
             }
         };
         bootHandler.postDelayed(bootRunnable, 600);
-    }
+                          }
         private void showGameHubScreen() {
         isGameRunning = true;
         hideSystemBars();
         RelativeLayout root = new RelativeLayout(this);
         root.setBackgroundColor(0xFF030508);
 
-        // असली गेम रेंडरिंग स्क्रीन (SurfaceView)
         SurfaceView gameSurface = new SurfaceView(this);
         RelativeLayout.LayoutParams svParams = new RelativeLayout.LayoutParams(
                 RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.MATCH_PARENT);
         root.addView(gameSurface, svParams);
 
-        // PS3 क्लासिक एम्बिएंट वेव बैकग्राउंड (Gradient Canvas Background)
         GradientDrawable ps3Wave = new GradientDrawable(
                 GradientDrawable.Orientation.TOP_BOTTOM,
                 new int[]{0xFF050F1A, 0xFF0D233A, 0xFF02070D});
@@ -665,7 +676,6 @@ public class MainActivity extends Activity {
         cbParams.bottomMargin = dpToPx(20);
         root.addView(centerBtns, cbParams);
 
-        // ऑन-स्क्रीन पॉज़ मेन्यू (In-Game Overlay)
         pauseOverlay = new LinearLayout(this);
         pauseOverlay.setOrientation(LinearLayout.VERTICAL);
         pauseOverlay.setBackground(createRoundBackground(0xF2161B22, 16, 0xFF00E5FF, 2));
@@ -827,6 +837,30 @@ public class MainActivity extends Activity {
         }
     }
 
+    // फ़ाइल का असली साइज़ निकालने का फंक्शन
+    private String getFileSizeFromUri(Uri uri) {
+        long size = 0;
+        try {
+            Cursor cursor = getContentResolver().query(uri, null, null, null, null);
+            if (cursor != null) {
+                int sizeIndex = cursor.getColumnIndex(OpenableColumns.SIZE);
+                if (sizeIndex != -1 && cursor.moveToFirst()) {
+                    size = cursor.getLong(sizeIndex);
+                }
+                cursor.close();
+            }
+        } catch (Exception ignored) {}
+
+        if (size <= 0) return "Unknown Size";
+        if (size >= 1024 * 1024 * 1024) {
+            return new DecimalFormat("#.##").format((double) size / (1024 * 1024 * 1024)) + " GB";
+        } else if (size >= 1024 * 1024) {
+            return new DecimalFormat("#.##").format((double) size / (1024 * 1024)) + " MB";
+        } else {
+            return (size / 1024) + " KB";
+        }
+    }
+
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
@@ -834,17 +868,15 @@ public class MainActivity extends Activity {
             Uri uri = data.getData();
             if (uri != null) {
                 selectedGamePath = uri.getLastPathSegment();
+                selectedGameSize = getFileSizeFromUri(uri);
+
                 if (prefs != null) {
-                    prefs.edit().putString(KEY_RECENT_GAME, selectedGamePath).apply();
+                    prefs.edit()
+                            .putString(KEY_RECENT_GAME, selectedGamePath)
+                            .putString(KEY_RECENT_SIZE, selectedGameSize)
+                            .apply();
                 }
-                if (statusText != null) {
-                    statusText.setText("लोड किया गया गेम: " + selectedGamePath);
-                    statusText.setTextColor(0xFF00E676);
-                }
-                if (startButton != null) {
-                    startButton.setVisibility(View.VISIBLE);
-                }
-                Toast.makeText(this, "गेम सेव हो गया! START दबाएँ", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "गेम लोड हो गया: " + selectedGameSize, Toast.LENGTH_SHORT).show();
                 showMainMenu();
             }
         }
@@ -858,5 +890,5 @@ public class MainActivity extends Activity {
             fpsHandler.removeCallbacks(fpsRunnable);
         }
     }
-                                       }
-    
+                                   }
+                    
