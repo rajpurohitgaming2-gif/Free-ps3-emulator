@@ -1242,12 +1242,12 @@ public class MainActivity extends Activity {
         }
     }
 
-    @Override
+        @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (resultCode == RESULT_OK && data != null) {
             Uri uri = data.getData();
-            if (uri != nul
+            if (uri != null) {
                 if (requestCode == PICK_GAME_FILE) {
                     String name = uri.getLastPathSegment();
                     if (name != null && name.contains("/")) {
