@@ -95,7 +95,7 @@ public class MainActivity extends Activity {
     private int dpToPx(int dp) {
         return (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, dp, getResources().getDisplayMetrics());
     }
-       private void showMainMenu() {
+        private void showMainMenu() {
         rootLayout.removeAllViews();
 
         ScrollView scrollView = new ScrollView(this);
@@ -105,7 +105,7 @@ public class MainActivity extends Activity {
         mainContainer.setOrientation(LinearLayout.VERTICAL);
         mainContainer.setPadding(dpToPx(30), dpToPx(15), dpToPx(30), dpToPx(20));
 
-        // Top Navigation Bar
+        // Top Bar
         RelativeLayout topBar = new RelativeLayout(this);
         topBar.setPadding(0, 0, 0, dpToPx(15));
 
@@ -127,7 +127,7 @@ public class MainActivity extends Activity {
 
         topBar.addView(titleBox);
 
-        // Action Buttons Row (Right Side)
+        // Action Buttons Row
         LinearLayout actionRow = new LinearLayout(this);
         actionRow.setOrientation(LinearLayout.HORIZONTAL);
         RelativeLayout.LayoutParams actionParams = new RelativeLayout.LayoutParams(
@@ -168,11 +168,10 @@ public class MainActivity extends Activity {
 
         mainContainer.addView(topBar);
 
-        // Game Grid Section
+        // Game Card
         LinearLayout gridRow = new LinearLayout(this);
         gridRow.setOrientation(LinearLayout.HORIZONTAL);
 
-        // Game Poster Card (Tomb Raider)
         LinearLayout gameCard = new LinearLayout(this);
         gameCard.setOrientation(LinearLayout.VERTICAL);
         gameCard.setBackground(createCard(Color.parseColor("#161b22"), 10, Color.parseColor("#30363d")));
@@ -181,7 +180,6 @@ public class MainActivity extends Activity {
                 dpToPx(280), LinearLayout.LayoutParams.WRAP_CONTENT);
         gameCard.setLayoutParams(cardParams);
 
-        // Poster Artwork Simulation
         FrameLayout posterBox = new FrameLayout(this);
         posterBox.setBackground(createCard(Color.parseColor("#0d1117"), 8, Color.parseColor("#21262d")));
         LinearLayout.LayoutParams posterParams = new LinearLayout.LayoutParams(
@@ -233,8 +231,9 @@ public class MainActivity extends Activity {
 
         scrollView.addView(mainContainer);
         rootLayout.addView(scrollView);
-       }
-      private void startPpuCompilingScreen() {
+    }
+
+    private void startPpuCompilingScreen() {
         rootLayout.removeAllViews();
 
         LinearLayout compLayout = new LinearLayout(this);
@@ -294,8 +293,7 @@ public class MainActivity extends Activity {
         };
         handler.postDelayed(progressRunnable, 200);
     }
-
-    private void showInGameScreen() {
+        private void showInGameScreen() {
         rootLayout.removeAllViews();
 
         RelativeLayout gameView = new RelativeLayout(this);
@@ -328,80 +326,215 @@ public class MainActivity extends Activity {
 
         gameView.addView(topBar);
 
-        // Virtual Touch Controls Overlay
+        // New Style Virtual Touch Controls
         createVirtualControls(gameView);
 
         rootLayout.addView(gameView);
     }
 
     private void createVirtualControls(RelativeLayout gameView) {
-        // Left Side: D-Pad
-        RelativeLayout dpadBox = new RelativeLayout(this);
-        RelativeLayout.LayoutParams dpadParams = new RelativeLayout.LayoutParams(dpToPx(140), dpToPx(140));
-        dpadParams.addRule(RelativeLayout.ALIGN_PARENT_LEFT);
-        dpadParams.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
-        dpadParams.setMargins(dpToPx(24), 0, 0, dpToPx(24));
-        dpadBox.setLayoutParams(dpadParams);
+        // Triggers Left: LT, LB, L3
+        Button ltBtn = createRectTriggerButton("LT");
+        setAbsolutePos(ltBtn, dpToPx(30), dpToPx(30), dpToPx(55), dpToPx(32));
+        gameView.addView(ltBtn);
 
-        dpadBox.addView(createControllerButton("▲", 48, 0));
-        dpadBox.addView(createControllerButton("▼", 48, 96));
-        dpadBox.addView(createControllerButton("◀", 0, 48));
-        dpadBox.addView(createControllerButton("▶", 96, 48));
-        gameView.addView(dpadBox);
+        Button lbBtn = createRectTriggerButton("LB");
+        setAbsolutePos(lbBtn, dpToPx(30), dpToPx(72), dpToPx(55), dpToPx(32));
+        gameView.addView(lbBtn);
 
-        // Right Side: Action Buttons (PS3 Symbols)
-        RelativeLayout actionBox = new RelativeLayout(this);
-        RelativeLayout.LayoutParams actionParams = new RelativeLayout.LayoutParams(dpToPx(140), dpToPx(140));
-        actionParams.addRule(RelativeLayout.ALIGN_PARENT_RIGHT);
-        actionParams.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
-        actionParams.setMargins(0, 0, dpToPx(24), dpToPx(24));
-        actionBox.setLayoutParams(actionParams);
+        Button l3Btn = createRoundSmallButton("L3");
+        setAbsolutePos(l3Btn, dpToPx(30), dpToPx(130), dpToPx(36), dpToPx(36));
+        gameView.addView(l3Btn);
 
-        actionBox.addView(createControllerButton("△", 48, 0));
-        actionBox.addView(createControllerButton("✕", 48, 96));
-        actionBox.addView(createControllerButton("□", 0, 48));
-        actionBox.addView(createControllerButton("○", 96, 48));
-        gameView.addView(actionBox);
+        // Triggers Right: RT, RB, R3
+        Button rtBtn = createRectTriggerButton("RT");
+        setAbsoluteAlignRight(rtBtn, dpToPx(30), dpToPx(30), dpToPx(55), dpToPx(32));
+        gameView.addView(rtBtn);
 
-        // Shoulder Buttons (L1, R1)
-        Button l1Btn = createControllerButton("L1", 0, 0);
-        RelativeLayout.LayoutParams l1Params = new RelativeLayout.LayoutParams(dpToPx(60), dpToPx(36));
-        l1Params.addRule(RelativeLayout.ALIGN_PARENT_LEFT);
-        l1Params.setMargins(dpToPx(24), dpToPx(50), 0, 0);
-        l1Btn.setLayoutParams(l1Params);
-        gameView.addView(l1Btn);
+        Button rbBtn = createRectTriggerButton("RB");
+        setAbsoluteAlignRight(rbBtn, dpToPx(30), dpToPx(72), dpToPx(55), dpToPx(32));
+        gameView.addView(rbBtn);
 
-        Button r1Btn = createControllerButton("R1", 0, 0);
-        RelativeLayout.LayoutParams r1Params = new RelativeLayout.LayoutParams(dpToPx(60), dpToPx(36));
-        r1Params.addRule(RelativeLayout.ALIGN_PARENT_RIGHT);
-        r1Params.setMargins(0, dpToPx(50), dpToPx(24), 0);
-        r1Btn.setLayoutParams(r1Params);
-        gameView.addView(r1Btn);
+        Button r3Btn = createRoundSmallButton("R3");
+        setAbsoluteAlignRight(r3Btn, dpToPx(30), dpToPx(130), dpToPx(36), dpToPx(36));
+        gameView.addView(r3Btn);
+
+        // Left Analog Joystick
+        FrameLayout leftStick = createJoystickCircle();
+        setAbsoluteAlignBottomLeft(leftStick, dpToPx(35), dpToPx(25), dpToPx(100), dpToPx(100));
+        gameView.addView(leftStick);
+
+        // Cross D-Pad
+        FrameLayout dpad = createCrossDPad();
+        setAbsoluteAlignBottomLeft(dpad, dpToPx(145), dpToPx(35), dpToPx(85), dpToPx(85));
+        gameView.addView(dpad);
+
+        // Right Analog Joystick
+        FrameLayout rightStick = createJoystickCircle();
+        setAbsoluteAlignBottomRight(rightStick, dpToPx(145), dpToPx(35), dpToPx(100), dpToPx(100));
+        gameView.addView(rightStick);
+
+        // ABXY Action Buttons
+        RelativeLayout abxyBox = new RelativeLayout(this);
+        setAbsoluteAlignBottomRight(abxyBox, dpToPx(25), dpToPx(20), dpToPx(120), dpToPx(120));
+
+        abxyBox.addView(createABXYButton("Y", 40, 0));
+        abxyBox.addView(createABXYButton("A", 40, 80));
+        abxyBox.addView(createABXYButton("X", 0, 40));
+        abxyBox.addView(createABXYButton("B", 80, 40));
+        gameView.addView(abxyBox);
+
+        // Center Menu Buttons (Back / Menu)
+        LinearLayout centerMenu = new LinearLayout(this);
+        centerMenu.setOrientation(LinearLayout.HORIZONTAL);
+        RelativeLayout.LayoutParams cParams = new RelativeLayout.LayoutParams(
+                RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
+        cParams.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
+        cParams.addRule(RelativeLayout.CENTER_HORIZONTAL);
+        cParams.setMargins(0, 0, 0, dpToPx(15));
+        centerMenu.setLayoutParams(cParams);
+
+        Button selectBtn = createCapsuleButton("❐");
+        Button menuBtn = createCapsuleButton("☰");
+        LinearLayout.LayoutParams mParams = new LinearLayout.LayoutParams(dpToPx(44), dpToPx(26));
+        mParams.setMargins(dpToPx(8), 0, 0, 0);
+        menuBtn.setLayoutParams(mParams);
+
+        centerMenu.addView(selectBtn);
+        centerMenu.addView(menuBtn);
+        gameView.addView(centerMenu);
     }
 
-    private Button createControllerButton(String text, int marginX, int marginY) {
+    private Button createRectTriggerButton(String text) {
         Button btn = new Button(this);
         btn.setText(text);
-        btn.setTextColor(Color.WHITE);
-        btn.setTextSize(16);
+        btn.setTextColor(Color.parseColor("#d0d0d0"));
+        btn.setTextSize(12);
         btn.setTypeface(null, Typeface.BOLD);
-        btn.setBackground(createCard(Color.argb(90, 60, 60, 60), 22, Color.argb(120, 200, 200, 200)));
+        btn.setBackground(createCard(Color.argb(35, 255, 255, 255), 8, Color.argb(80, 255, 255, 255)));
+        btn.setPadding(0, 0, 0, 0);
+        setupTouchHighlight(btn);
+        return btn;
+    }
 
-        RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(dpToPx(44), dpToPx(44));
+    private Button createRoundSmallButton(String text) {
+        Button btn = new Button(this);
+        btn.setText(text);
+        btn.setTextColor(Color.parseColor("#d0d0d0"));
+        btn.setTextSize(11);
+        btn.setBackground(createCard(Color.argb(35, 255, 255, 255), 18, Color.argb(80, 255, 255, 255)));
+        btn.setPadding(0, 0, 0, 0);
+        setupTouchHighlight(btn);
+        return btn;
+    }
+
+    private Button createABXYButton(String text, int marginX, int marginY) {
+        Button btn = new Button(this);
+        btn.setText(text);
+        btn.setTextColor(Color.parseColor("#d0d0d0"));
+        btn.setTextSize(14);
+        btn.setTypeface(null, Typeface.BOLD);
+        btn.setBackground(createCard(Color.argb(40, 255, 255, 255), 20, Color.argb(90, 255, 255, 255)));
+
+        RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(dpToPx(38), dpToPx(38));
         params.setMargins(dpToPx(marginX), dpToPx(marginY), 0, 0);
         btn.setLayoutParams(params);
+        btn.setPadding(0, 0, 0, 0);
 
+        setupTouchHighlight(btn);
+        return btn;
+    }
+
+    private Button createCapsuleButton(String icon) {
+        Button btn = new Button(this);
+        btn.setText(icon);
+        btn.setTextColor(Color.parseColor("#d0d0d0"));
+        btn.setTextSize(11);
+        btn.setBackground(createCard(Color.argb(35, 255, 255, 255), 12, Color.argb(80, 255, 255, 255)));
+        btn.setLayoutParams(new LinearLayout.LayoutParams(dpToPx(44), dpToPx(26)));
+        btn.setPadding(0, 0, 0, 0);
+        setupTouchHighlight(btn);
+        return btn;
+    }
+
+    private FrameLayout createJoystickCircle() {
+        FrameLayout frame = new FrameLayout(this);
+        frame.setBackground(createCard(Color.argb(20, 255, 255, 255), 50, Color.argb(70, 255, 255, 255)));
+
+        View thumb = new View(this);
+        thumb.setBackground(createCard(Color.argb(40, 255, 255, 255), 25, Color.argb(100, 255, 255, 255)));
+        FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(dpToPx(50), dpToPx(50));
+        params.gravity = Gravity.CENTER;
+        frame.addView(thumb, params);
+
+        frame.setOnTouchListener((v, event) -> {
+            if (event.getAction() == MotionEvent.ACTION_DOWN) triggerFeedback();
+            return true;
+        });
+        return frame;
+    }
+
+    private FrameLayout createCrossDPad() {
+        FrameLayout frame = new FrameLayout(this);
+
+        View hBar = new View(this);
+        hBar.setBackground(createCard(Color.argb(35, 255, 255, 255), 6, Color.argb(80, 255, 255, 255)));
+        FrameLayout.LayoutParams hp = new FrameLayout.LayoutParams(dpToPx(85), dpToPx(30));
+        hp.gravity = Gravity.CENTER;
+        frame.addView(hBar, hp);
+
+        View vBar = new View(this);
+        vBar.setBackground(createCard(Color.argb(35, 255, 255, 255), 6, Color.argb(80, 255, 255, 255)));
+        FrameLayout.LayoutParams vp = new FrameLayout.LayoutParams(dpToPx(30), dpToPx(85));
+        vp.gravity = Gravity.CENTER;
+        frame.addView(vBar, vp);
+
+        frame.setOnTouchListener((v, event) -> {
+            if (event.getAction() == MotionEvent.ACTION_DOWN) triggerFeedback();
+            return true;
+        });
+        return frame;
+    }
+
+    private void setupTouchHighlight(Button btn) {
         btn.setOnTouchListener((v, event) -> {
             if (event.getAction() == MotionEvent.ACTION_DOWN) {
                 triggerFeedback();
-                btn.setBackground(createCard(Color.argb(180, 88, 166, 255), 22, Color.WHITE));
+                btn.getBackground().setAlpha(180);
             } else if (event.getAction() == MotionEvent.ACTION_UP || event.getAction() == MotionEvent.ACTION_CANCEL) {
-                btn.setBackground(createCard(Color.argb(90, 60, 60, 60), 22, Color.argb(120, 200, 200, 200)));
+                btn.getBackground().setAlpha(40);
             }
-            return true;
+            return false;
         });
+    }
 
-        return btn;
+    private void setAbsolutePos(View v, int x, int y, int w, int h) {
+        RelativeLayout.LayoutParams p = new RelativeLayout.LayoutParams(w, h);
+        p.setMargins(x, y, 0, 0);
+        v.setLayoutParams(p);
+    }
+
+    private void setAbsoluteAlignRight(View v, int rightMargin, int y, int w, int h) {
+        RelativeLayout.LayoutParams p = new RelativeLayout.LayoutParams(w, h);
+        p.addRule(RelativeLayout.ALIGN_PARENT_RIGHT);
+        p.setMargins(0, y, rightMargin, 0);
+        v.setLayoutParams(p);
+    }
+
+    private void setAbsoluteAlignBottomLeft(View v, int leftMargin, int bottomMargin, int w, int h) {
+        RelativeLayout.LayoutParams p = new RelativeLayout.LayoutParams(w, h);
+        p.addRule(RelativeLayout.ALIGN_PARENT_LEFT);
+        p.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
+        p.setMargins(leftMargin, 0, 0, bottomMargin);
+        v.setLayoutParams(p);
+    }
+
+    private void setAbsoluteAlignBottomRight(View v, int rightMargin, int bottomMargin, int w, int h) {
+        RelativeLayout.LayoutParams p = new RelativeLayout.LayoutParams(w, h);
+        p.addRule(RelativeLayout.ALIGN_PARENT_RIGHT);
+        p.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
+        p.setMargins(0, 0, rightMargin, bottomMargin);
+        v.setLayoutParams(p);
     }
 
     private void openFilePicker(int requestCode) {
@@ -448,4 +581,5 @@ public class MainActivity extends Activity {
         }
         return result;
     }
-                        }
+    }
+                
