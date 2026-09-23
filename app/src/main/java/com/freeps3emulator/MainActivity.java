@@ -38,7 +38,11 @@ public class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+        try {
+            vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+        } catch (Exception e) {
+            vibrator = null;
+        }
         detectHardware();
         hideSystemBars();
         showMainMenu();
@@ -53,21 +57,25 @@ public class MainActivity extends Activity {
     }
 
     private void hideSystemBars() {
-        View decor = getWindow().getDecorView();
-        decor.setSystemUiVisibility(
-                View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-                        | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                        | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-                        | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-                        | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-                        | View.SYSTEM_UI_FLAG_FULLSCREEN
-        );
+        try {
+            View decor = getWindow().getDecorView();
+            decor.setSystemUiVisibility(
+                    View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                            | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                            | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                            | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                            | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                            | View.SYSTEM_UI_FLAG_FULLSCREEN
+            );
+        } catch (Exception ignored) {}
     }
 
     private void triggerVibration() {
-        if (vibrator != null && vibrator.hasVibrator()) {
-            vibrator.vibrate(35);
-        }
+        try {
+            if (vibrator != null && vibrator.hasVibrator()) {
+                vibrator.vibrate(30);
+            }
+        } catch (Exception ignored) {}
     }
 
     private void detectHardware() {
@@ -553,10 +561,14 @@ public class MainActivity extends Activity {
     }
 
     private void openFilePicker() {
-        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
-        intent.addCategory(Intent.CATEGORY_OPENABLE);
-        intent.setType("*/*");
-        startActivityForResult(intent, PICK_GAME_FILE);
+        try {
+            Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+            intent.addCategory(Intent.CATEGORY_OPENABLE);
+            intent.setType("*/*");
+            startActivityForResult(intent, PICK_GAME_FILE);
+        } catch (Exception e) {
+            Toast.makeText(this, "फ़ाइल पिकर खोलने में त्रुटि", Toast.LENGTH_SHORT).show();
+        }
     }
 
     @Override
@@ -566,8 +578,10 @@ public class MainActivity extends Activity {
             Uri uri = data.getData();
             if (uri != null) {
                 selectedGamePath = uri.getLastPathSegment();
-                statusText.setText("लोड किया गया गेम: " + selectedGamePath);
-                statusText.setTextColor(0xFF00E676);
+                if (statusText != null) {
+                    statusText.setText("लोड किया गया गेम: " + selectedGamePath);
+                    statusText.setTextColor(0xFF00E676);
+                }
                 if (startButton != null) {
                     startButton.setVisibility(View.VISIBLE);
                 }
