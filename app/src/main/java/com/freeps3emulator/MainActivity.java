@@ -1,12 +1,10 @@
 package com.freeps3emulator;
 
 import android.app.Activity;
-import android.app.Dialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
-import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.Build;
@@ -17,7 +15,6 @@ import android.os.Vibrator;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
-import android.view.Window;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.CheckBox;
@@ -51,6 +48,7 @@ public class MainActivity extends Activity {
     private Runnable fpsRunnable;
     private boolean isGameRunning = false;
     private Random random = new Random();
+    private LinearLayout pauseOverlay;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -300,7 +298,7 @@ public class MainActivity extends Activity {
 
         sv.addView(layout);
         setContentView(sv);
-            }
+    }
         private void showSettingsScreen() {
         hideSystemBars();
         ScrollView sv = new ScrollView(this);
@@ -472,95 +470,6 @@ public class MainActivity extends Activity {
             }
         };
         bootHandler.postDelayed(bootRunnable, 600);
-    }
-
-    // इन-गेम पॉज़ मेन्यू (Quick Pause Menu)
-    private void showInGameMenu() {
-        final Dialog dialog = new Dialog(this);
-        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
-        if (dialog.getWindow() != null) {
-            dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
-        }
-
-        LinearLayout panel = new LinearLayout(this);
-        panel.setOrientation(LinearLayout.VERTICAL);
-        panel.setBackground(createRoundBackground(0xF0161B22, 20, 0xFF388BFD, 2));
-        panel.setPadding(40, 30, 40, 30);
-        panel.setGravity(Gravity.CENTER);
-
-        TextView title = new TextView(this);
-        title.setText("⏸ PS3 QUICK MENU");
-        title.setTextSize(18);
-        title.setTextColor(0xFF00E5FF);
-        title.setGravity(Gravity.CENTER);
-        panel.addView(title);
-
-        panel.addView(createSpacer(15));
-
-        Button resumeBtn = createMenuActionButton("▶ Resume Game", 0xFF238636);
-        resumeBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                triggerVibration();
-                dialog.dismiss();
-                hideSystemBars();
-            }
-        });
-        panel.addView(resumeBtn);
-
-        panel.addView(createSpacer(10));
-
-        Button saveStateBtn = createMenuActionButton("💾 Save State", 0xFF1F6FEB);
-        saveStateBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                triggerVibration();
-                Toast.makeText(MainActivity.this, "Slot 1: State Saved Successfully!", Toast.LENGTH_SHORT).show();
-                dialog.dismiss();
-                hideSystemBars();
-            }
-        });
-        panel.addView(saveStateBtn);
-
-        panel.addView(createSpacer(10));
-
-        Button loadStateBtn = createMenuActionButton("📂 Load State", 0xFF8957E5);
-        loadStateBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                triggerVibration();
-                Toast.makeText(MainActivity.this, "Slot 1: State Loaded Successfully!", Toast.LENGTH_SHORT).show();
-                dialog.dismiss();
-                hideSystemBars();
-            }
-        });
-        panel.addView(loadStateBtn);
-
-        panel.addView(createSpacer(10));
-
-        Button exitBtn = createMenuActionButton("🚪 Exit to Main Menu", 0xFFDA3633);
-        exitBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                triggerVibration();
-                dialog.dismiss();
-                showMainMenu();
-            }
-        });
-        panel.addView(exitBtn);
-
-        dialog.setContentView(panel);
-        dialog.show();
-    }
-
-    private Button createMenuActionButton(String label, int bgColor) {
-        Button btn = new Button(this);
-        btn.setText(label);
-        btn.setTextSize(13);
-        btn.setTextColor(Color.WHITE);
-        btn.setBackground(createRoundBackground(bgColor, 12, 0, 0));
-        btn.setPadding(35, 14, 35, 14);
-        return btn;
                         }
         private void showGameHubScreen() {
         isGameRunning = true;
@@ -717,7 +626,9 @@ public class MainActivity extends Activity {
             @Override
             public void onClick(View v) {
                 triggerVibration();
-                showInGameMenu();
+                if (pauseOverlay != null) {
+                    pauseOverlay.setVisibility(View.VISIBLE);
+                }
             }
         });
         centerBtns.addView(homeBtn);
@@ -731,7 +642,88 @@ public class MainActivity extends Activity {
         cbParams.bottomMargin = dpToPx(20);
         root.addView(centerBtns, cbParams);
 
+        // ऑन-स्क्रीन पॉज़ मेन्यू (In-Game Overlay)
+        pauseOverlay = new LinearLayout(this);
+        pauseOverlay.setOrientation(LinearLayout.VERTICAL);
+        pauseOverlay.setBackground(createRoundBackground(0xF2161B22, 16, 0xFF00E5FF, 2));
+        pauseOverlay.setPadding(dpToPx(25), dpToPx(18), dpToPx(25), dpToPx(18));
+        pauseOverlay.setGravity(Gravity.CENTER);
+        pauseOverlay.setVisibility(View.GONE);
+
+        TextView menuTitle = new TextView(this);
+        menuTitle.setText("⏸ PS3 QUICK MENU");
+        menuTitle.setTextSize(16);
+        menuTitle.setTextColor(0xFF00E5FF);
+        menuTitle.setGravity(Gravity.CENTER);
+        pauseOverlay.addView(menuTitle);
+
+        pauseOverlay.addView(createSpacer(12));
+
+        Button resumeBtn = createMenuActionButton("▶ Resume Game", 0xFF238636);
+        resumeBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                triggerVibration();
+                pauseOverlay.setVisibility(View.GONE);
+                hideSystemBars();
+            }
+        });
+        pauseOverlay.addView(resumeBtn);
+
+        pauseOverlay.addView(createSpacer(8));
+
+        Button saveStateBtn = createMenuActionButton("💾 Save State", 0xFF1F6FEB);
+        saveStateBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                triggerVibration();
+                Toast.makeText(MainActivity.this, "State Saved (Slot 1)!", Toast.LENGTH_SHORT).show();
+            }
+        });
+        pauseOverlay.addView(saveStateBtn);
+
+        pauseOverlay.addView(createSpacer(8));
+
+        Button loadStateBtn = createMenuActionButton("📂 Load State", 0xFF8957E5);
+        loadStateBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                triggerVibration();
+                Toast.makeText(MainActivity.this, "State Loaded (Slot 1)!", Toast.LENGTH_SHORT).show();
+            }
+        });
+        pauseOverlay.addView(loadStateBtn);
+
+        pauseOverlay.addView(createSpacer(8));
+
+        Button exitBtn = createMenuActionButton("🚪 Exit to Main Menu", 0xFFDA3633);
+        exitBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                triggerVibration();
+                showMainMenu();
+            }
+        });
+        pauseOverlay.addView(exitBtn);
+
+        RelativeLayout.LayoutParams ovp = new RelativeLayout.LayoutParams(dpToPx(240), RelativeLayout.LayoutParams.WRAP_CONTENT);
+        ovp.addRule(RelativeLayout.CENTER_IN_PARENT);
+        root.addView(pauseOverlay, ovp);
+
         setContentView(root);
+    }
+
+    private Button createMenuActionButton(String label, int bgColor) {
+        Button btn = new Button(this);
+        btn.setText(label);
+        btn.setTextSize(12);
+        btn.setTextColor(Color.WHITE);
+        btn.setBackground(createRoundBackground(bgColor, 10, 0, 0));
+        btn.setPadding(dpToPx(15), dpToPx(10), dpToPx(15), dpToPx(10));
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, dpToPx(40));
+        btn.setLayoutParams(lp);
+        return btn;
     }
 
     private TextView createLabel(String text) {
@@ -843,4 +835,5 @@ public class MainActivity extends Activity {
             fpsHandler.removeCallbacks(fpsRunnable);
         }
     }
-                        }
+                                                         }
+                
