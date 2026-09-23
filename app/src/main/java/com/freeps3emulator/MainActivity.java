@@ -74,13 +74,14 @@ public class MainActivity extends Activity {
         showMainMenu();
     }
 
-    @Override
-    public void onWindowFocusChanged(hasFocus) {
+        @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
         super.onWindowFocusChanged(hasFocus);
         if (hasFocus) {
             hideSystemBars();
         }
     }
+    
 
     private void hideSystemBars() {
         try {
