@@ -88,26 +88,34 @@ public class MainActivity extends Activity {
         } catch (Throwable ignored) {}
     }
 
-    @Override
+     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
-        selectedGamePath = prefs.getString(KEY_RECENT_GAME, null);
-        selectedGameSize = prefs.getString(KEY_RECENT_SIZE, "Ready");
-        internalGamePath = prefs.getString(KEY_INTERNAL_GAME_PATH, null);
-        selectedOpacity = prefs.getString(KEY_BUTTON_OPACITY, "Medium (50%)");
-        isVibrationEnabled = prefs.getBoolean(KEY_VIBRATION_ENABLED, true);
-        isSoundEnabled = prefs.getBoolean(KEY_SOUND_ENABLED, true);
-        isFirmwareInstalled = prefs.getBoolean(KEY_FIRMWARE_INSTALLED, false);
-        firmwareVersion = prefs.getString(KEY_FIRMWARE_VERSION, "None");
+        try {
+            prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+            selectedGamePath = prefs.getString(KEY_RECENT_GAME, null);
+            selectedGameSize = prefs.getString(KEY_RECENT_SIZE, "Ready");
+            internalGamePath = prefs.getString(KEY_INTERNAL_GAME_PATH, null);
+            selectedOpacity = prefs.getString(KEY_BUTTON_OPACITY, "Medium (50%)");
+            isVibrationEnabled = prefs.getBoolean(KEY_VIBRATION_ENABLED, true);
+            isSoundEnabled = prefs.getBoolean(KEY_SOUND_ENABLED, true);
+            isFirmwareInstalled = prefs.getBoolean(KEY_FIRMWARE_INSTALLED, false);
+            firmwareVersion = prefs.getString(KEY_FIRMWARE_VERSION, "None");
+        } catch (Exception ignored) {}
 
-        initInternalFileSystem();
+        try {
+            initInternalFileSystem();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
         try {
             vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
         } catch (Exception e) {
             vibrator = null;
         }
+        
+        
 
         try {
             toneGen = new ToneGenerator(AudioManager.STREAM_MUSIC, 80);
