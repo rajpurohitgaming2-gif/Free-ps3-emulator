@@ -19,6 +19,7 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.ScrollView;
 import android.widget.Spinner;
@@ -143,7 +144,6 @@ public class MainActivity extends Activity {
 
         layout.addView(createSpacer(20));
 
-        // रीसेंट गेम कार्ड
         if (selectedGamePath != null) {
             LinearLayout recentCard = new LinearLayout(this);
             recentCard.setOrientation(LinearLayout.VERTICAL);
@@ -175,7 +175,7 @@ public class MainActivity extends Activity {
                 @Override
                 public void onClick(View v) {
                     triggerVibration();
-                    showGameHubScreen();
+                    startBootSequence();
                 }
             });
             recentCard.addView(resumeBtn);
@@ -232,7 +232,7 @@ public class MainActivity extends Activity {
             @Override
             public void onClick(View v) {
                 triggerVibration();
-                showGameHubScreen();
+                startBootSequence();
             }
         });
         layout.addView(startButton);
@@ -297,8 +297,8 @@ public class MainActivity extends Activity {
 
         sv.addView(layout);
         setContentView(sv);
-                       }
-           private void showSettingsScreen() {
+    }
+        private void showSettingsScreen() {
         hideSystemBars();
         ScrollView sv = new ScrollView(this);
         sv.setBackgroundColor(0xFF0D1117);
@@ -396,7 +396,83 @@ public class MainActivity extends Activity {
         setContentView(sv);
     }
 
-    private void showGameHubScreen() {
+    // PS3 बूट और शेडर लोडिंग स्क्रीन (Boot Animation)
+    private void startBootSequence() {
+        hideSystemBars();
+        RelativeLayout bootRoot = new RelativeLayout(this);
+        bootRoot.setBackgroundColor(0xFF020408);
+
+        LinearLayout centerBox = new LinearLayout(this);
+        centerBox.setOrientation(LinearLayout.VERTICAL);
+        centerBox.setGravity(Gravity.CENTER);
+
+        TextView psLogo = new TextView(this);
+        psLogo.setText("PlayStation®3");
+        psLogo.setTextSize(28);
+        psLogo.setTextColor(Color.WHITE);
+        psLogo.setGravity(Gravity.CENTER);
+        centerBox.addView(psLogo);
+
+        TextView subLogo = new TextView(this);
+        subLogo.setText("Sony Computer Entertainment");
+        subLogo.setTextSize(11);
+        subLogo.setTextColor(0xFF8B949E);
+        subLogo.setGravity(Gravity.CENTER);
+        centerBox.addView(subLogo);
+
+        centerBox.addView(createSpacer(30));
+
+        final ProgressBar pBar = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
+        pBar.setMax(100);
+        pBar.setProgress(10);
+        LinearLayout.LayoutParams pbParams = new LinearLayout.LayoutParams(dpToPx(280), dpToPx(10));
+        pBar.setLayoutParams(pbParams);
+        centerBox.addView(pBar);
+
+        centerBox.addView(createSpacer(12));
+
+        final TextView loadStatus = new TextView(this);
+        loadStatus.setText("Compiling Vulkan Shaders... 15%");
+        loadStatus.setTextSize(12);
+        loadStatus.setTextColor(0xFF00E5FF);
+        loadStatus.setGravity(Gravity.CENTER);
+        centerBox.addView(loadStatus);
+
+        RelativeLayout.LayoutParams cbp = new RelativeLayout.LayoutParams(
+                RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
+        cbp.addRule(RelativeLayout.CENTER_IN_PARENT);
+        bootRoot.addView(centerBox, cbp);
+
+        setContentView(bootRoot);
+
+        // लोडिंग प्रोग्रेस बार टाइमर
+        final int[] progress = {15};
+        final Handler bootHandler = new Handler(Looper.getMainLooper());
+        final Runnable bootRunnable = new Runnable() {
+            @Override
+            public void run() {
+                progress[0] += 25;
+                if (progress[0] >= 100) {
+                    pBar.setProgress(100);
+                    loadStatus.setText("Launching System Engine... 100%");
+                    bootHandler.postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+                            showGameHubScreen();
+                        }
+                    }, 500);
+                } else {
+                    pBar.setProgress(progress[0]);
+                    if (progress[0] == 40) loadStatus.setText("Building Graphics Pipelines... 40%");
+                    if (progress[0] == 65) loadStatus.setText("Mounting ISO Filesystem... 65%");
+                    if (progress[0] == 90) loadStatus.setText("Allocating VRAM (Adreno)... 90%");
+                    bootHandler.postDelayed(this, 600);
+                }
+            }
+        };
+        bootHandler.postDelayed(bootRunnable, 600);
+    }
+        private void showGameHubScreen() {
         isGameRunning = true;
         hideSystemBars();
         RelativeLayout root = new RelativeLayout(this);
@@ -566,8 +642,9 @@ public class MainActivity extends Activity {
         root.addView(centerBtns, cbParams);
 
         setContentView(root);
-       }
-           private TextView createLabel(String text) {
+    }
+
+    private TextView createLabel(String text) {
         TextView tv = new TextView(this);
         tv.setText(text);
         tv.setTextSize(13);
@@ -652,12 +729,9 @@ public class MainActivity extends Activity {
             Uri uri = data.getData();
             if (uri != null) {
                 selectedGamePath = uri.getLastPathSegment();
-                
-                // गेम पाथ को मेमोरी में सेव करें
                 if (prefs != null) {
                     prefs.edit().putString(KEY_RECENT_GAME, selectedGamePath).apply();
                 }
-
                 if (statusText != null) {
                     statusText.setText("लोड किया गया गेम: " + selectedGamePath);
                     statusText.setTextColor(0xFF00E676);
@@ -679,4 +753,4 @@ public class MainActivity extends Activity {
             fpsHandler.removeCallbacks(fpsRunnable);
         }
     }
-}
+            }
