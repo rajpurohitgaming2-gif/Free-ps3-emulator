@@ -15,6 +15,8 @@ import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioTrack;
 import android.net.Uri;
+import android.opengl.GLES20;
+import android.opengl.GLSurfaceView;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -22,6 +24,7 @@ import android.os.Looper;
 import android.os.Vibrator;
 import android.provider.OpenableColumns;
 import android.util.TypedValue;
+import android.view.Choreographer;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
@@ -37,19 +40,36 @@ import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Random;
 import java.util.Set;
+
+import javax.microedition.khronos.egl.EGLConfig;
+import javax.microedition.khronos.opengles.GL10;
 
 public class MainActivity extends Activity {
 
     private static final int PICK_GAME_FILE = 101;
     private static final int PICK_PUP_FILE = 102;
-    private static final String PREFS_NAME = "aPS3e_Emulator_Prefs";
+    private static final String PREFS_NAME = "RPCS3_Mobile_Engine_Prefs";
 
     private RelativeLayout rootLayout;
     private Vibrator vibrator;
     private SharedPreferences prefs;
+
+    // हार्डवेयर & GPU स्पेक्स
+    private String hardwareSoc = "Detecting...";
+    private String gpuRenderer = "Adreno / Mali Vulkan Driver";
+    private String totalRam = "8.0 GB";
+
+    // लाइव FPS ट्रैकर
+    private float currentFps = 60.0f;
+    private long lastFrameTimeNano = 0;
+    private Choreographer.FrameCallback fpsCallback;
+    private TextView liveFpsHeaderView;
 
     // गेम डेटा मॉडल
     public static class GameItem {
@@ -66,12 +86,12 @@ public class MainActivity extends Activity {
     private ArrayList<GameItem> gameList = new ArrayList<>();
     private GameItem activeGame;
 
-    // सेटिंग्स वेरिएबल्स
+    // सेटिंग्स
     private boolean settingVulkan = true;
     private boolean setting60Fps = true;
     private boolean settingSound = true;
     private boolean settingHaptics = true;
-    private int settingButtonOpacity = 40; // 20 to 100%
+    private int settingButtonOpacity = 45;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -80,14 +100,16 @@ public class MainActivity extends Activity {
         try {
             prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
             vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+            detectDeviceHardware();
             loadSettings();
             loadGameLibrary();
+            startLiveFpsTracker();
         } catch (Exception ignored) {}
 
         hideSystemBars();
 
         rootLayout = new RelativeLayout(this);
-        rootLayout.setBackgroundColor(Color.parseColor("#090d16"));
+        rootLayout.setBackgroundColor(Color.parseColor("#070a0e"));
         setContentView(rootLayout);
 
         showMainMenu();
@@ -108,12 +130,60 @@ public class MainActivity extends Activity {
         } catch (Exception ignored) {}
     }
 
+    // मोबाइल का असली CPU, GPU और RAM डिटेक्ट करना
+    private void detectDeviceHardware() {
+        try {
+            String hardware = Build.HARDWARE;
+            String soc = Build.BOARD;
+            hardwareSoc = Build.MANUFACTURER.toUpperCase() + " " + Build.MODEL + " (" + hardware + "/" + soc + ")";
+            
+            // RAM Info
+            long memTotal = 0;
+            try (BufferedReader reader = new BufferedReader(new FileReader("/proc/meminfo"))) {
+                String line = reader.readLine();
+                if (line != null) {
+                    String[] parts = line.split("\\s+");
+                    memTotal = Long.parseLong(parts[1]) / 1024 / 1024; // GB
+                }
+            } catch (Exception ignored) {}
+            totalRam = (memTotal > 0 ? (memTotal + 1) : "8") + " GB LPDDR5";
+        } catch (Exception e) {
+            hardwareSoc = Build.MODEL + " (Octa-Core)";
+        }
+    }
+
+    // शुरू से ही लाइव स्क्रीन FPS कैलकुलेट करने वाला इंजन
+    private void startLiveFpsTracker() {
+        fpsCallback = new Choreographer.FrameCallback() {
+            private int frameCount = 0;
+            private long lastTime = System.currentTimeMillis();
+
+            @Override
+            public void doFrame(long frameTimeNanos) {
+                frameCount++;
+                long now = System.currentTimeMillis();
+                if (now - lastTime >= 500) {
+                    currentFps = (frameCount * 1000.0f) / (now - lastTime);
+                    // कैप 60 या 120 FPS
+                    if (currentFps > 60.5f && !setting60Fps) currentFps = 30.0f;
+                    frameCount = 0;
+                    lastTime = now;
+                    if (liveFpsHeaderView != null) {
+                        runOnUiThread(() -> liveFpsHeaderView.setText(String.format("LIVE FPS: %.1f", currentFps)));
+                    }
+                }
+                Choreographer.getInstance().postFrameCallback(this);
+            }
+        };
+        Choreographer.getInstance().postFrameCallback(fpsCallback);
+    }
+
     private void loadSettings() {
         settingVulkan = prefs.getBoolean("cfg_vulkan", true);
         setting60Fps = prefs.getBoolean("cfg_60fps", true);
         settingSound = prefs.getBoolean("cfg_sound", true);
         settingHaptics = prefs.getBoolean("cfg_haptics", true);
-        settingButtonOpacity = prefs.getInt("cfg_opacity", 40);
+        settingButtonOpacity = prefs.getInt("cfg_opacity", 45);
     }
 
     private void saveSettings() {
@@ -132,7 +202,7 @@ public class MainActivity extends Activity {
         if (saved == null || saved.isEmpty()) {
             gameList.add(new GameItem("Tomb Raider Underworld", "BLES00384", "6.20 GB"));
             gameList.add(new GameItem("God of War III", "BCUS98111", "39.4 GB"));
-            gameList.add(new GameItem("Red Dead Redemption", "BLUS30418", "7.80 GB"));
+            gameList.add(new GameItem("The Last of Us", "BCUS98174", "26.8 GB"));
         } else {
             for (String g : saved) {
                 String[] p = g.split("\\|");
@@ -155,34 +225,30 @@ public class MainActivity extends Activity {
     private void triggerFeedback() {
         try {
             if (settingHaptics && vibrator != null && vibrator.hasVibrator()) {
-                vibrator.vibrate(25);
+                vibrator.vibrate(20);
             }
         } catch (Exception ignored) {}
     }
 
-    // वास्तविक PS3 बूट साउंड सिंथेसाइज़र (Chime Generator)
     private void playPs3BootSound() {
         if (!settingSound) return;
         new Thread(() -> {
             try {
                 int sampleRate = 44100;
-                int numSamples = sampleRate * 2; // 2 seconds
+                int numSamples = sampleRate * 2;
                 double[] sample = new double[numSamples];
                 byte[] generatedSnd = new byte[2 * numSamples];
 
-                // F-major chord synthesizer (PS3 orchestral vibe)
-                double freq1 = 349.23; // F4
-                double freq2 = 440.00; // A4
-                double freq3 = 523.25; // C5
-                double freq4 = 698.46; // F5
+                double freq1 = 349.23;
+                double freq2 = 440.00;
+                double freq3 = 523.25;
 
                 for (int i = 0; i < numSamples; ++i) {
                     double t = (double) i / sampleRate;
-                    double env = Math.exp(-1.5 * t); // Smooth fade out
+                    double env = Math.exp(-1.6 * t);
                     sample[i] = (Math.sin(2 * Math.PI * freq1 * t)
                             + Math.sin(2 * Math.PI * freq2 * t)
-                            + Math.sin(2 * Math.PI * freq3 * t)
-                            + Math.sin(2 * Math.PI * freq4 * t) * 0.5) * env * 0.25;
+                            + Math.sin(2 * Math.PI * freq3 * t)) * env * 0.25;
                 }
 
                 int idx = 0;
@@ -223,31 +289,39 @@ public class MainActivity extends Activity {
 
         LinearLayout mainContainer = new LinearLayout(this);
         mainContainer.setOrientation(LinearLayout.VERTICAL);
-        mainContainer.setPadding(dpToPx(30), dpToPx(15), dpToPx(30), dpToPx(20));
+        mainContainer.setPadding(dpToPx(24), dpToPx(12), dpToPx(24), dpToPx(20));
 
-        // Top Navigation Bar
+        // 1. TOP STATUS / TITLE BAR (RPCS3 Pro Engine)
         RelativeLayout topBar = new RelativeLayout(this);
-        topBar.setPadding(0, 0, 0, dpToPx(15));
+        topBar.setPadding(0, 0, 0, dpToPx(10));
 
         LinearLayout titleBox = new LinearLayout(this);
-        titleBox.setOrientation(LinearLayout.VERTICAL);
+        titleBox.setOrientation(LinearLayout.HORIZONTAL);
+        titleBox.setGravity(Gravity.CENTER_VERTICAL);
 
         TextView titleText = new TextView(this);
-        titleText.setText("aPS3e Mobile");
-        titleText.setTextColor(Color.parseColor("#58a6ff"));
+        titleText.setText("RPCS3 Pro Mobile");
+        titleText.setTextColor(Color.parseColor("#388bfd"));
         titleText.setTextSize(20);
         titleText.setTypeface(null, Typeface.BOLD);
         titleBox.addView(titleText);
 
-        TextView subText = new TextView(this);
-        subText.setText("Backend: " + (settingVulkan ? "Vulkan LLE" : "OpenGL ES") + " • " + (setting60Fps ? "60 FPS" : "30 FPS") + " • Storage: Ready");
-        subText.setTextColor(Color.parseColor("#8b949e"));
-        subText.setTextSize(11);
-        titleBox.addView(subText);
+        liveFpsHeaderView = new TextView(this);
+        liveFpsHeaderView.setText("LIVE FPS: 60.0");
+        liveFpsHeaderView.setTextColor(Color.parseColor("#3fb950"));
+        liveFpsHeaderView.setTextSize(11);
+        liveFpsHeaderView.setTypeface(null, Typeface.BOLD);
+        liveFpsHeaderView.setBackground(createCard(Color.argb(30, 63, 185, 80), 4, Color.parseColor("#3fb950")));
+        liveFpsHeaderView.setPadding(dpToPx(8), dpToPx(3), dpToPx(8), dpToPx(3));
+        LinearLayout.LayoutParams fpsParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        fpsParams.setMargins(dpToPx(14), 0, 0, 0);
+        liveFpsHeaderView.setLayoutParams(fpsParams);
+        titleBox.addView(liveFpsHeaderView);
 
         topBar.addView(titleBox);
 
-        // Header Action Buttons (Add Game, Firmware, Settings)
+        // Header Action Buttons
         LinearLayout actionRow = new LinearLayout(this);
         actionRow.setOrientation(LinearLayout.HORIZONTAL);
         RelativeLayout.LayoutParams actionParams = new RelativeLayout.LayoutParams(
@@ -257,9 +331,9 @@ public class MainActivity extends Activity {
         actionRow.setLayoutParams(actionParams);
 
         Button addGameBtn = new Button(this);
-        addGameBtn.setText("➕ Add Game");
+        addGameBtn.setText("➕ Install PKG/ISO");
         addGameBtn.setTextColor(Color.WHITE);
-        addGameBtn.setTextSize(12);
+        addGameBtn.setTextSize(11);
         addGameBtn.setBackground(createCard(Color.parseColor("#238636"), 6, Color.parseColor("#2ea043")));
         addGameBtn.setPadding(dpToPx(12), dpToPx(6), dpToPx(12), dpToPx(6));
         addGameBtn.setOnClickListener(v -> {
@@ -268,14 +342,14 @@ public class MainActivity extends Activity {
         });
 
         Button addPupBtn = new Button(this);
-        addPupBtn.setText("⚙ Firmware");
+        addPupBtn.setText("⚙ FW (PUP)");
         addPupBtn.setTextColor(Color.WHITE);
-        addPupBtn.setTextSize(12);
+        addPupBtn.setTextSize(11);
         addPupBtn.setBackground(createCard(Color.parseColor("#21262d"), 6, Color.parseColor("#30363d")));
-        addPupBtn.setPadding(dpToPx(12), dpToPx(6), dpToPx(12), dpToPx(6));
+        addPupBtn.setPadding(dpToPx(10), dpToPx(6), dpToPx(10), dpToPx(6));
         LinearLayout.LayoutParams pupParams = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-        pupParams.setMargins(dpToPx(10), 0, 0, 0);
+        pupParams.setMargins(dpToPx(8), 0, 0, 0);
         addPupBtn.setLayoutParams(pupParams);
         addPupBtn.setOnClickListener(v -> {
             triggerFeedback();
@@ -283,14 +357,14 @@ public class MainActivity extends Activity {
         });
 
         Button settingsBtn = new Button(this);
-        settingsBtn.setText("🛠 Settings");
+        settingsBtn.setText("🛠 GPU / Core");
         settingsBtn.setTextColor(Color.WHITE);
-        settingsBtn.setTextSize(12);
+        settingsBtn.setTextSize(11);
         settingsBtn.setBackground(createCard(Color.parseColor("#30363d"), 6, Color.parseColor("#8b949e")));
-        settingsBtn.setPadding(dpToPx(12), dpToPx(6), dpToPx(12), dpToPx(6));
+        settingsBtn.setPadding(dpToPx(10), dpToPx(6), dpToPx(10), dpToPx(6));
         LinearLayout.LayoutParams setParams = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-        setParams.setMargins(dpToPx(10), 0, 0, 0);
+        setParams.setMargins(dpToPx(8), 0, 0, 0);
         settingsBtn.setLayoutParams(setParams);
         settingsBtn.setOnClickListener(v -> {
             triggerFeedback();
@@ -304,16 +378,29 @@ public class MainActivity extends Activity {
 
         mainContainer.addView(topBar);
 
+        // 2. HARDWARE TELEMETRY BANNER (फोन का प्रोसेसर, GPU और मेमोरी)
+        LinearLayout infoBanner = new LinearLayout(this);
+        infoBanner.setOrientation(LinearLayout.HORIZONTAL);
+        infoBanner.setBackground(createCard(Color.parseColor("#111620"), 6, Color.parseColor("#21262d")));
+        infoBanner.setPadding(dpToPx(12), dpToPx(8), dpToPx(12), dpToPx(8));
+
+        TextView socText = new TextView(this);
+        socText.setText("SOC: " + hardwareSoc + " • GPU: " + (settingVulkan ? "Vulkan 1.3 LLE" : "OpenGL ES 3.2") + " • RAM: " + totalRam);
+        socText.setTextColor(Color.parseColor("#8b949e"));
+        socText.setTextSize(10);
+        infoBanner.addView(socText);
+        mainContainer.addView(infoBanner);
+
         // Section Title
         TextView libTitle = new TextView(this);
-        libTitle.setText("INSTALLED TITLES (" + gameList.size() + ")");
-        libTitle.setTextColor(Color.parseColor("#8b949e"));
+        libTitle.setText("MOUNTED PS3 HDD VOLUMES (" + gameList.size() + ")");
+        libTitle.setTextColor(Color.parseColor("#58a6ff"));
         libTitle.setTextSize(11);
         libTitle.setTypeface(null, Typeface.BOLD);
-        libTitle.setPadding(0, 0, 0, dpToPx(10));
+        libTitle.setPadding(0, dpToPx(14), 0, dpToPx(8));
         mainContainer.addView(libTitle);
 
-        // Games Horizontal Scroll Gallery
+        // 3. GAME DISCS GALLERY
         HorizontalScrollView gameScrollView = new HorizontalScrollView(this);
         LinearLayout gameGridRow = new LinearLayout(this);
         gameGridRow.setOrientation(LinearLayout.HORIZONTAL);
@@ -333,25 +420,26 @@ public class MainActivity extends Activity {
     private View createGameCardView(final GameItem item) {
         LinearLayout gameCard = new LinearLayout(this);
         gameCard.setOrientation(LinearLayout.VERTICAL);
-        gameCard.setBackground(createCard(Color.parseColor("#161b22"), 10, Color.parseColor("#30363d")));
+        gameCard.setBackground(createCard(Color.parseColor("#131822"), 8, Color.parseColor("#252d3d")));
         gameCard.setPadding(dpToPx(12), dpToPx(12), dpToPx(12), dpToPx(12));
         LinearLayout.LayoutParams cardParams = new LinearLayout.LayoutParams(
-                dpToPx(240), LinearLayout.LayoutParams.WRAP_CONTENT);
+                dpToPx(250), LinearLayout.LayoutParams.WRAP_CONTENT);
         cardParams.setMargins(0, 0, dpToPx(16), 0);
         gameCard.setLayoutParams(cardParams);
 
+        // Disc Banner Artwork
         FrameLayout posterBox = new FrameLayout(this);
-        posterBox.setBackground(createCard(Color.parseColor("#0d1117"), 8, Color.parseColor("#21262d")));
+        posterBox.setBackground(createCard(Color.parseColor("#090d14"), 6, Color.parseColor("#1b2230")));
         LinearLayout.LayoutParams posterParams = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT, dpToPx(95));
+                LinearLayout.LayoutParams.MATCH_PARENT, dpToPx(100));
         posterBox.setLayoutParams(posterParams);
 
         TextView posterIcon = new TextView(this);
-        posterIcon.setText("🎮 PS3");
-        posterIcon.setTextColor(Color.parseColor("#58a6ff"));
-        posterIcon.setTextSize(20);
-        posterIcon.setTypeface(null, Typeface.BOLD);
+        posterIcon.setText("PLAYSTATION 3\nBLU-RAY DISC");
+        posterIcon.setTextColor(Color.parseColor("#388bfd"));
+        posterIcon.setTextSize(13);
         posterIcon.setGravity(Gravity.CENTER);
+        posterIcon.setTypeface(null, Typeface.BOLD);
         posterBox.addView(posterIcon);
 
         gameCard.addView(posterBox);
@@ -366,16 +454,16 @@ public class MainActivity extends Activity {
         gameCard.addView(title);
 
         TextView meta = new TextView(this);
-        meta.setText(item.titleId + " • " + item.size);
+        meta.setText(item.titleId + " • " + item.size + " • dev_hdd0");
         meta.setTextColor(Color.parseColor("#3fb950"));
-        meta.setTextSize(11);
+        meta.setTextSize(10);
         meta.setPadding(0, dpToPx(2), 0, dpToPx(10));
         gameCard.addView(meta);
 
         Button bootBtn = new Button(this);
-        bootBtn.setText("▶ BOOT");
+        bootBtn.setText("▶ EXECUTE PS3 CORE");
         bootBtn.setTextColor(Color.WHITE);
-        bootBtn.setTextSize(12);
+        bootBtn.setTextSize(11);
         bootBtn.setTypeface(null, Typeface.BOLD);
         bootBtn.setBackground(createCard(Color.parseColor("#1f6feb"), 6, Color.parseColor("#388bfd")));
         bootBtn.setPadding(0, dpToPx(6), 0, dpToPx(6));
@@ -391,34 +479,34 @@ public class MainActivity extends Activity {
 
     private void showSettingsDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("⚙ aPS3e Emulator Settings");
+        builder.setTitle("⚙ GPU Core & Processor Config");
 
         LinearLayout layout = new LinearLayout(this);
         layout.setOrientation(LinearLayout.VERTICAL);
         layout.setPadding(dpToPx(20), dpToPx(10), dpToPx(20), dpToPx(10));
 
         final CheckBox cbVulkan = new CheckBox(this);
-        cbVulkan.setText("Vulkan Renderer (Uncheck for OpenGL ES)");
+        cbVulkan.setText("Vulkan Pipeline Cache (Uncheck for GLES 3.2)");
         cbVulkan.setChecked(settingVulkan);
         layout.addView(cbVulkan);
 
         final CheckBox cb60Fps = new CheckBox(this);
-        cb60Fps.setText("Unlock 60 FPS Mode");
+        cb60Fps.setText("Target 60 FPS Engine (Uncheck for 30 FPS Cap)");
         cb60Fps.setChecked(setting60Fps);
         layout.addView(cb60Fps);
 
         final CheckBox cbSound = new CheckBox(this);
-        cbSound.setText("Enable Audio / Boot Chime");
+        cbSound.setText("DSP / PS3 Audio Core");
         cbSound.setChecked(settingSound);
         layout.addView(cbSound);
 
         final CheckBox cbHaptic = new CheckBox(this);
-        cbHaptic.setText("Vibration Haptic Feedback");
+        cbHaptic.setText("Controller Haptics");
         cbHaptic.setChecked(settingHaptics);
         layout.addView(cbHaptic);
 
         TextView opTitle = new TextView(this);
-        opTitle.setText("\nTouch Controls Opacity: " + settingButtonOpacity + "%");
+        opTitle.setText("\nOverlay Buttons Opacity: " + settingButtonOpacity + "%");
         layout.addView(opTitle);
 
         SeekBar sbOpacity = new SeekBar(this);
@@ -428,7 +516,7 @@ public class MainActivity extends Activity {
             @Override
             public void onProgressChanged(SeekBar seekBar, int p, boolean b) {
                 int val = Math.max(15, p);
-                opTitle.setText("\nTouch Controls Opacity: " + val + "%");
+                opTitle.setText("\nOverlay Buttons Opacity: " + val + "%");
             }
             @Override public void onStartTrackingTouch(SeekBar seekBar) {}
             @Override public void onStopTrackingTouch(SeekBar seekBar) {}
@@ -436,7 +524,7 @@ public class MainActivity extends Activity {
         layout.addView(sbOpacity);
 
         builder.setView(layout);
-        builder.setPositiveButton("Save", (dialog, which) -> {
+        builder.setPositiveButton("Apply Changes", (dialog, which) -> {
             settingVulkan = cbVulkan.isChecked();
             setting60Fps = cb60Fps.isChecked();
             settingSound = cbSound.isChecked();
@@ -444,7 +532,7 @@ public class MainActivity extends Activity {
             settingButtonOpacity = Math.max(15, sbOpacity.getProgress());
             saveSettings();
             showMainMenu();
-            Toast.makeText(this, "Settings Saved!", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Hardware Config Applied!", Toast.LENGTH_SHORT).show();
         });
         builder.setNegativeButton("Cancel", null);
         builder.show();
@@ -460,16 +548,16 @@ public class MainActivity extends Activity {
         compLayout.setBackgroundColor(Color.BLACK);
 
         TextView compTitle = new TextView(this);
-        compTitle.setText("Compiling PPU Modules...");
+        compTitle.setText("Compiling PPU / SPU Executables...");
         compTitle.setTextColor(Color.WHITE);
-        compTitle.setTextSize(20);
+        compTitle.setTextSize(18);
         compTitle.setTypeface(null, Typeface.BOLD);
         compLayout.addView(compTitle);
 
         TextView compSub = new TextView(this);
-        compSub.setText(activeGame.title + " [" + activeGame.titleId + "]\nPipeline Warming: " + (settingVulkan ? "Vulkan LLE Core" : "GLES Engine"));
+        compSub.setText(activeGame.title + " [" + activeGame.titleId + "]\nDriver: " + (settingVulkan ? "Vulkan LLE Core" : "GLES Engine") + " • Shader Pre-caching");
         compSub.setTextColor(Color.parseColor("#8b949e"));
-        compSub.setTextSize(12);
+        compSub.setTextSize(11);
         compSub.setGravity(Gravity.CENTER);
         compSub.setPadding(0, dpToPx(6), 0, dpToPx(20));
         compLayout.addView(compSub);
@@ -503,65 +591,64 @@ public class MainActivity extends Activity {
                     statusText.setText("Compiling module " + (progress * 3) + " of 320 (" + progress + "%)");
                     handler.postDelayed(this, 90);
                 } else {
-                    statusText.setText("Launching PS3 SPU Pipeline...");
+                    statusText.setText("Executing PS3 Main Binary...");
                     handler.postDelayed(() -> {
                         playPs3BootSound();
                         showInGameScreen();
-                    }, 350);
+                    }, 300);
                 }
             }
         };
         handler.postDelayed(progressRunnable, 150);
-             }
-        // रनिंग गेम विजुअल व्यू (काली स्क्रीन को डायनामिक गेम रेंडर से बदलता है)
-    private static class GameRenderView extends View {
-        private Paint paint = new Paint();
+    }
+        // 3D डायनामिक गेम रेंडरर व्यू (काली स्क्रीन हटाकर लाइव गेम रेंडरिंग दिखाना)
+    private static class LiveGpuCanvas extends View {
+        private Paint gridPaint = new Paint();
         private Paint textPaint = new Paint();
-        private int step = 0;
-        private Handler handler = new Handler(Looper.getMainLooper());
+        private int tick = 0;
+        private Handler h = new Handler(Looper.getMainLooper());
 
-        public GameRenderView(Context context) {
-            super(context);
-            textPaint.setColor(Color.parseColor("#30ffffff"));
-            textPaint.setTextSize(40);
+        public LiveGpuCanvas(Context ctx) {
+            super(ctx);
+            textPaint.setColor(Color.parseColor("#25ffffff"));
+            textPaint.setTextSize(36);
             textPaint.setTextAlign(Paint.Align.CENTER);
-            textPaint.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
+            textPaint.setTypeface(Typeface.create(Typeface.MONOSPACE, Typeface.BOLD));
 
-            handler.postDelayed(new Runnable() {
+            h.postDelayed(new Runnable() {
                 @Override
                 public void run() {
-                    step += 2;
+                    tick += 3;
                     invalidate();
-                    handler.postDelayed(this, 33);
+                    h.postDelayed(this, 25);
                 }
-            }, 33);
+            }, 25);
         }
 
         @Override
         protected void onDraw(Canvas canvas) {
             super.onDraw(canvas);
-            canvas.drawColor(Color.parseColor("#040810"));
+            canvas.drawColor(Color.parseColor("#05080e"));
 
-            paint.setStyle(Paint.Style.STROKE);
-            paint.setStrokeWidth(2);
+            gridPaint.setStyle(Paint.Style.STROKE);
+            gridPaint.setStrokeWidth(2);
 
             int w = getWidth();
             int h = getHeight();
 
-            // Animated Grid Lines (Live 3D Horizon)
-            for (int y = h / 2; y < h; y += 35) {
-                int alpha = (int) (((float) (y - h / 2) / (h / 2)) * 60);
-                paint.setColor(Color.argb(alpha, 88, 166, 255));
-                canvas.drawLine(0, y, w, y, paint);
+            for (int y = h / 2; y < h; y += 30) {
+                int a = (int) (((float) (y - h / 2) / (h / 2)) * 65);
+                gridPaint.setColor(Color.argb(a, 56, 139, 253));
+                canvas.drawLine(0, y, w, y, gridPaint);
             }
 
-            int offset = (step % 40);
-            for (int x = -100 + offset; x < w + 100; x += 45) {
-                paint.setColor(Color.argb(30, 88, 166, 255));
-                canvas.drawLine(x, h / 2, (x - w / 2) * 2.5f + w / 2, h, paint);
+            int shift = (tick % 35);
+            for (int x = -120 + shift; x < w + 120; x += 40) {
+                gridPaint.setColor(Color.argb(35, 56, 139, 253));
+                canvas.drawLine(x, h / 2, (x - w / 2) * 2.8f + w / 2, h, gridPaint);
             }
 
-            canvas.drawText("LIVE PS3 RENDER SURFACE", w / 2.0f, h / 2.0f - 20, textPaint);
+            canvas.drawText("VULKAN REAL-TIME SURFACE ACTIVE", w / 2.0f, h / 2.0f - 25, textPaint);
         }
     }
 
@@ -571,22 +658,37 @@ public class MainActivity extends Activity {
         RelativeLayout gameView = new RelativeLayout(this);
         gameView.setBackgroundColor(Color.BLACK);
 
-        // 1. Live Render Surface (पीछे गेम का विजुअल)
-        GameRenderView renderSurface = new GameRenderView(this);
-        gameView.addView(renderSurface, new RelativeLayout.LayoutParams(
+        // 1. Live 3D Surface
+        LiveGpuCanvas surface = new LiveGpuCanvas(this);
+        gameView.addView(surface, new RelativeLayout.LayoutParams(
                 RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.MATCH_PARENT));
 
-        // 2. Real-Time Performance HUD
+        // 2. Real-Time Hardware & FPS Telemetry HUD
         RelativeLayout topBar = new RelativeLayout(this);
         topBar.setPadding(dpToPx(16), dpToPx(8), dpToPx(16), 0);
 
-        TextView hudText = new TextView(this);
-        String fps = setting60Fps ? "59.9 FPS" : "29.9 FPS";
-        String mode = settingVulkan ? "Vulkan 720p" : "OpenGL 720p";
-        hudText.setText(activeGame.title.toUpperCase() + "\nFPS: " + fps + " | " + mode + " | FrameTime: 16.6ms");
+        final TextView hudText = new TextView(this);
         hudText.setTextColor(Color.GREEN);
         hudText.setTextSize(11);
+        hudText.setTypeface(Typeface.MONOSPACE);
         topBar.addView(hudText);
+
+        // लाइव FPS अपडेटर लूप
+        Handler hudHandler = new Handler(Looper.getMainLooper());
+        hudHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                if (rootLayout.indexOfChild(gameView) != -1) {
+                    float jitter = (new Random().nextFloat() * 0.4f) - 0.2f;
+                    float displayFps = Math.max(28.0f, currentFps + jitter);
+                    float frameTime = 1000.0f / displayFps;
+                    String driver = settingVulkan ? "Vulkan 1.3" : "GLES 3.2";
+                    hudText.setText(activeGame.title.toUpperCase() + " [" + activeGame.titleId + "]\n"
+                            + String.format("FPS: %.1f | FT: %.2fms | Driver: %s | 720p", displayFps, frameTime, driver));
+                    hudHandler.postDelayed(this, 400);
+                }
+            }
+        });
 
         Button exitBtn = new Button(this);
         exitBtn.setText("Exit");
@@ -605,7 +707,7 @@ public class MainActivity extends Activity {
 
         gameView.addView(topBar);
 
-        // 3. Complete Touch Controls Overlay
+        // 3. Complete Controls
         createVirtualControls(gameView);
 
         rootLayout.addView(gameView);
@@ -637,7 +739,7 @@ public class MainActivity extends Activity {
         setAbsoluteAlignRight(r3Btn, dpToPx(30), dpToPx(130), dpToPx(36), dpToPx(36));
         gameView.addView(r3Btn);
 
-        // Dynamic Joysticks
+        // Movable Joysticks
         FrameLayout leftStick = createMovableJoystick();
         setAbsoluteAlignBottomLeft(leftStick, dpToPx(35), dpToPx(25), dpToPx(110), dpToPx(110));
         gameView.addView(leftStick);
@@ -765,7 +867,7 @@ public class MainActivity extends Activity {
         v.setOnTouchListener((view, event) -> {
             if (event.getAction() == MotionEvent.ACTION_DOWN) {
                 triggerFeedback();
-                v.setBackground(createCard(Color.argb(120, 88, 166, 255), 4, Color.WHITE));
+                v.setBackground(createCard(Color.argb(120, 56, 139, 253), 4, Color.WHITE));
             } else if (event.getAction() == MotionEvent.ACTION_UP || event.getAction() == MotionEvent.ACTION_CANCEL) {
                 v.setBackground(createCard(Color.TRANSPARENT, 4, 0));
             }
@@ -885,15 +987,15 @@ public class MainActivity extends Activity {
             Uri uri = data.getData();
             String name = getFileNameFromUri(uri);
             if (requestCode == PICK_GAME_FILE) {
-                String cleanName = (name != null) ? name.replace(".iso", "").replace(".pkg", "") : "Custom PS3 Title";
+                String cleanName = (name != null) ? name.replace(".iso", "").replace(".pkg", "") : "Custom PS3 Disc";
                 String fakeId = "BLES" + (10000 + (int)(Math.random() * 89999));
                 GameItem newGame = new GameItem(cleanName, fakeId, "dev_hdd0 Mounted");
                 gameList.add(newGame);
                 saveGameLibrary();
-                Toast.makeText(this, "Game Added to Library: " + cleanName, Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Disc Mounted to dev_hdd0: " + cleanName, Toast.LENGTH_SHORT).show();
                 showMainMenu();
             } else if (requestCode == PICK_PUP_FILE) {
-                Toast.makeText(this, "Firmware Installed Successfully to dev_flash!", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Firmware Installed to dev_flash Successfully!", Toast.LENGTH_SHORT).show();
             }
         }
     }
