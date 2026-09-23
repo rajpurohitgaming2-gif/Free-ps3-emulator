@@ -10,8 +10,6 @@ import android.os.Bundle;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
-import android.view.WindowInsets;
-import android.view.WindowInsetsController;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.CheckBox;
@@ -47,27 +45,20 @@ public class MainActivity extends Activity {
         }
     }
 
-    // 1. फ़ोन के तीनों नेविगेशन बटन और स्टेटस बार को पूरी तरह छुपाने का फ़ंक्शन
+    // नेविगेशन बार और स्टेटस बार को पूरी तरह छुपाने के लिए
     private void hideSystemUI() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            final WindowInsetsController insetsController = getWindow().getInsetsController();
-            if (insetsController != null) {
-                insetsController.hide(WindowInsets.Type.statusBars() | WindowInsets.Type.navigationBars());
-                insetsController.setSystemBarsBehavior(WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
-            }
-        } else {
-            getWindow().getDecorView().setSystemUiVisibility(
-                    View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-                            | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                            | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-                            | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-                            | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-                            | View.SYSTEM_UI_FLAG_FULLSCREEN
-            );
-        }
+        View decorView = getWindow().getDecorView();
+        decorView.setSystemUiVisibility(
+                View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                        | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                        | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                        | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                        | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                        | View.SYSTEM_UI_FLAG_FULLSCREEN
+        );
     }
 
-    // --- मेन मेन्यू स्क्रीन ---
+    // 1. मुख्य मेन्यू स्क्रीन
     private void showMainMenu() {
         hideSystemUI();
         ScrollView scrollView = new ScrollView(this);
@@ -105,7 +96,12 @@ public class MainActivity extends Activity {
         loadButton.setTextColor(Color.WHITE);
         loadButton.setBackground(createRoundBackground(0xFF1E88E5, 20, 0, 0));
         loadButton.setPadding(40, 25, 40, 25);
-        loadButton.setOnClickListener(v -> openFilePicker());
+        loadButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                openFilePicker();
+            }
+        });
         layout.addView(loadButton);
 
         layout.addView(createSpacer(25));
@@ -117,7 +113,12 @@ public class MainActivity extends Activity {
         startButton.setBackground(createRoundBackground(0xFF00C853, 20, 0, 0));
         startButton.setPadding(40, 25, 40, 25);
         startButton.setVisibility(selectedGamePath == null ? View.GONE : View.VISIBLE);
-        startButton.setOnClickListener(v -> showGameHubScreen());
+        startButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                showGameHubScreen();
+            }
+        });
         layout.addView(startButton);
 
         layout.addView(createSpacer(25));
@@ -128,14 +129,19 @@ public class MainActivity extends Activity {
         settingsButton.setTextColor(0xFFE0E0E0);
         settingsButton.setBackground(createRoundBackground(0xFF263238, 20, 0x55FFFFFF, 1));
         settingsButton.setPadding(40, 20, 40, 20);
-        settingsButton.setOnClickListener(v -> showSettingsScreen());
+        settingsButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                showSettingsScreen();
+            }
+        });
         layout.addView(settingsButton);
 
         scrollView.addView(layout);
         setContentView(scrollView);
     }
 
-    // --- सेटिंग्स स्क्रीन ---
+    // 2. सेटिंग्स स्क्रीन (Graphics, Resolution & Hardware Info)
     private void showSettingsScreen() {
         hideSystemUI();
         ScrollView scrollView = new ScrollView(this);
@@ -192,27 +198,27 @@ public class MainActivity extends Activity {
         layout.addView(createSpacer(15));
 
         layout.addView(createLabel("Resolution Scaling:"));
-        Spinner resSpinner = new Spinner(this);
-        String[] resolutions = {"720p (Native PS3 - Balanced)", "1080p (Full HD - High End)", "2K Quad HD (Ultra GPU)", "480p (Performance - Low End)"};
-        ArrayAdapter<String> resAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, resolutions);
+        final Spinner resSpinner = new Spinner(this);
+        String[] resolutions = new String[]{"720p (Native PS3 - Balanced)", "1080p (Full HD - High End)", "2K Quad HD (Ultra GPU)", "480p (Performance - Low End)"};
+        ArrayAdapter<String> resAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_dropdown_item, resolutions);
         resSpinner.setAdapter(resAdapter);
         layout.addView(resSpinner);
 
         layout.addView(createSpacer(20));
 
         layout.addView(createLabel("Frame Rate (FPS Target):"));
-        Spinner fpsSpinner = new Spinner(this);
-        String[] fpsOptions = {"60 FPS (Smooth)", "30 FPS (Battery Saver)", "Unlimited (Unlocked)"};
-        ArrayAdapter<String> fpsAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, fpsOptions);
+        final Spinner fpsSpinner = new Spinner(this);
+        String[] fpsOptions = new String[]{"60 FPS (Smooth)", "30 FPS (Battery Saver)", "Unlimited (Unlocked)"};
+        ArrayAdapter<String> fpsAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_dropdown_item, fpsOptions);
         fpsSpinner.setAdapter(fpsAdapter);
         layout.addView(fpsSpinner);
 
         layout.addView(createSpacer(20));
 
         layout.addView(createLabel("Graphics Backend (Driver):"));
-        Spinner apiSpinner = new Spinner(this);
-        String[] apis = {"Vulkan (Recommended for Adreno & Mali)", "OpenGL ES 3.2 (Compatibility Mode)"};
-        ArrayAdapter<String> apiAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, apis);
+        final Spinner apiSpinner = new Spinner(this);
+        String[] apis = new String[]{"Vulkan (Recommended for Adreno & Mali)", "OpenGL ES 3.2 (Compatibility Mode)"};
+        ArrayAdapter<String> apiAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_dropdown_item, apis);
         apiSpinner.setAdapter(apiAdapter);
         layout.addView(apiSpinner);
 
@@ -237,12 +243,15 @@ public class MainActivity extends Activity {
         saveBtn.setTextColor(Color.WHITE);
         saveBtn.setBackground(createRoundBackground(0xFF00C853, 16, 0, 0));
         saveBtn.setPadding(30, 20, 30, 20);
-        saveBtn.setOnClickListener(v -> {
-            selectedResolution = resSpinner.getSelectedItem().toString();
-            selectedFps = fpsSpinner.getSelectedItem().toString();
-            selectedGraphicsApi = apiSpinner.getSelectedItem().toString();
-            Toast.makeText(this, "Settings Applied Successfully!", Toast.LENGTH_SHORT).show();
-            showMainMenu();
+        saveBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                selectedResolution = resSpinner.getSelectedItem().toString();
+                selectedFps = fpsSpinner.getSelectedItem().toString();
+                selectedGraphicsApi = apiSpinner.getSelectedItem().toString();
+                Toast.makeText(MainActivity.this, "Settings Applied Successfully!", Toast.LENGTH_SHORT).show();
+                showMainMenu();
+            }
         });
         layout.addView(saveBtn);
 
@@ -253,14 +262,19 @@ public class MainActivity extends Activity {
         cancelBtn.setTextColor(Color.WHITE);
         cancelBtn.setBackground(createRoundBackground(0xFF37474F, 16, 0, 0));
         cancelBtn.setPadding(30, 15, 30, 15);
-        cancelBtn.setOnClickListener(v -> showMainMenu());
+        cancelBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                showMainMenu();
+            }
+        });
         layout.addView(cancelBtn);
 
         scrollView.addView(layout);
         setContentView(scrollView);
     }
 
-    // --- GameHub टच कंट्रोलर गेम स्क्रीन ---
+    // 3. गेम स्क्रीन और टच कंट्रोलर
     private void showGameHubScreen() {
         hideSystemUI();
         RelativeLayout gameLayout = new RelativeLayout(this);
@@ -277,7 +291,7 @@ public class MainActivity extends Activity {
                 RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.MATCH_PARENT);
         gameLayout.addView(screenView, screenParams);
 
-        // L1, L2
+        // L1, L2 (Top Left)
         LinearLayout leftShoulder = new LinearLayout(this);
         leftShoulder.setOrientation(LinearLayout.HORIZONTAL);
         leftShoulder.addView(createShoulderButton("L2"));
@@ -292,7 +306,7 @@ public class MainActivity extends Activity {
         lsParams.topMargin = dpToPx(15);
         gameLayout.addView(leftShoulder, lsParams);
 
-        // R1, R2
+        // R1, R2 (Top Right)
         LinearLayout rightShoulder = new LinearLayout(this);
         rightShoulder.setOrientation(LinearLayout.HORIZONTAL);
         rightShoulder.addView(createShoulderButton("R1"));
@@ -309,7 +323,12 @@ public class MainActivity extends Activity {
 
         // सेंटर मेन्यू बटन
         Button btnExit = createCapsuleButton("MENU", 0x33FFFFFF);
-        btnExit.setOnClickListener(v -> showMainMenu());
+        btnExit.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                showMainMenu();
+            }
+        });
         RelativeLayout.LayoutParams exitParams = new RelativeLayout.LayoutParams(
                 RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
         exitParams.addRule(RelativeLayout.ALIGN_PARENT_TOP);
@@ -317,7 +336,7 @@ public class MainActivity extends Activity {
         exitParams.topMargin = dpToPx(15);
         gameLayout.addView(btnExit, exitParams);
 
-        // D-PAD
+        // D-PAD (Left Side)
         RelativeLayout dpadLayout = new RelativeLayout(this);
         int btnSize = dpToPx(55);
 
@@ -326,10 +345,10 @@ public class MainActivity extends Activity {
         Button left = createCircularButton("◀", 0x33FFFFFF, 0x55FFFFFF, Color.WHITE, btnSize);
         Button right = createCircularButton("▶", 0x33FFFFFF, 0x55FFFFFF, Color.WHITE, btnSize);
 
-        up.setId(View.generateViewId());
-        down.setId(View.generateViewId());
-        left.setId(View.generateViewId());
-        right.setId(View.generateViewId());
+        up.setId(1001);
+        down.setId(1002);
+        left.setId(1003);
+        right.setId(1004);
 
         RelativeLayout.LayoutParams pUp = new RelativeLayout.LayoutParams(btnSize, btnSize);
         pUp.addRule(RelativeLayout.CENTER_HORIZONTAL);
@@ -360,7 +379,7 @@ public class MainActivity extends Activity {
         dpadLayout.addView(right, pRight);
         gameLayout.addView(dpadLayout, dpadBoxParams);
 
-        // PS Buttons
+        // PS सिंबल्स (△, ○, ✕, ◻ - Right Side)
         RelativeLayout actionLayout = new RelativeLayout(this);
 
         Button triangle = createCircularButton("△", 0x2A00E676, 0x8800E676, 0xFF00E676, btnSize);
@@ -368,10 +387,10 @@ public class MainActivity extends Activity {
         Button cross = createCircularButton("✕", 0x2A2979FF, 0x882979FF, 0xFF2979FF, btnSize);
         Button square = createCircularButton("◻", 0x2AF50057, 0x88F50057, 0xFFF50057, btnSize);
 
-        triangle.setId(View.generateViewId());
-        circle.setId(View.generateViewId());
-        cross.setId(View.generateViewId());
-        square.setId(View.generateViewId());
+        triangle.setId(2001);
+        circle.setId(2002);
+        cross.setId(2003);
+        square.setId(2004);
 
         RelativeLayout.LayoutParams pTri = new RelativeLayout.LayoutParams(btnSize, btnSize);
         pTri.addRule(RelativeLayout.CENTER_HORIZONTAL);
@@ -401,7 +420,7 @@ public class MainActivity extends Activity {
         actionLayout.addView(circle, pCir);
         gameLayout.addView(actionLayout, actionBoxParams);
 
-        // SELECT & START
+        // SELECT & START (Bottom Center)
         LinearLayout centerPills = new LinearLayout(this);
         centerPills.setOrientation(LinearLayout.HORIZONTAL);
         centerPills.addView(createCapsuleButton("SELECT", 0x2AFFFFFF));
@@ -438,20 +457,14 @@ public class MainActivity extends Activity {
         return v;
     }
 
-    private Button createCircularButton(String label, int bgColor, int strokeColor, int textColor, int size) {
+    private Button createCircularButton(final String label, int bgColor, int strokeColor, int textColor, int size) {
         Button btn = new Button(this);
         btn.setText(label);
         btn.setTextSize(20);
         btn.setTextColor(textColor);
         btn.setGravity(Gravity.CENTER);
         btn.setBackground(createRoundBackground(bgColor, size / 2, strokeColor, 2));
-        btn.setOnClickListener(v -> Toast.makeText(this, label + " Pressed", Toast.LENGTH_SHORT).show());
-        return btn;
-    }
-
-    private Button createShoulderButton(String label) {
-        Button btn = new Button(this);
-        btn.setText(label);
-        btn.setTextSize(13);
-        btn.setTextColor(Color.WHITE);
-        btn.setBackground(createRoundBackground(0x2AFFFFFF, 12, 0x
+        btn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+           
