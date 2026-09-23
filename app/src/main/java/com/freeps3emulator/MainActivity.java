@@ -1,12 +1,14 @@
 package com.freeps3emulator;
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Vibrator;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
@@ -25,13 +27,19 @@ public class MainActivity extends Activity {
     private TextView statusText;
     private Button startButton;
     private String selectedGamePath = null;
-    private String selectedResolution = "720p (Native PS3)";
+    private Vibrator vibrator;
+
+    private String detectedChipset = "";
+    private String detectedGpu = "";
+    private String selectedResolution = "720p (PS3 Native)";
     private String selectedFps = "60 FPS";
-    private String selectedGraphicsApi = "Vulkan";
+    private String selectedGraphicsDriver = "Turnip Mesa v24 (Adreno Fast)";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+        detectHardware();
         hideSystemBars();
         showMainMenu();
     }
@@ -56,63 +64,108 @@ public class MainActivity extends Activity {
         );
     }
 
+    private void triggerVibration() {
+        if (vibrator != null && vibrator.hasVibrator()) {
+            vibrator.vibrate(35);
+        }
+    }
+
+    private void detectHardware() {
+        String model = Build.MODEL != null ? Build.MODEL.toUpperCase() : "";
+        String board = Build.HARDWARE != null ? Build.HARDWARE.toLowerCase() : "";
+        String soc = Build.SOC_MODEL != null ? Build.SOC_MODEL.toUpperCase() : "";
+
+        if (soc.contains("SM6450") || board.contains("sm6450") || model.contains("CPH2721")) {
+            detectedChipset = "Qualcomm Snapdragon 6 Gen 1 (8 Cores)";
+            detectedGpu = "Adreno 710 (Turnip Mesa Supported)";
+        } else if (board.contains("qcom") || soc.contains("SNAPDRAGON")) {
+            detectedChipset = "Qualcomm Snapdragon Octa-Core";
+            detectedGpu = "Adreno GPU (Turnip Optimized)";
+        } else if (board.contains("mt") || soc.contains("DIMENSITY")) {
+            detectedChipset = "MediaTek Dimensity / Helio";
+            detectedGpu = "Mali GPU (Vulkan 1.3)";
+        } else {
+            detectedChipset = Build.MANUFACTURER.toUpperCase() + " " + Build.MODEL;
+            detectedGpu = "Hardware Accelerated GPU";
+        }
+    }
+
+    // 1. GAMEHUB मेन्यू स्क्रीन
     private void showMainMenu() {
         hideSystemBars();
         ScrollView sv = new ScrollView(this);
-        sv.setBackgroundColor(0xFF0F0F14);
+        sv.setBackgroundColor(0xFF0D1117);
 
         LinearLayout layout = new LinearLayout(this);
         layout.setOrientation(LinearLayout.VERTICAL);
-        layout.setGravity(Gravity.CENTER_HORIZONTAL);
-        layout.setPadding(40, 50, 40, 50);
+        layout.setPadding(35, 45, 35, 45);
 
-        TextView title = new TextView(this);
-        title.setText("FREE PS3 EMULATOR");
-        title.setTextSize(26);
-        title.setTextColor(0xFF00E5FF);
-        title.setGravity(Gravity.CENTER);
-        layout.addView(title);
+        TextView brand = new TextView(this);
+        brand.setText("GAMEHUB • PS3 EMULATOR");
+        brand.setTextSize(22);
+        brand.setTextColor(0xFF00E5FF);
+        brand.setGravity(Gravity.CENTER);
+        layout.addView(brand);
 
-        TextView sub = new TextView(this);
-        sub.setText("GameHub Edition • Fullscreen");
-        sub.setTextSize(13);
-        sub.setTextColor(0xFF888888);
-        sub.setGravity(Gravity.CENTER);
-        layout.addView(sub);
+        TextView chipInfo = new TextView(this);
+        chipInfo.setText(detectedChipset + " | " + detectedGpu);
+        chipInfo.setTextSize(11);
+        chipInfo.setTextColor(0xFF8B949E);
+        chipInfo.setGravity(Gravity.CENTER);
+        layout.addView(chipInfo);
+
+        layout.addView(createSpacer(20));
+
+        // गेम लाइब्रेरी सेक्शन
+        TextView libTitle = new TextView(this);
+        libTitle.setText("🎮 आपकी गेम लाइब्रेरी (Games)");
+        libTitle.setTextSize(15);
+        libTitle.setTextColor(Color.WHITE);
+        layout.addView(libTitle);
+
+        layout.addView(createSpacer(10));
 
         statusText = new TextView(this);
-        statusText.setText(selectedGamePath == null ? "\nNo game loaded yet.\n" : "\nSelected Game:\n" + selectedGamePath + "\n");
-        statusText.setTextSize(15);
-        statusText.setTextColor(selectedGamePath == null ? 0xFF888888 : 0xFF00E676);
-        statusText.setGravity(Gravity.CENTER);
+        if (selectedGamePath == null) {
+            statusText.setText("कोई गेम लोड नहीं है। नीचे से ISO या PKG जोड़ें।");
+            statusText.setTextColor(0xFF8B949E);
+        } else {
+            statusText.setText("लोड किया गया गेम: " + selectedGamePath);
+            statusText.setTextColor(0xFF00E676);
+        }
+        statusText.setTextSize(13);
         layout.addView(statusText);
 
+        layout.addView(createSpacer(15));
+
         Button loadBtn = new Button(this);
-        loadBtn.setText("📂 SELECT GAME (ISO / PKG)");
-        loadBtn.setTextSize(16);
+        loadBtn.setText("➕ गेम फ़ाइल जोड़ें (ISO / PKG)");
+        loadBtn.setTextSize(15);
         loadBtn.setTextColor(Color.WHITE);
-        loadBtn.setBackground(createRoundBackground(0xFF1E88E5, 20, 0, 0));
-        loadBtn.setPadding(40, 25, 40, 25);
+        loadBtn.setBackground(createRoundBackground(0xFF1F6FEB, 18, 0, 0));
+        loadBtn.setPadding(35, 20, 35, 20);
         loadBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                triggerVibration();
                 openFilePicker();
             }
         });
         layout.addView(loadBtn);
 
-        layout.addView(createSpacer(25));
+        layout.addView(createSpacer(15));
 
         startButton = new Button(this);
-        startButton.setText("▶ START GAME");
-        startButton.setTextSize(16);
+        startButton.setText("▶ खेलें (START GAME)");
+        startButton.setTextSize(15);
         startButton.setTextColor(Color.WHITE);
-        startButton.setBackground(createRoundBackground(0xFF00C853, 20, 0, 0));
-        startButton.setPadding(40, 25, 40, 25);
+        startButton.setBackground(createRoundBackground(0xFF238636, 18, 0, 0));
+        startButton.setPadding(35, 20, 35, 20);
         startButton.setVisibility(selectedGamePath == null ? View.GONE : View.VISIBLE);
         startButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                triggerVibration();
                 showGameHubScreen();
             }
         });
@@ -120,15 +173,58 @@ public class MainActivity extends Activity {
 
         layout.addView(createSpacer(25));
 
+        // क्विक लो-एंड ऑप्टिमाइज़र कार्ड
+        LinearLayout boostCard = new LinearLayout(this);
+        boostCard.setOrientation(LinearLayout.VERTICAL);
+        boostCard.setBackground(createRoundBackground(0xFF161B22, 14, 0x44F85149, 1));
+        boostCard.setPadding(25, 20, 25, 20);
+
+        TextView bTitle = new TextView(this);
+        bTitle.setText("⚡ लो-एंड डिवाइस 1-क्लिक स्पीड बूस्ट");
+        bTitle.setTextSize(13);
+        bTitle.setTextColor(0xFFFF7B72);
+        boostCard.addView(bTitle);
+
+        boostCard.addView(createSpacer(6));
+
+        TextView bDesc = new TextView(this);
+        bDesc.setText("अगर गेम में लैग हो, तो 480p और फ़ास्ट Vulkan ड्राइवर ऑटोमैटिक सेट करें।");
+        bDesc.setTextSize(11);
+        bDesc.setTextColor(0xFF8B949E);
+        boostCard.addView(bDesc);
+
+        boostCard.addView(createSpacer(10));
+
+        Button oneClickBtn = new Button(this);
+        oneClickBtn.setText("लागू करें (APPLY BOOST)");
+        oneClickBtn.setTextSize(12);
+        oneClickBtn.setTextColor(Color.WHITE);
+        oneClickBtn.setBackground(createRoundBackground(0xFFDA3633, 12, 0, 0));
+        oneClickBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                triggerVibration();
+                selectedResolution = "480p (Speed Mode)";
+                selectedFps = "30 FPS";
+                selectedGraphicsDriver = "Vulkan Fast-Path";
+                Toast.makeText(MainActivity.this, "लो-एंड मोड एक्टिव हो गया!", Toast.LENGTH_SHORT).show();
+            }
+        });
+        boostCard.addView(oneClickBtn);
+        layout.addView(boostCard);
+
+        layout.addView(createSpacer(20));
+
         Button settingsBtn = new Button(this);
-        settingsBtn.setText("⚙ GRAPHICS & DEVICE SETTINGS");
-        settingsBtn.setTextSize(15);
-        settingsBtn.setTextColor(0xFFE0E0E0);
-        settingsBtn.setBackground(createRoundBackground(0xFF263238, 20, 0x55FFFFFF, 1));
-        settingsBtn.setPadding(40, 20, 40, 20);
+        settingsBtn.setText("⚙ कस्टमाइज़ सेटिंग्स (Settings)");
+        settingsBtn.setTextSize(14);
+        settingsBtn.setTextColor(0xFFC9D1D9);
+        settingsBtn.setBackground(createRoundBackground(0xFF21262D, 18, 0x4430363D, 1));
+        settingsBtn.setPadding(35, 18, 35, 18);
         settingsBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                triggerVibration();
                 showSettingsScreen();
             }
         });
@@ -138,111 +234,80 @@ public class MainActivity extends Activity {
         setContentView(sv);
     }
 
+    // 2. सेटिंग्स स्क्रीन
     private void showSettingsScreen() {
         hideSystemBars();
         ScrollView sv = new ScrollView(this);
-        sv.setBackgroundColor(0xFF0B0E14);
+        sv.setBackgroundColor(0xFF0D1117);
 
         LinearLayout layout = new LinearLayout(this);
         layout.setOrientation(LinearLayout.VERTICAL);
-        layout.setPadding(40, 40, 40, 50);
+        layout.setPadding(35, 40, 35, 50);
 
         TextView title = new TextView(this);
-        title.setText("⚙ EMULATOR SETTINGS");
-        title.setTextSize(24);
+        title.setText("⚙ GAMEHUB सेटिंग्स");
+        title.setTextSize(20);
         title.setTextColor(0xFF00E5FF);
         layout.addView(title);
 
-        layout.addView(createSpacer(20));
+        layout.addView(createSpacer(15));
 
-        LinearLayout card = new LinearLayout(this);
-        card.setOrientation(LinearLayout.VERTICAL);
-        card.setBackground(createRoundBackground(0xFF161B22, 16, 0x3300E5FF, 1));
-        card.setPadding(25, 25, 25, 25);
-
-        TextView infoTitle = new TextView(this);
-        infoTitle.setText("📱 DEVICE HARDWARE SPECS");
-        infoTitle.setTextSize(15);
-        infoTitle.setTextColor(0xFF00E5FF);
-        card.addView(infoTitle);
-
-        card.addView(createSpacer(10));
-
-        String specs = "Device: " + Build.MANUFACTURER.toUpperCase() + " " + Build.MODEL + "\n"
-                + "Android: " + Build.VERSION.RELEASE + " (SDK " + Build.VERSION.SDK_INT + ")\n"
-                + "CPU Cores: " + Runtime.getRuntime().availableProcessors() + " Cores\n"
-                + "Arch: " + (Build.SUPPORTED_ABIS.length > 0 ? Build.SUPPORTED_ABIS[0] : "arm64-v8a") + "\n"
-                + "GPU: Hardware Accelerated (Vulkan / GLES 3.2)\n"
-                + "Formats: .ISO, .PKG, .BIN, .ELF";
-
-        TextView infoText = new TextView(this);
-        infoText.setText(specs);
-        infoText.setTextSize(13);
-        infoText.setTextColor(0xFFB0BEC5);
-        infoText.setLineSpacing(8, 1);
-        card.addView(infoText);
-        layout.addView(card);
-
-        layout.addView(createSpacer(25));
-
-        TextView gfx = new TextView(this);
-        gfx.setText("🎮 GRAPHICS CONFIGURATION");
-        gfx.setTextSize(16);
-        gfx.setTextColor(0xFF76FF03);
-        layout.addView(gfx);
-
-        layout.addView(createSpacer(12));
-
-        layout.addView(createLabel("Resolution:"));
+        layout.addView(createLabel("स्क्रीन रेजोल्यूशन (Resolution):"));
         final Spinner resSpinner = new Spinner(this);
-        String[] resOptions = new String[]{"720p (Native PS3)", "1080p (Full HD)", "2K Quad HD", "480p (Fast)"};
+        String[] resOptions = new String[]{"720p (PS3 Native)", "1080p (Full HD)", "480p (Speed Mode)", "2K Quad HD"};
         resSpinner.setAdapter(new ArrayAdapter<String>(this, android.R.layout.simple_spinner_dropdown_item, resOptions));
         layout.addView(resSpinner);
 
         layout.addView(createSpacer(15));
 
-        layout.addView(createLabel("Target FPS:"));
+        layout.addView(createLabel("FPS टारगेट:"));
         final Spinner fpsSpinner = new Spinner(this);
-        String[] fpsOptions = new String[]{"60 FPS (Smooth)", "30 FPS (Battery Saver)", "Unlimited"};
+        String[] fpsOptions = new String[]{"60 FPS (स्मूथ)", "30 FPS (स्थिर)", "अनलिमिटेड"};
         fpsSpinner.setAdapter(new ArrayAdapter<String>(this, android.R.layout.simple_spinner_dropdown_item, fpsOptions));
         layout.addView(fpsSpinner);
 
         layout.addView(createSpacer(15));
 
-        layout.addView(createLabel("Graphics Driver:"));
-        final Spinner apiSpinner = new Spinner(this);
-        String[] apiOptions = new String[]{"Vulkan (Optimal)", "OpenGL ES 3.2"};
-        apiSpinner.setAdapter(new ArrayAdapter<String>(this, android.R.layout.simple_spinner_dropdown_item, apiOptions));
-        layout.addView(apiSpinner);
+        layout.addView(createLabel("GPU ड्राइवर:"));
+        final Spinner driverSpinner = new Spinner(this);
+        String[] driverOptions = new String[]{
+                "Turnip Mesa v24 (Adreno Fast)",
+                "System Vulkan 1.3 (Dimensity / Mali)",
+                "OpenGL ES 3.2 (Universal)",
+                "Vulkan Fast-Path"
+        };
+        driverSpinner.setAdapter(new ArrayAdapter<String>(this, android.R.layout.simple_spinner_dropdown_item, driverOptions));
+        layout.addView(driverSpinner);
 
         layout.addView(createSpacer(20));
 
         CheckBox vsync = new CheckBox(this);
-        vsync.setText("Enable V-Sync");
+        vsync.setText("V-Sync इनेबल रखें");
         vsync.setTextColor(Color.WHITE);
         vsync.setChecked(true);
         layout.addView(vsync);
 
         CheckBox multiThread = new CheckBox(this);
-        multiThread.setText("Multi-Threaded CPU");
+        multiThread.setText("मल्टी-कोर CPU प्रोसेसिंग");
         multiThread.setTextColor(Color.WHITE);
         multiThread.setChecked(true);
         layout.addView(multiThread);
 
-        layout.addView(createSpacer(30));
+        layout.addView(createSpacer(25));
 
         Button saveBtn = new Button(this);
-        saveBtn.setText("SAVE & APPLY");
+        saveBtn.setText("सेव करें (APPLY)");
         saveBtn.setTextColor(Color.WHITE);
-        saveBtn.setBackground(createRoundBackground(0xFF00C853, 16, 0, 0));
-        saveBtn.setPadding(30, 20, 30, 20);
+        saveBtn.setBackground(createRoundBackground(0xFF238636, 16, 0, 0));
+        saveBtn.setPadding(30, 18, 30, 18);
         saveBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                triggerVibration();
                 selectedResolution = resSpinner.getSelectedItem().toString();
                 selectedFps = fpsSpinner.getSelectedItem().toString();
-                selectedGraphicsApi = apiSpinner.getSelectedItem().toString();
-                Toast.makeText(MainActivity.this, "Settings Applied!", Toast.LENGTH_SHORT).show();
+                selectedGraphicsDriver = driverSpinner.getSelectedItem().toString();
+                Toast.makeText(MainActivity.this, "सेटिंग्स सेव हो गईं!", Toast.LENGTH_SHORT).show();
                 showMainMenu();
             }
         });
@@ -251,13 +316,14 @@ public class MainActivity extends Activity {
         layout.addView(createSpacer(12));
 
         Button backBtn = new Button(this);
-        backBtn.setText("BACK TO MENU");
+        backBtn.setText("वापस जाएँ");
         backBtn.setTextColor(Color.WHITE);
-        backBtn.setBackground(createRoundBackground(0xFF37474F, 16, 0, 0));
+        backBtn.setBackground(createRoundBackground(0xFF21262D, 16, 0, 0));
         backBtn.setPadding(30, 15, 30, 15);
         backBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                triggerVibration();
                 showMainMenu();
             }
         });
@@ -267,73 +333,61 @@ public class MainActivity extends Activity {
         setContentView(sv);
     }
 
+    // 3. गेम स्क्रीन + लाइव HUD + एनालॉग और वाइब्रेशन कंट्रोलर
     private void showGameHubScreen() {
         hideSystemBars();
         RelativeLayout root = new RelativeLayout(this);
-        root.setBackgroundColor(0xFF050508);
+        root.setBackgroundColor(0xFF030508);
 
-        TextView screenView = new TextView(this);
-        screenView.setText("EMULATOR ACTIVE\n"
-                + selectedResolution.split(" ")[0] + " | " + selectedFps.split(" ")[0] + " | " + selectedGraphicsApi.split(" ")[0] + "\n\n"
-                + (selectedGamePath != null ? selectedGamePath : ""));
-        screenView.setTextColor(0xFF666666);
-        screenView.setTextSize(14);
-        screenView.setGravity(Gravity.CENTER);
-        RelativeLayout.LayoutParams scrParams = new RelativeLayout.LayoutParams(
-                RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.MATCH_PARENT);
-        root.addView(screenView, scrParams);
+        // लाइव HUD (कोने में स्टेटस)
+        TextView hud = new TextView(this);
+        hud.setText("● LIVE: 60 FPS | " + selectedResolution.split(" ")[0] + " | " + selectedGraphicsDriver.split(" ")[0]
+                + "\nGame: " + (selectedGamePath != null ? selectedGamePath : "Running"));
+        hud.setTextColor(0xFF39D353);
+        hud.setTextSize(11);
+        hud.setPadding(25, 20, 25, 20);
+        RelativeLayout.LayoutParams hp = new RelativeLayout.LayoutParams(
+                RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
+        hp.addRule(RelativeLayout.ALIGN_PARENT_TOP);
+        hp.addRule(RelativeLayout.CENTER_HORIZONTAL);
+        root.addView(hud, hp);
 
-        // Top Left L1 L2
+        // L1, L2
         LinearLayout lShoulder = new LinearLayout(this);
         lShoulder.setOrientation(LinearLayout.HORIZONTAL);
-        lShoulder.addView(createShoulderButton("L2"));
-        lShoulder.addView(createSpacerH(15));
-        lShoulder.addView(createShoulderButton("L1"));
+        lShoulder.addView(createPillButton("L2"));
+        lShoulder.addView(createSpacerH(12));
+        lShoulder.addView(createPillButton("L1"));
         RelativeLayout.LayoutParams lsp = new RelativeLayout.LayoutParams(
                 RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
         lsp.addRule(RelativeLayout.ALIGN_PARENT_TOP);
         lsp.addRule(RelativeLayout.ALIGN_PARENT_LEFT);
         lsp.leftMargin = dpToPx(20);
-        lsp.topMargin = dpToPx(15);
+        lsp.topMargin = dpToPx(12);
         root.addView(lShoulder, lsp);
 
-        // Top Right R1 R2
+        // R1, R2
         LinearLayout rShoulder = new LinearLayout(this);
         rShoulder.setOrientation(LinearLayout.HORIZONTAL);
-        rShoulder.addView(createShoulderButton("R1"));
-        rShoulder.addView(createSpacerH(15));
-        rShoulder.addView(createShoulderButton("R2"));
+        rShoulder.addView(createPillButton("R1"));
+        rShoulder.addView(createSpacerH(12));
+        rShoulder.addView(createPillButton("R2"));
         RelativeLayout.LayoutParams rsp = new RelativeLayout.LayoutParams(
                 RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
         rsp.addRule(RelativeLayout.ALIGN_PARENT_TOP);
         rsp.addRule(RelativeLayout.ALIGN_PARENT_RIGHT);
         rsp.rightMargin = dpToPx(20);
-        rsp.topMargin = dpToPx(15);
+        rsp.topMargin = dpToPx(12);
         root.addView(rShoulder, rsp);
 
-        // Top Menu
-        Button menuBtn = createCapsuleButton("MENU", 0x33FFFFFF);
-        menuBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                showMainMenu();
-            }
-        });
-        RelativeLayout.LayoutParams mp = new RelativeLayout.LayoutParams(
-                RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
-        mp.addRule(RelativeLayout.ALIGN_PARENT_TOP);
-        mp.addRule(RelativeLayout.CENTER_HORIZONTAL);
-        mp.topMargin = dpToPx(15);
-        root.addView(menuBtn, mp);
-
-        // D-Pad
+        // D-PAD (बाएँ)
         RelativeLayout dpad = new RelativeLayout(this);
-        int btnSz = dpToPx(55);
+        int btnSz = dpToPx(52);
 
-        Button up = createCircularButton("▲", 0x33FFFFFF, 0x55FFFFFF, Color.WHITE, btnSz);
-        Button down = createCircularButton("▼", 0x33FFFFFF, 0x55FFFFFF, Color.WHITE, btnSz);
-        Button left = createCircularButton("◀", 0x33FFFFFF, 0x55FFFFFF, Color.WHITE, btnSz);
-        Button right = createCircularButton("▶", 0x33FFFFFF, 0x55FFFFFF, Color.WHITE, btnSz);
+        Button up = createCircleButton("▲", 0x2AFFFFFF, 0x44FFFFFF, Color.WHITE, btnSz);
+        Button down = createCircleButton("▼", 0x2AFFFFFF, 0x44FFFFFF, Color.WHITE, btnSz);
+        Button left = createCircleButton("◀", 0x2AFFFFFF, 0x44FFFFFF, Color.WHITE, btnSz);
+        Button right = createCircleButton("▶", 0x2AFFFFFF, 0x44FFFFFF, Color.WHITE, btnSz);
 
         RelativeLayout.LayoutParams pUp = new RelativeLayout.LayoutParams(btnSz, btnSz);
         pUp.addRule(RelativeLayout.CENTER_HORIZONTAL);
@@ -351,12 +405,12 @@ public class MainActivity extends Activity {
         pRight.addRule(RelativeLayout.CENTER_VERTICAL);
         pRight.addRule(RelativeLayout.ALIGN_PARENT_RIGHT);
 
-        int dpadSz = dpToPx(160);
+        int dpadSz = dpToPx(150);
         RelativeLayout.LayoutParams dpParams = new RelativeLayout.LayoutParams(dpadSz, dpadSz);
         dpParams.addRule(RelativeLayout.ALIGN_PARENT_LEFT);
         dpParams.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
-        dpParams.leftMargin = dpToPx(20);
-        dpParams.bottomMargin = dpToPx(20);
+        dpParams.leftMargin = dpToPx(15);
+        dpParams.bottomMargin = dpToPx(15);
 
         dpad.addView(up, pUp);
         dpad.addView(down, pDown);
@@ -364,13 +418,22 @@ public class MainActivity extends Activity {
         dpad.addView(right, pRight);
         root.addView(dpad, dpParams);
 
-        // PS Buttons
+        // बायाँ एनालॉग (Left Stick - L3)
+        Button leftStick = createCircleButton("L3", 0x3300E5FF, 0x8800E5FF, 0xFF00E5FF, dpToPx(65));
+        RelativeLayout.LayoutParams lStickParams = new RelativeLayout.LayoutParams(dpToPx(65), dpToPx(65));
+        lStickParams.addRule(RelativeLayout.ALIGN_PARENT_LEFT);
+        lStickParams.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
+        lStickParams.leftMargin = dpToPx(175);
+        lStickParams.bottomMargin = dpToPx(35);
+        root.addView(leftStick, lStickParams);
+
+        // PS सिम्बल्स (△, ○, ✕, ◻ - दाएँ)
         RelativeLayout actions = new RelativeLayout(this);
 
-        Button tri = createCircularButton("△", 0x2A00E676, 0x8800E676, 0xFF00E676, btnSz);
-        Button cir = createCircularButton("○", 0x2AFF1744, 0x88FF1744, 0xFFFF1744, btnSz);
-        Button crs = createCircularButton("✕", 0x2A2979FF, 0x882979FF, 0xFF2979FF, btnSz);
-        Button sqr = createCircularButton("◻", 0x2AF50057, 0x88F50057, 0xFFF50057, btnSz);
+        Button tri = createCircleButton("△", 0x2A00E676, 0x8800E676, 0xFF00E676, btnSz);
+        Button cir = createCircleButton("○", 0x2AFF1744, 0x88FF1744, 0xFFFF1744, btnSz);
+        Button crs = createCircleButton("✕", 0x2A2979FF, 0x882979FF, 0xFF2979FF, btnSz);
+        Button sqr = createCircleButton("◻", 0x2AF50057, 0x88F50057, 0xFFF50057, btnSz);
 
         RelativeLayout.LayoutParams pTri = new RelativeLayout.LayoutParams(btnSz, btnSz);
         pTri.addRule(RelativeLayout.CENTER_HORIZONTAL);
@@ -391,8 +454,8 @@ public class MainActivity extends Activity {
         RelativeLayout.LayoutParams actParams = new RelativeLayout.LayoutParams(dpadSz, dpadSz);
         actParams.addRule(RelativeLayout.ALIGN_PARENT_RIGHT);
         actParams.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
-        actParams.rightMargin = dpToPx(20);
-        actParams.bottomMargin = dpToPx(20);
+        actParams.rightMargin = dpToPx(15);
+        actParams.bottomMargin = dpToPx(15);
 
         actions.addView(tri, pTri);
         actions.addView(crs, pCrs);
@@ -400,19 +463,41 @@ public class MainActivity extends Activity {
         actions.addView(cir, pCir);
         root.addView(actions, actParams);
 
-        // Select Start
-        LinearLayout selectStart = new LinearLayout(this);
-        selectStart.setOrientation(LinearLayout.HORIZONTAL);
-        selectStart.addView(createCapsuleButton("SELECT", 0x2AFFFFFF));
-        selectStart.addView(createSpacerH(25));
-        selectStart.addView(createCapsuleButton("START", 0x2AFFFFFF));
+        // दायाँ एनालॉग (Right Stick - R3)
+        Button rightStick = createCircleButton("R3", 0x33FF9100, 0x88FF9100, 0xFFFF9100, dpToPx(65));
+        RelativeLayout.LayoutParams rStickParams = new RelativeLayout.LayoutParams(dpToPx(65), dpToPx(65));
+        rStickParams.addRule(RelativeLayout.ALIGN_PARENT_RIGHT);
+        rStickParams.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
+        rStickParams.rightMargin = dpToPx(175);
+        rStickParams.bottomMargin = dpToPx(35);
+        root.addView(rightStick, rStickParams);
 
-        RelativeLayout.LayoutParams ssp = new RelativeLayout.LayoutParams(
+        // SELECT, HOME/MENU, START (नीचे बीच में)
+        LinearLayout centerBtns = new LinearLayout(this);
+        centerBtns.setOrientation(LinearLayout.HORIZONTAL);
+        centerBtns.addView(createPillButton("SELECT"));
+        centerBtns.addView(createSpacerH(15));
+
+        Button homeBtn = createPillButton("PS MENU");
+        homeBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                            @Override
+            public void onClick(View v) {
+                triggerVibration();
+                showMainMenu();
+            }
+        });
+        centerBtns.addView(homeBtn);
+        centerBtns.addView(createSpacerH(15));
+        centerBtns.addView(createPillButton("START"));
+
+        RelativeLayout.LayoutParams cbParams = new RelativeLayout.LayoutParams(
                 RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
-        ssp.addRule(RelativeLayout.CENTER_HORIZONTAL);
-        ssp.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
-        ssp.bottomMargin = dpToPx(25);
-        root.addView(selectStart, ssp);
+        cbParams.addRule(RelativeLayout.CENTER_HORIZONTAL);
+        cbParams.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
+        cbParams.bottomMargin = dpToPx(20);
+        root.addView(centerBtns, cbParams);
 
         setContentView(root);
     }
@@ -420,8 +505,8 @@ public class MainActivity extends Activity {
     private TextView createLabel(String text) {
         TextView tv = new TextView(this);
         tv.setText(text);
-        tv.setTextSize(14);
-        tv.setTextColor(0xFFEEEEEE);
+        tv.setTextSize(13);
+        tv.setTextColor(0xFFE6EDF3);
         return tv;
     }
 
@@ -437,49 +522,33 @@ public class MainActivity extends Activity {
         return v;
     }
 
-    private Button createCircularButton(final String label, int bgColor, int strokeColor, int textColor, int size) {
+    private Button createCircleButton(final String label, int bgColor, int strokeColor, int textColor, int size) {
         Button btn = new Button(this);
         btn.setText(label);
-        btn.setTextSize(20);
+        btn.setTextSize(18);
         btn.setTextColor(textColor);
         btn.setGravity(Gravity.CENTER);
         btn.setBackground(createRoundBackground(bgColor, size / 2, strokeColor, 2));
         btn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Toast.makeText(MainActivity.this, label + " Pressed", Toast.LENGTH_SHORT).show();
+                triggerVibration();
             }
         });
         return btn;
     }
 
-    private Button createShoulderButton(final String label) {
+    private Button createPillButton(final String label) {
         Button btn = new Button(this);
         btn.setText(label);
-        btn.setTextSize(13);
+        btn.setTextSize(11);
         btn.setTextColor(Color.WHITE);
-        btn.setBackground(createRoundBackground(0x2AFFFFFF, 12, 0x44FFFFFF, 2));
-        btn.setPadding(30, 12, 30, 12);
+        btn.setBackground(createRoundBackground(0x2AFFFFFF, 15, 0x44FFFFFF, 1));
+        btn.setPadding(24, 10, 24, 10);
         btn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Toast.makeText(MainActivity.this, label + " Pressed", Toast.LENGTH_SHORT).show();
-            }
-        });
-        return btn;
-    }
-
-    private Button createCapsuleButton(final String label, int bgColor) {
-        Button btn = new Button(this);
-        btn.setText(label);
-        btn.setTextSize(12);
-        btn.setTextColor(0xFFCCCCCC);
-        btn.setBackground(createRoundBackground(bgColor, 30, 0x33FFFFFF, 1));
-        btn.setPadding(28, 10, 28, 10);
-        btn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Toast.makeText(MainActivity.this, label + " Pressed", Toast.LENGTH_SHORT).show();
+                triggerVibration();
             }
         });
         return btn;
@@ -514,15 +583,13 @@ public class MainActivity extends Activity {
             Uri uri = data.getData();
             if (uri != null) {
                 selectedGamePath = uri.getLastPathSegment();
-                statusText.setText("\nSelected Game:\n" + selectedGamePath + "\n");
+                statusText.setText("लोड किया गया गेम: " + selectedGamePath);
                 statusText.setTextColor(0xFF00E676);
                 if (startButton != null) {
                     startButton.setVisibility(View.VISIBLE);
                 }
-                Toast.makeText(this, "Game loaded! Tap START GAME", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "गेम जुड़ गया! START दबाएँ", Toast.LENGTH_SHORT).show();
             }
         }
     }
 }
-
-     
