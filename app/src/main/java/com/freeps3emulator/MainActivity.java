@@ -7,6 +7,8 @@ import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
+import android.media.AudioManager;
+import android.media.ToneGenerator;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -37,6 +39,9 @@ public class MainActivity extends Activity {
     private static final String PREFS_NAME = "GameHubPrefs";
     private static final String KEY_RECENT_GAME = "recent_game_path";
     private static final String KEY_RECENT_SIZE = "recent_game_size";
+    private static final String KEY_BUTTON_OPACITY = "button_opacity";
+    private static final String KEY_VIBRATION_ENABLED = "vibration_enabled";
+    private static final String KEY_SOUND_ENABLED = "sound_enabled";
 
     private TextView statusText;
     private Button startButton;
@@ -44,12 +49,16 @@ public class MainActivity extends Activity {
     private String selectedGameSize = null;
     private Vibrator vibrator;
     private SharedPreferences prefs;
+    private ToneGenerator toneGen;
 
     private String detectedChipset = "";
     private String detectedGpu = "";
     private String selectedResolution = "720p (PS3 Native)";
     private String selectedFps = "60 FPS";
     private String selectedGraphicsDriver = "Turnip Mesa v24 (Adreno Fast)";
+    private String selectedOpacity = "Medium (50%)";
+    private boolean isVibrationEnabled = true;
+    private boolean isSoundEnabled = true;
 
     private Handler fpsHandler = new Handler(Looper.getMainLooper());
     private Runnable fpsRunnable;
@@ -63,25 +72,34 @@ public class MainActivity extends Activity {
         prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
         selectedGamePath = prefs.getString(KEY_RECENT_GAME, null);
         selectedGameSize = prefs.getString(KEY_RECENT_SIZE, "Ready");
+        selectedOpacity = prefs.getString(KEY_BUTTON_OPACITY, "Medium (50%)");
+        isVibrationEnabled = prefs.getBoolean(KEY_VIBRATION_ENABLED, true);
+        isSoundEnabled = prefs.getBoolean(KEY_SOUND_ENABLED, true);
 
         try {
             vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
         } catch (Exception e) {
             vibrator = null;
         }
+
+        try {
+            toneGen = new ToneGenerator(AudioManager.STREAM_MUSIC, 80);
+        } catch (Exception e) {
+            toneGen = null;
+        }
+
         detectHardware();
         hideSystemBars();
         showMainMenu();
     }
 
-        @Override
+    @Override
     public void onWindowFocusChanged(boolean hasFocus) {
         super.onWindowFocusChanged(hasFocus);
         if (hasFocus) {
             hideSystemBars();
         }
     }
-    
 
     private void hideSystemBars() {
         try {
@@ -97,12 +115,31 @@ public class MainActivity extends Activity {
         } catch (Exception ignored) {}
     }
 
-    private void triggerVibration() {
-        try {
-            if (vibrator != null && vibrator.hasVibrator()) {
-                vibrator.vibrate(30);
-            }
-        } catch (Exception ignored) {}
+    private void triggerFeedback() {
+        if (isVibrationEnabled) {
+            try {
+                if (vibrator != null && vibrator.hasVibrator()) {
+                    vibrator.vibrate(30);
+                }
+            } catch (Exception ignored) {}
+        }
+        if (isSoundEnabled) {
+            try {
+                if (toneGen != null) {
+                    toneGen.startTone(ToneGenerator.TONE_PROP_BEEP, 35);
+                }
+            } catch (Exception ignored) {}
+        }
+    }
+
+    private void playBootSound() {
+        if (isSoundEnabled) {
+            try {
+                if (toneGen != null) {
+                    toneGen.startTone(ToneGenerator.TONE_PROP_PROMPT, 150);
+                }
+            } catch (Exception ignored) {}
+        }
     }
 
     private void detectHardware() {
@@ -154,7 +191,6 @@ public class MainActivity extends Activity {
 
         layout.addView(createSpacer(20));
 
-        // गेम फ़ाइल इंफॉर्मेशन और कंपैटिबिलिटी कार्ड
         if (selectedGamePath != null) {
             LinearLayout recentCard = new LinearLayout(this);
             recentCard.setOrientation(LinearLayout.VERTICAL);
@@ -191,7 +227,7 @@ public class MainActivity extends Activity {
             resumeBtn.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    triggerVibration();
+                    triggerFeedback();
                     startBootSequence();
                 }
             });
@@ -230,7 +266,7 @@ public class MainActivity extends Activity {
         loadBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                triggerVibration();
+                triggerFeedback();
                 openFilePicker();
             }
         });
@@ -248,7 +284,7 @@ public class MainActivity extends Activity {
         startButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                triggerVibration();
+                triggerFeedback();
                 startBootSequence();
             }
         });
@@ -285,7 +321,7 @@ public class MainActivity extends Activity {
         oneClickBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                triggerVibration();
+                triggerFeedback();
                 selectedResolution = "480p (Speed Mode)";
                 selectedFps = "30 FPS";
                 selectedGraphicsDriver = "Vulkan Fast-Path";
@@ -306,7 +342,7 @@ public class MainActivity extends Activity {
         settingsBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                triggerVibration();
+                triggerFeedback();
                 showSettingsScreen();
             }
         });
@@ -314,7 +350,7 @@ public class MainActivity extends Activity {
 
         sv.addView(layout);
         setContentView(sv);
-            }
+    }
         private void showSettingsScreen() {
         hideSystemBars();
         ScrollView sv = new ScrollView(this);
@@ -329,6 +365,31 @@ public class MainActivity extends Activity {
         title.setTextSize(20);
         title.setTextColor(0xFF00E5FF);
         layout.addView(title);
+
+        layout.addView(createSpacer(15));
+
+        layout.addView(createLabel("कंट्रोलर बटन पारदर्शिता (Opacity):"));
+        final Spinner opacitySpinner = new Spinner(this);
+        String[] opOptions = new String[]{"Medium (50%)", "Low (25%)", "High (75%)", "Solid (100%)"};
+        opacitySpinner.setAdapter(new ArrayAdapter<String>(this, android.R.layout.simple_spinner_dropdown_item, opOptions));
+        for (int i = 0; i < opOptions.length; i++) {
+            if (opOptions[i].equals(selectedOpacity)) opacitySpinner.setSelection(i);
+        }
+        layout.addView(opacitySpinner);
+
+        layout.addView(createSpacer(15));
+
+        final CheckBox soundCheck = new CheckBox(this);
+        soundCheck.setText("🔊 PS3 ऑडियो व बटन साउंड (Navigation Sounds)");
+        soundCheck.setTextColor(Color.WHITE);
+        soundCheck.setChecked(isSoundEnabled);
+        layout.addView(soundCheck);
+
+        final CheckBox vibCheck = new CheckBox(this);
+        vibCheck.setText("📳 टच वाइब्रेशन (Haptic Feedback)");
+        vibCheck.setTextColor(Color.WHITE);
+        vibCheck.setChecked(isVibrationEnabled);
+        layout.addView(vibCheck);
 
         layout.addView(createSpacer(15));
 
@@ -359,20 +420,6 @@ public class MainActivity extends Activity {
         driverSpinner.setAdapter(new ArrayAdapter<String>(this, android.R.layout.simple_spinner_dropdown_item, driverOptions));
         layout.addView(driverSpinner);
 
-        layout.addView(createSpacer(20));
-
-        CheckBox vsync = new CheckBox(this);
-        vsync.setText("V-Sync इनेबल रखें");
-        vsync.setTextColor(Color.WHITE);
-        vsync.setChecked(true);
-        layout.addView(vsync);
-
-        CheckBox multiThread = new CheckBox(this);
-        multiThread.setText("मल्टी-कोर CPU प्रोसेसिंग");
-        multiThread.setTextColor(Color.WHITE);
-        multiThread.setChecked(true);
-        layout.addView(multiThread);
-
         layout.addView(createSpacer(25));
 
         Button saveBtn = new Button(this);
@@ -383,10 +430,22 @@ public class MainActivity extends Activity {
         saveBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                triggerVibration();
+                triggerFeedback();
                 selectedResolution = resSpinner.getSelectedItem().toString();
                 selectedFps = fpsSpinner.getSelectedItem().toString();
                 selectedGraphicsDriver = driverSpinner.getSelectedItem().toString();
+                selectedOpacity = opacitySpinner.getSelectedItem().toString();
+                isSoundEnabled = soundCheck.isChecked();
+                isVibrationEnabled = vibCheck.isChecked();
+
+                if (prefs != null) {
+                    prefs.edit()
+                            .putString(KEY_BUTTON_OPACITY, selectedOpacity)
+                            .putBoolean(KEY_SOUND_ENABLED, isSoundEnabled)
+                            .putBoolean(KEY_VIBRATION_ENABLED, isVibrationEnabled)
+                            .apply();
+                }
+
                 Toast.makeText(MainActivity.this, "सेटिंग्स सेव हो गईं!", Toast.LENGTH_SHORT).show();
                 showMainMenu();
             }
@@ -403,7 +462,7 @@ public class MainActivity extends Activity {
         backBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                triggerVibration();
+                triggerFeedback();
                 showMainMenu();
             }
         });
@@ -415,6 +474,7 @@ public class MainActivity extends Activity {
 
     private void startBootSequence() {
         hideSystemBars();
+        playBootSound();
         RelativeLayout bootRoot = new RelativeLayout(this);
         bootRoot.setBackgroundColor(0xFF020408);
 
@@ -486,8 +546,15 @@ public class MainActivity extends Activity {
             }
         };
         bootHandler.postDelayed(bootRunnable, 600);
-                          }
-        private void showGameHubScreen() {
+    }
+        private int getButtonAlpha() {
+        if (selectedOpacity.contains("25")) return 0x22;
+        if (selectedOpacity.contains("75")) return 0x77;
+        if (selectedOpacity.contains("100")) return 0xFF;
+        return 0x44; // Default 50%
+    }
+
+    private void showGameHubScreen() {
         isGameRunning = true;
         hideSystemBars();
         RelativeLayout root = new RelativeLayout(this);
@@ -536,11 +603,15 @@ public class MainActivity extends Activity {
         };
         fpsHandler.post(fpsRunnable);
 
+        int alpha = getButtonAlpha();
+        int btnBg = (alpha << 24) | 0x00FFFFFF;
+        int btnBorder = Math.min(255, alpha + 0x30) << 24 | 0x00FFFFFF;
+
         LinearLayout lShoulder = new LinearLayout(this);
         lShoulder.setOrientation(LinearLayout.HORIZONTAL);
-        lShoulder.addView(createPillButton("L2"));
+        lShoulder.addView(createPillButton("L2", btnBg, btnBorder));
         lShoulder.addView(createSpacerH(12));
-        lShoulder.addView(createPillButton("L1"));
+        lShoulder.addView(createPillButton("L1", btnBg, btnBorder));
         RelativeLayout.LayoutParams lsp = new RelativeLayout.LayoutParams(
                 RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
         lsp.addRule(RelativeLayout.ALIGN_PARENT_TOP);
@@ -551,9 +622,9 @@ public class MainActivity extends Activity {
 
         LinearLayout rShoulder = new LinearLayout(this);
         rShoulder.setOrientation(LinearLayout.HORIZONTAL);
-        rShoulder.addView(createPillButton("R1"));
+        rShoulder.addView(createPillButton("R1", btnBg, btnBorder));
         rShoulder.addView(createSpacerH(12));
-        rShoulder.addView(createPillButton("R2"));
+        rShoulder.addView(createPillButton("R2", btnBg, btnBorder));
         RelativeLayout.LayoutParams rsp = new RelativeLayout.LayoutParams(
                 RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
         rsp.addRule(RelativeLayout.ALIGN_PARENT_TOP);
@@ -565,10 +636,10 @@ public class MainActivity extends Activity {
         RelativeLayout dpad = new RelativeLayout(this);
         int btnSz = dpToPx(52);
 
-        Button up = createCircleButton("▲", 0x33FFFFFF, 0x55FFFFFF, Color.WHITE, btnSz);
-        Button down = createCircleButton("▼", 0x33FFFFFF, 0x55FFFFFF, Color.WHITE, btnSz);
-        Button left = createCircleButton("◀", 0x33FFFFFF, 0x55FFFFFF, Color.WHITE, btnSz);
-        Button right = createCircleButton("▶", 0x33FFFFFF, 0x55FFFFFF, Color.WHITE, btnSz);
+        Button up = createCircleButton("▲", btnBg, btnBorder, Color.WHITE, btnSz);
+        Button down = createCircleButton("▼", btnBg, btnBorder, Color.WHITE, btnSz);
+        Button left = createCircleButton("◀", btnBg, btnBorder, Color.WHITE, btnSz);
+        Button right = createCircleButton("▶", btnBg, btnBorder, Color.WHITE, btnSz);
 
         RelativeLayout.LayoutParams pUp = new RelativeLayout.LayoutParams(btnSz, btnSz);
         pUp.addRule(RelativeLayout.CENTER_HORIZONTAL);
@@ -599,7 +670,8 @@ public class MainActivity extends Activity {
         dpad.addView(right, pRight);
         root.addView(dpad, dpParams);
 
-        Button leftStick = createCircleButton("L3", 0x3300E5FF, 0x6600E5FF, 0xFF00E5FF, dpToPx(65));
+        int l3Bg = (alpha << 24) | 0x0000E5FF;
+        Button leftStick = createCircleButton("L3", l3Bg, btnBorder, 0xFF00E5FF, dpToPx(65));
         RelativeLayout.LayoutParams lStickParams = new RelativeLayout.LayoutParams(dpToPx(65), dpToPx(65));
         lStickParams.addRule(RelativeLayout.ALIGN_PARENT_LEFT);
         lStickParams.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
@@ -609,10 +681,15 @@ public class MainActivity extends Activity {
 
         RelativeLayout actions = new RelativeLayout(this);
 
-        Button tri = createCircleButton("△", 0x3300E676, 0x6600E676, 0xFF00E676, btnSz);
-        Button cir = createCircleButton("○", 0x33FF1744, 0x66FF1744, 0xFFFF1744, btnSz);
-        Button crs = createCircleButton("✕", 0x332979FF, 0x662979FF, 0xFF2979FF, btnSz);
-        Button sqr = createCircleButton("◻", 0x33F50057, 0x66F50057, 0xFFF50057, btnSz);
+        int triBg = (alpha << 24) | 0x0000E676;
+        int cirBg = (alpha << 24) | 0x00FF1744;
+        int crsBg = (alpha << 24) | 0x002979FF;
+        int sqrBg = (alpha << 24) | 0x00F50057;
+
+        Button tri = createCircleButton("△", triBg, btnBorder, 0xFF00E676, btnSz);
+        Button cir = createCircleButton("○", cirBg, btnBorder, 0xFFFF1744, btnSz);
+        Button crs = createCircleButton("✕", crsBg, btnBorder, 0xFF2979FF, btnSz);
+        Button sqr = createCircleButton("◻", sqrBg, btnBorder, 0xFFF50057, btnSz);
 
         RelativeLayout.LayoutParams pTri = new RelativeLayout.LayoutParams(btnSz, btnSz);
         pTri.addRule(RelativeLayout.CENTER_HORIZONTAL);
@@ -643,7 +720,8 @@ public class MainActivity extends Activity {
         actions.addView(cir, pCir);
         root.addView(actions, actParams);
 
-        Button rightStick = createCircleButton("R3", 0x33FF9100, 0x66FF9100, 0xFFFF9100, dpToPx(65));
+        int r3Bg = (alpha << 24) | 0x00FF9100;
+        Button rightStick = createCircleButton("R3", r3Bg, btnBorder, 0xFFFF9100, dpToPx(65));
         RelativeLayout.LayoutParams rStickParams = new RelativeLayout.LayoutParams(dpToPx(65), dpToPx(65));
         rStickParams.addRule(RelativeLayout.ALIGN_PARENT_RIGHT);
         rStickParams.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
@@ -653,14 +731,14 @@ public class MainActivity extends Activity {
 
         LinearLayout centerBtns = new LinearLayout(this);
         centerBtns.setOrientation(LinearLayout.HORIZONTAL);
-        centerBtns.addView(createPillButton("SELECT"));
+        centerBtns.addView(createPillButton("SELECT", btnBg, btnBorder));
         centerBtns.addView(createSpacerH(15));
 
-        Button homeBtn = createPillButton("PS MENU");
+        Button homeBtn = createPillButton("PS MENU", btnBg, btnBorder);
         homeBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                triggerVibration();
+                triggerFeedback();
                 if (pauseOverlay != null) {
                     pauseOverlay.setVisibility(View.VISIBLE);
                 }
@@ -668,7 +746,7 @@ public class MainActivity extends Activity {
         });
         centerBtns.addView(homeBtn);
         centerBtns.addView(createSpacerH(15));
-        centerBtns.addView(createPillButton("START"));
+        centerBtns.addView(createPillButton("START", btnBg, btnBorder));
 
         RelativeLayout.LayoutParams cbParams = new RelativeLayout.LayoutParams(
                 RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
@@ -697,7 +775,7 @@ public class MainActivity extends Activity {
         resumeBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                triggerVibration();
+                triggerFeedback();
                 pauseOverlay.setVisibility(View.GONE);
                 hideSystemBars();
             }
@@ -710,7 +788,7 @@ public class MainActivity extends Activity {
         saveStateBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                triggerVibration();
+                triggerFeedback();
                 Toast.makeText(MainActivity.this, "State Saved (Slot 1)!", Toast.LENGTH_SHORT).show();
             }
         });
@@ -722,7 +800,7 @@ public class MainActivity extends Activity {
         loadStateBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                triggerVibration();
+                triggerFeedback();
                 Toast.makeText(MainActivity.this, "State Loaded (Slot 1)!", Toast.LENGTH_SHORT).show();
             }
         });
@@ -734,7 +812,7 @@ public class MainActivity extends Activity {
         exitBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                triggerVibration();
+                triggerFeedback();
                 showMainMenu();
             }
         });
@@ -790,23 +868,23 @@ public class MainActivity extends Activity {
         btn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                triggerVibration();
+                triggerFeedback();
             }
         });
         return btn;
     }
 
-    private Button createPillButton(final String label) {
+    private Button createPillButton(final String label, int bgColor, int strokeColor) {
         Button btn = new Button(this);
         btn.setText(label);
         btn.setTextSize(11);
         btn.setTextColor(Color.WHITE);
-        btn.setBackground(createRoundBackground(0x33FFFFFF, 15, 0x55FFFFFF, 1));
+        btn.setBackground(createRoundBackground(bgColor, 15, strokeColor, 1));
         btn.setPadding(24, 10, 24, 10);
         btn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                triggerVibration();
+                triggerFeedback();
             }
         });
         return btn;
@@ -838,7 +916,6 @@ public class MainActivity extends Activity {
         }
     }
 
-    // फ़ाइल का असली साइज़ निकालने का फंक्शन
     private String getFileSizeFromUri(Uri uri) {
         long size = 0;
         try {
@@ -890,6 +967,8 @@ public class MainActivity extends Activity {
         if (fpsRunnable != null) {
             fpsHandler.removeCallbacks(fpsRunnable);
         }
+        if (toneGen != null) {
+            toneGen.release();
+        }
     }
-                                   }
-                    
+}
