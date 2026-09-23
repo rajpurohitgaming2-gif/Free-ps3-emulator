@@ -1,8 +1,9 @@
-       package com.freeps3emulator;
+package com.freeps3emulator;
 
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
@@ -27,10 +28,14 @@ import java.util.Random;
 
 public class MainActivity extends Activity {
     private static final int PICK_GAME_FILE = 101;
+    private static final String PREFS_NAME = "GameHubPrefs";
+    private static final String KEY_RECENT_GAME = "recent_game_path";
+
     private TextView statusText;
     private Button startButton;
     private String selectedGamePath = null;
     private Vibrator vibrator;
+    private SharedPreferences prefs;
 
     private String detectedChipset = "";
     private String detectedGpu = "";
@@ -46,6 +51,9 @@ public class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        selectedGamePath = prefs.getString(KEY_RECENT_GAME, null);
+
         try {
             vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
         } catch (Exception e) {
@@ -135,8 +143,48 @@ public class MainActivity extends Activity {
 
         layout.addView(createSpacer(20));
 
+        // रीसेंट गेम कार्ड
+        if (selectedGamePath != null) {
+            LinearLayout recentCard = new LinearLayout(this);
+            recentCard.setOrientation(LinearLayout.VERTICAL);
+            recentCard.setBackground(createRoundBackground(0xFF161B22, 14, 0xFF388BFD, 1));
+            recentCard.setPadding(25, 20, 25, 20);
+
+            TextView rcTitle = new TextView(this);
+            rcTitle.setText("🕒 हाल ही में खेला गया (RECENT GAME)");
+            rcTitle.setTextSize(13);
+            rcTitle.setTextColor(0xFF58A6FF);
+            recentCard.addView(rcTitle);
+
+            recentCard.addView(createSpacer(6));
+
+            TextView rcName = new TextView(this);
+            rcName.setText("🎮 " + selectedGamePath);
+            rcName.setTextSize(12);
+            rcName.setTextColor(0xFFE6EDF3);
+            recentCard.addView(rcName);
+
+            recentCard.addView(createSpacer(10));
+
+            Button resumeBtn = new Button(this);
+            resumeBtn.setText("▶ तुरंत खेलें (RESUME)");
+            resumeBtn.setTextSize(12);
+            resumeBtn.setTextColor(Color.WHITE);
+            resumeBtn.setBackground(createRoundBackground(0xFF238636, 12, 0, 0));
+            resumeBtn.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    triggerVibration();
+                    showGameHubScreen();
+                }
+            });
+            recentCard.addView(resumeBtn);
+            layout.addView(recentCard);
+            layout.addView(createSpacer(20));
+        }
+
         TextView libTitle = new TextView(this);
-        libTitle.setText("🎮 आपकी गेम लाइब्रेरी (Games)");
+        libTitle.setText("🎮 नई गेम फ़ाइल चुनें");
         libTitle.setTextSize(15);
         libTitle.setTextColor(Color.WHITE);
         layout.addView(libTitle);
@@ -249,8 +297,8 @@ public class MainActivity extends Activity {
 
         sv.addView(layout);
         setContentView(sv);
-    }
-        private void showSettingsScreen() {
+                       }
+           private void showSettingsScreen() {
         hideSystemBars();
         ScrollView sv = new ScrollView(this);
         sv.setBackgroundColor(0xFF0D1117);
@@ -364,13 +412,12 @@ public class MainActivity extends Activity {
         hp.addRule(RelativeLayout.CENTER_HORIZONTAL);
         root.addView(hud, hp);
 
-        // डायनामिक FPS लूप (Dynamic FPS Counter)
         final int targetFps = selectedFps.contains("30") ? 30 : 60;
         fpsRunnable = new Runnable() {
             @Override
             public void run() {
                 if (!isGameRunning) return;
-                int currentFps = targetFps - random.nextInt(4); // जैसे 60, 59, 58, 57
+                int currentFps = targetFps - random.nextInt(4);
                 if (currentFps < 24) currentFps = 24;
                 hud.setText("● LIVE: " + currentFps + " FPS | " + selectedResolution.split(" ")[0] + " | " + selectedGraphicsDriver.split(" ")[0]
                         + "\nGame: " + (selectedGamePath != null ? selectedGamePath : "Running"));
@@ -473,7 +520,8 @@ public class MainActivity extends Activity {
         pCir.addRule(RelativeLayout.CENTER_VERTICAL);
         pCir.addRule(RelativeLayout.ALIGN_PARENT_RIGHT);
 
-        RelativeLayout.LayoutParams actParams = new RelativeLayout.LayoutParams(dpadSz, dpadSz);
+        int actSz = dpToPx(150);
+        RelativeLayout.LayoutParams actParams = new RelativeLayout.LayoutParams(actSz, actSz);
         actParams.addRule(RelativeLayout.ALIGN_PARENT_RIGHT);
         actParams.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
         actParams.rightMargin = dpToPx(15);
@@ -518,8 +566,8 @@ public class MainActivity extends Activity {
         root.addView(centerBtns, cbParams);
 
         setContentView(root);
-                                                                           }
-        private TextView createLabel(String text) {
+       }
+           private TextView createLabel(String text) {
         TextView tv = new TextView(this);
         tv.setText(text);
         tv.setTextSize(13);
@@ -604,6 +652,12 @@ public class MainActivity extends Activity {
             Uri uri = data.getData();
             if (uri != null) {
                 selectedGamePath = uri.getLastPathSegment();
+                
+                // गेम पाथ को मेमोरी में सेव करें
+                if (prefs != null) {
+                    prefs.edit().putString(KEY_RECENT_GAME, selectedGamePath).apply();
+                }
+
                 if (statusText != null) {
                     statusText.setText("लोड किया गया गेम: " + selectedGamePath);
                     statusText.setTextColor(0xFF00E676);
@@ -611,7 +665,8 @@ public class MainActivity extends Activity {
                 if (startButton != null) {
                     startButton.setVisibility(View.VISIBLE);
                 }
-                Toast.makeText(this, "गेम जुड़ गया! START दबाएँ", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "गेम सेव हो गया! START दबाएँ", Toast.LENGTH_SHORT).show();
+                showMainMenu();
             }
         }
     }
