@@ -90,7 +90,6 @@ public class MainActivity extends Activity {
         }
     }
 
-    // 1. GAMEHUB मेन्यू स्क्रीन
     private void showMainMenu() {
         hideSystemBars();
         ScrollView sv = new ScrollView(this);
@@ -116,7 +115,6 @@ public class MainActivity extends Activity {
 
         layout.addView(createSpacer(20));
 
-        // गेम लाइब्रेरी सेक्शन
         TextView libTitle = new TextView(this);
         libTitle.setText("🎮 आपकी गेम लाइब्रेरी (Games)");
         libTitle.setTextSize(15);
@@ -173,7 +171,6 @@ public class MainActivity extends Activity {
 
         layout.addView(createSpacer(25));
 
-        // क्विक लो-एंड ऑप्टिमाइज़र कार्ड
         LinearLayout boostCard = new LinearLayout(this);
         boostCard.setOrientation(LinearLayout.VERTICAL);
         boostCard.setBackground(createRoundBackground(0xFF161B22, 14, 0x44F85149, 1));
@@ -233,9 +230,7 @@ public class MainActivity extends Activity {
         sv.addView(layout);
         setContentView(sv);
     }
-
-    // 2. सेटिंग्स स्क्रीन
-    private void showSettingsScreen() {
+        private void showSettingsScreen() {
         hideSystemBars();
         ScrollView sv = new ScrollView(this);
         sv.setBackgroundColor(0xFF0D1117);
@@ -333,13 +328,11 @@ public class MainActivity extends Activity {
         setContentView(sv);
     }
 
-    // 3. गेम स्क्रीन + लाइव HUD + एनालॉग और वाइब्रेशन कंट्रोलर
     private void showGameHubScreen() {
         hideSystemBars();
         RelativeLayout root = new RelativeLayout(this);
         root.setBackgroundColor(0xFF030508);
 
-        // लाइव HUD (कोने में स्टेटस)
         TextView hud = new TextView(this);
         hud.setText("● LIVE: 60 FPS | " + selectedResolution.split(" ")[0] + " | " + selectedGraphicsDriver.split(" ")[0]
                 + "\nGame: " + (selectedGamePath != null ? selectedGamePath : "Running"));
@@ -352,7 +345,6 @@ public class MainActivity extends Activity {
         hp.addRule(RelativeLayout.CENTER_HORIZONTAL);
         root.addView(hud, hp);
 
-        // L1, L2
         LinearLayout lShoulder = new LinearLayout(this);
         lShoulder.setOrientation(LinearLayout.HORIZONTAL);
         lShoulder.addView(createPillButton("L2"));
@@ -366,7 +358,6 @@ public class MainActivity extends Activity {
         lsp.topMargin = dpToPx(12);
         root.addView(lShoulder, lsp);
 
-        // R1, R2
         LinearLayout rShoulder = new LinearLayout(this);
         rShoulder.setOrientation(LinearLayout.HORIZONTAL);
         rShoulder.addView(createPillButton("R1"));
@@ -380,7 +371,6 @@ public class MainActivity extends Activity {
         rsp.topMargin = dpToPx(12);
         root.addView(rShoulder, rsp);
 
-        // D-PAD (बाएँ)
         RelativeLayout dpad = new RelativeLayout(this);
         int btnSz = dpToPx(52);
 
@@ -418,7 +408,6 @@ public class MainActivity extends Activity {
         dpad.addView(right, pRight);
         root.addView(dpad, dpParams);
 
-        // बायाँ एनालॉग (Left Stick - L3)
         Button leftStick = createCircleButton("L3", 0x3300E5FF, 0x8800E5FF, 0xFF00E5FF, dpToPx(65));
         RelativeLayout.LayoutParams lStickParams = new RelativeLayout.LayoutParams(dpToPx(65), dpToPx(65));
         lStickParams.addRule(RelativeLayout.ALIGN_PARENT_LEFT);
@@ -427,7 +416,6 @@ public class MainActivity extends Activity {
         lStickParams.bottomMargin = dpToPx(35);
         root.addView(leftStick, lStickParams);
 
-        // PS सिम्बल्स (△, ○, ✕, ◻ - दाएँ)
         RelativeLayout actions = new RelativeLayout(this);
 
         Button tri = createCircleButton("△", 0x2A00E676, 0x8800E676, 0xFF00E676, btnSz);
@@ -463,7 +451,6 @@ public class MainActivity extends Activity {
         actions.addView(cir, pCir);
         root.addView(actions, actParams);
 
-        // दायाँ एनालॉग (Right Stick - R3)
         Button rightStick = createCircleButton("R3", 0x33FF9100, 0x88FF9100, 0xFFFF9100, dpToPx(65));
         RelativeLayout.LayoutParams rStickParams = new RelativeLayout.LayoutParams(dpToPx(65), dpToPx(65));
         rStickParams.addRule(RelativeLayout.ALIGN_PARENT_RIGHT);
@@ -472,7 +459,6 @@ public class MainActivity extends Activity {
         rStickParams.bottomMargin = dpToPx(35);
         root.addView(rightStick, rStickParams);
 
-        // SELECT, HOME/MENU, START (नीचे बीच में)
         LinearLayout centerBtns = new LinearLayout(this);
         centerBtns.setOrientation(LinearLayout.HORIZONTAL);
         centerBtns.addView(createPillButton("SELECT"));
@@ -481,8 +467,6 @@ public class MainActivity extends Activity {
         Button homeBtn = createPillButton("PS MENU");
         homeBtn.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View v) {
-                            @Override
             public void onClick(View v) {
                 triggerVibration();
                 showMainMenu();
@@ -501,8 +485,7 @@ public class MainActivity extends Activity {
 
         setContentView(root);
     }
-
-    private TextView createLabel(String text) {
+        private TextView createLabel(String text) {
         TextView tv = new TextView(this);
         tv.setText(text);
         tv.setTextSize(13);
