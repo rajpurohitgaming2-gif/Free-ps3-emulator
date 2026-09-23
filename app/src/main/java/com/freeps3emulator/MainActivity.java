@@ -14,6 +14,8 @@ import android.os.Looper;
 import android.os.Vibrator;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.SurfaceHolder;
+import android.view.SurfaceView;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
@@ -298,7 +300,7 @@ public class MainActivity extends Activity {
 
         sv.addView(layout);
         setContentView(sv);
-    }
+                                       }
         private void showSettingsScreen() {
         hideSystemBars();
         ScrollView sv = new ScrollView(this);
@@ -470,12 +472,33 @@ public class MainActivity extends Activity {
             }
         };
         bootHandler.postDelayed(bootRunnable, 600);
-                        }
+    }
         private void showGameHubScreen() {
         isGameRunning = true;
         hideSystemBars();
         RelativeLayout root = new RelativeLayout(this);
         root.setBackgroundColor(0xFF030508);
+
+        // असली गेम रेंडरिंग स्क्रीन (SurfaceView)
+        SurfaceView gameSurface = new SurfaceView(this);
+        RelativeLayout.LayoutParams svParams = new RelativeLayout.LayoutParams(
+                RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.MATCH_PARENT);
+        root.addView(gameSurface, svParams);
+
+        // PS3 क्लासिक एम्बिएंट वेव बैकग्राउंड (Gradient Canvas Background)
+        GradientDrawable ps3Wave = new GradientDrawable(
+                GradientDrawable.Orientation.TOP_BOTTOM,
+                new int[]{0xFF050F1A, 0xFF0D233A, 0xFF02070D});
+        gameSurface.setBackground(ps3Wave);
+
+        gameSurface.getHolder().addCallback(new SurfaceHolder.Callback() {
+            @Override
+            public void surfaceCreated(SurfaceHolder holder) {}
+            @Override
+            public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {}
+            @Override
+            public void surfaceDestroyed(SurfaceHolder holder) {}
+        });
 
         final TextView hud = new TextView(this);
         hud.setTextColor(0xFF39D353);
@@ -530,10 +553,10 @@ public class MainActivity extends Activity {
         RelativeLayout dpad = new RelativeLayout(this);
         int btnSz = dpToPx(52);
 
-        Button up = createCircleButton("▲", 0x2AFFFFFF, 0x44FFFFFF, Color.WHITE, btnSz);
-        Button down = createCircleButton("▼", 0x2AFFFFFF, 0x44FFFFFF, Color.WHITE, btnSz);
-        Button left = createCircleButton("◀", 0x2AFFFFFF, 0x44FFFFFF, Color.WHITE, btnSz);
-        Button right = createCircleButton("▶", 0x2AFFFFFF, 0x44FFFFFF, Color.WHITE, btnSz);
+        Button up = createCircleButton("▲", 0x33FFFFFF, 0x55FFFFFF, Color.WHITE, btnSz);
+        Button down = createCircleButton("▼", 0x33FFFFFF, 0x55FFFFFF, Color.WHITE, btnSz);
+        Button left = createCircleButton("◀", 0x33FFFFFF, 0x55FFFFFF, Color.WHITE, btnSz);
+        Button right = createCircleButton("▶", 0x33FFFFFF, 0x55FFFFFF, Color.WHITE, btnSz);
 
         RelativeLayout.LayoutParams pUp = new RelativeLayout.LayoutParams(btnSz, btnSz);
         pUp.addRule(RelativeLayout.CENTER_HORIZONTAL);
@@ -564,7 +587,7 @@ public class MainActivity extends Activity {
         dpad.addView(right, pRight);
         root.addView(dpad, dpParams);
 
-        Button leftStick = createCircleButton("L3", 0x3300E5FF, 0x8800E5FF, 0xFF00E5FF, dpToPx(65));
+        Button leftStick = createCircleButton("L3", 0x3300E5FF, 0x6600E5FF, 0xFF00E5FF, dpToPx(65));
         RelativeLayout.LayoutParams lStickParams = new RelativeLayout.LayoutParams(dpToPx(65), dpToPx(65));
         lStickParams.addRule(RelativeLayout.ALIGN_PARENT_LEFT);
         lStickParams.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
@@ -574,10 +597,10 @@ public class MainActivity extends Activity {
 
         RelativeLayout actions = new RelativeLayout(this);
 
-        Button tri = createCircleButton("△", 0x2A00E676, 0x8800E676, 0xFF00E676, btnSz);
-        Button cir = createCircleButton("○", 0x2AFF1744, 0x88FF1744, 0xFFFF1744, btnSz);
-        Button crs = createCircleButton("✕", 0x2A2979FF, 0x882979FF, 0xFF2979FF, btnSz);
-        Button sqr = createCircleButton("◻", 0x2AF50057, 0x88F50057, 0xFFF50057, btnSz);
+        Button tri = createCircleButton("△", 0x3300E676, 0x6600E676, 0xFF00E676, btnSz);
+        Button cir = createCircleButton("○", 0x33FF1744, 0x66FF1744, 0xFFFF1744, btnSz);
+        Button crs = createCircleButton("✕", 0x332979FF, 0x662979FF, 0xFF2979FF, btnSz);
+        Button sqr = createCircleButton("◻", 0x33F50057, 0x66F50057, 0xFFF50057, btnSz);
 
         RelativeLayout.LayoutParams pTri = new RelativeLayout.LayoutParams(btnSz, btnSz);
         pTri.addRule(RelativeLayout.CENTER_HORIZONTAL);
@@ -608,7 +631,7 @@ public class MainActivity extends Activity {
         actions.addView(cir, pCir);
         root.addView(actions, actParams);
 
-        Button rightStick = createCircleButton("R3", 0x33FF9100, 0x88FF9100, 0xFFFF9100, dpToPx(65));
+        Button rightStick = createCircleButton("R3", 0x33FF9100, 0x66FF9100, 0xFFFF9100, dpToPx(65));
         RelativeLayout.LayoutParams rStickParams = new RelativeLayout.LayoutParams(dpToPx(65), dpToPx(65));
         rStickParams.addRule(RelativeLayout.ALIGN_PARENT_RIGHT);
         rStickParams.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
@@ -767,7 +790,7 @@ public class MainActivity extends Activity {
         btn.setText(label);
         btn.setTextSize(11);
         btn.setTextColor(Color.WHITE);
-        btn.setBackground(createRoundBackground(0x2AFFFFFF, 15, 0x44FFFFFF, 1));
+        btn.setBackground(createRoundBackground(0x33FFFFFF, 15, 0x55FFFFFF, 1));
         btn.setPadding(24, 10, 24, 10);
         btn.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -835,5 +858,5 @@ public class MainActivity extends Activity {
             fpsHandler.removeCallbacks(fpsRunnable);
         }
     }
-                                                         }
-                
+                                       }
+    
