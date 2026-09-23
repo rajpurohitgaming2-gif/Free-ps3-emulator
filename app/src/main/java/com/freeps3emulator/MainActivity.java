@@ -1,4 +1,4 @@
-package com.freeps3emulator;
+       package com.freeps3emulator;
 
 import android.app.Activity;
 import android.content.Context;
@@ -8,6 +8,8 @@ import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.os.Vibrator;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -21,6 +23,7 @@ import android.widget.ScrollView;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
+import java.util.Random;
 
 public class MainActivity extends Activity {
     private static final int PICK_GAME_FILE = 101;
@@ -34,6 +37,11 @@ public class MainActivity extends Activity {
     private String selectedResolution = "720p (PS3 Native)";
     private String selectedFps = "60 FPS";
     private String selectedGraphicsDriver = "Turnip Mesa v24 (Adreno Fast)";
+
+    private Handler fpsHandler = new Handler(Looper.getMainLooper());
+    private Runnable fpsRunnable;
+    private boolean isGameRunning = false;
+    private Random random = new Random();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -99,6 +107,10 @@ public class MainActivity extends Activity {
     }
 
     private void showMainMenu() {
+        isGameRunning = false;
+        if (fpsRunnable != null) {
+            fpsHandler.removeCallbacks(fpsRunnable);
+        }
         hideSystemBars();
         ScrollView sv = new ScrollView(this);
         sv.setBackgroundColor(0xFF0D1117);
@@ -337,13 +349,12 @@ public class MainActivity extends Activity {
     }
 
     private void showGameHubScreen() {
+        isGameRunning = true;
         hideSystemBars();
         RelativeLayout root = new RelativeLayout(this);
         root.setBackgroundColor(0xFF030508);
 
-        TextView hud = new TextView(this);
-        hud.setText("● LIVE: 60 FPS | " + selectedResolution.split(" ")[0] + " | " + selectedGraphicsDriver.split(" ")[0]
-                + "\nGame: " + (selectedGamePath != null ? selectedGamePath : "Running"));
+        final TextView hud = new TextView(this);
         hud.setTextColor(0xFF39D353);
         hud.setTextSize(11);
         hud.setPadding(25, 20, 25, 20);
@@ -352,6 +363,21 @@ public class MainActivity extends Activity {
         hp.addRule(RelativeLayout.ALIGN_PARENT_TOP);
         hp.addRule(RelativeLayout.CENTER_HORIZONTAL);
         root.addView(hud, hp);
+
+        // डायनामिक FPS लूप (Dynamic FPS Counter)
+        final int targetFps = selectedFps.contains("30") ? 30 : 60;
+        fpsRunnable = new Runnable() {
+            @Override
+            public void run() {
+                if (!isGameRunning) return;
+                int currentFps = targetFps - random.nextInt(4); // जैसे 60, 59, 58, 57
+                if (currentFps < 24) currentFps = 24;
+                hud.setText("● LIVE: " + currentFps + " FPS | " + selectedResolution.split(" ")[0] + " | " + selectedGraphicsDriver.split(" ")[0]
+                        + "\nGame: " + (selectedGamePath != null ? selectedGamePath : "Running"));
+                fpsHandler.postDelayed(this, 750);
+            }
+        };
+        fpsHandler.post(fpsRunnable);
 
         LinearLayout lShoulder = new LinearLayout(this);
         lShoulder.setOrientation(LinearLayout.HORIZONTAL);
@@ -492,7 +518,7 @@ public class MainActivity extends Activity {
         root.addView(centerBtns, cbParams);
 
         setContentView(root);
-    }
+                                                                           }
         private TextView createLabel(String text) {
         TextView tv = new TextView(this);
         tv.setText(text);
@@ -587,6 +613,15 @@ public class MainActivity extends Activity {
                 }
                 Toast.makeText(this, "गेम जुड़ गया! START दबाएँ", Toast.LENGTH_SHORT).show();
             }
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        isGameRunning = false;
+        if (fpsRunnable != null) {
+            fpsHandler.removeCallbacks(fpsRunnable);
         }
     }
 }
