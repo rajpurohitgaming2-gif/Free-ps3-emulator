@@ -17,14 +17,14 @@ wget -O base.apk "$LATEST_URL"
 echo "[2/5] Decompiling with Apktool..."
 apktool d base.apk -o decompiled_gamehub -f
 
-# 3. ऐप का नाम और क्रेडिट बदलना
+# 3. नाम और क्रेडिट बदलना (अंदर के सारे फीचर्स सुरक्षित रहेंगे)
 echo "[3/5] Setting App Name to VortexPS3 Emu..."
 NEW_APP_NAME="VortexPS3 Emu"
 
-# फोन स्क्रीन पर दिखने वाला नाम बदलना
+# ऐप का नाम बदलना
 find decompiled_gamehub/res -name "strings.xml" -exec sed -i "s|<string name=\"app_name\">.*</string>|<string name=\"app_name\">$NEW_APP_NAME</string>|g" {} + || true
 
-# क्रेडिट स्क्रीन में आपका नाम जोड़ना
+# क्रेडिट स्क्रीन में नाम जोड़ना
 find decompiled_gamehub/res -name "strings.xml" -exec sed -i 's/Built on the shoulders of giants/VortexPS3 Emu - Modded by Yash (AI VIDEO HUB) - Built on the shoulders of giants/g' {} + || true
 
 # ब्लोटवेयर हटाना
