@@ -17,13 +17,13 @@ wget -O base.apk "$LATEST_URL"
 echo "[2/5] Decompiling APK..."
 apktool d base.apk -o decompiled_gamehub -f
 
-# 3. नया ऐप आइकन और लोगो रिप्लेसमेंट
-echo "[3/5] Replacing App Launcher Icons & Neutralizing Splash..."
+# 3. नया ऐप आइकन और लोगो रिप्लेसमेंट (बिना किसी एरर के 1 लाइन में)
+echo "[3/5] Generating Custom Icon & Neutralizing Splash..."
 
-# एक नया प्रीमियम गेमिंग आइकन डाउनलोड करना
-wget -O new_icon.png "https://raw.githubusercontent.com/google/material-design-icons/master/png/hardware/videogame_asset/materialicons/48dp/2x/baseline_videogame_asset_white_48dp.png"
+sudo apt-get install -y imagemagick
+convert -size 96x96 xc:"#0d1117" -fill "#0078d4" -draw "circle 48,48 48,15" new_icon.png
 
-# सभी पुराने लॉन्चर आइकन्स (App Icon) को नए आइकन से रिप्लेस करना
+# पुराने ऐप आइकन्स को नए आइकन से रिप्लेस करना
 find decompiled_gamehub/res/ -name "*ic_launcher*.png" -exec cp new_icon.png {} \; 2>/dev/null || true
 
 # स्टार्ट-अप स्प्लैश लोगो को ट्रांसपेरेंट बनाना
