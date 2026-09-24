@@ -30,6 +30,8 @@ import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.PopupWindow;
 import android.widget.ProgressBar;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
 import android.widget.RelativeLayout;
 import android.widget.ScrollView;
 import android.widget.SeekBar;
@@ -46,7 +48,9 @@ public class MainActivity extends Activity {
     private static final int PICK_PKG_FILE = 101;
     private static final int PICK_PUP_FILE = 102;
     private static final int PICK_ISO_DIR = 103;
-    private static final String PREFS_NAME = "PS3_VideoExact_Settings";
+    private static final int PICK_FONT_FILE = 104;
+    private static final int PICK_DRIVER_FILE = 105;
+    private static final String PREFS_NAME = "NovaPS3_Core_Settings";
 
     private FrameLayout rootContainer;
     private SharedPreferences prefs;
@@ -54,6 +58,8 @@ public class MainActivity extends Activity {
 
     private ArrayList<String> gameTitles = new ArrayList<>();
     private String activeBootGame = "Tomb Raider Underworld [BLES00384]";
+    private int currentSetupStep = 1;
+    private boolean isFirmwareInstalled = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -69,7 +75,12 @@ public class MainActivity extends Activity {
         rootContainer.setBackgroundColor(Color.parseColor("#1f1f1f"));
         setContentView(rootContainer);
 
-        showSelectGameScreen();
+        boolean setupDone = prefs.getBoolean("novaps3_wizard_done", false);
+        if (!setupDone) {
+            showWelcomeWizard(1);
+        } else {
+            showSelectGameScreen();
+        }
     }
 
     private void loadSavedGames() {
@@ -121,6 +132,221 @@ public class MainActivity extends Activity {
         return gd;
     }
 
+    // --- आपकी भेजी गई फ़ोटो के अनुसार विज़ार्ड ---
+    private void showWelcomeWizard(int step) {
+        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+        currentSetupStep = step;
+        rootContainer.removeAllViews();
+
+        RelativeLayout wizardRoot = new RelativeLayout(this);
+        wizardRoot.setBackgroundColor(Color.parseColor("#2a2a2a"));
+
+        // Top Header
+        LinearLayout topBar = new LinearLayout(this);
+        topBar.setId(View.generateViewId());
+        topBar.setBackgroundColor(Color.parseColor("#1f1f1f"));
+        topBar.setPadding(dpToPx(16), dpToPx(16), dpToPx(16), dpToPx(16));
+        TextView topTitle = new TextView(this);
+        topTitle.setText("Welcome");
+        topTitle.setTextColor(Color.WHITE);
+        topTitle.setTextSize(20);
+        topBar.addView(topTitle);
+
+        RelativeLayout.LayoutParams topParams = new RelativeLayout.LayoutParams(
+                RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
+        topParams.addRule(RelativeLayout.ALIGN_PARENT_TOP);
+        wizardRoot.addView(topBar, topParams);
+
+        ScrollView sv = new ScrollView(this);
+        LinearLayout content = new LinearLayout(this);
+        content.setOrientation(LinearLayout.VERTICAL);
+        content.setPadding(dpToPx(16), dpToPx(20), dpToPx(16), dpToPx(20));
+
+        switch (step) {
+            case 1: // फ़ोटो 1: Welcome स्क्रीन
+                TextView wTitle = new TextView(this);
+                wTitle.setText("Welcome to NovaPS3!");
+                wTitle.setTextColor(Color.WHITE);
+                wTitle.setTextSize(22);
+                wTitle.setPadding(0, 0, 0, dpToPx(8));
+                content.addView(wTitle);
+
+                TextView wSub = new TextView(this);
+                wSub.setText("With just a few simple steps, you re ready to start playing, click on Next Step to get started.");
+                wSub.setTextColor(Color.parseColor("#d0d0d0"));
+                wSub.setTextSize(15);
+                content.addView(wSub);
+                break;
+
+            case 2: // फ़ोटो 2: फ़र्मवेयर स्क्रीन
+                TextView fText = new TextView(this);
+                fText.setText("To play the game, you must install the PS3 firmware (PS3UPDAT.PUP). Please select the firmware file.");
+                fText.setTextColor(Color.WHITE);
+                fText.setTextSize(17);
+                fText.setPadding(0, 0, 0, dpToPx(18));
+                content.addView(fText);
+
+                Button selFwBtn = createWizardActionButton(isFirmwareInstalled ? "FIRMWARE INSTALLED" : "SELECT FIRMWARE(PS3UPDAT.PUP)");
+                selFwBtn.setOnClickListener(v -> openFilePicker("*/*", PICK_PUP_FILE));
+                content.addView(selFwBtn);
+                break;
+
+            case 3: // फ़ोटो 3: ISO डायरेक्टरी
+                TextView dirText = new TextView(this);
+                dirText.setText("Please specify the PS3 ISO directory, the APP will automatically scan to retrieve valid games, you can also skip this step and install the .pkg file directly.");
+                dirText.setTextColor(Color.WHITE);
+                dirText.setTextSize(17);
+                dirText.setPadding(0, 0, 0, dpToPx(18));
+                content.addView(dirText);
+
+                Button selDirBtn = createWizardActionButton("SET (*.ISO) DIRECTORY");
+                selDirBtn.setOnClickListener(v -> openFolderPicker(PICK_ISO_DIR));
+                content.addView(selDirBtn);
+                break;
+
+            case 4: // फ़ोटो 4: फ़ॉन्ट सेलेक्शन
+                TextView fontText = new TextView(this);
+                fontText.setText("Please select a font file (*.ttf, *.ttc, *.otf) to install, or you can use a font from the PS3 firmware (words may be missing).");
+                fontText.setTextColor(Color.WHITE);
+                fontText.setTextSize(17);
+                fontText.setPadding(0, 0, 0, dpToPx(14));
+                content.addView(fontText);
+
+                RadioGroup rg = new RadioGroup(this);
+                RadioButton rbFirm = new RadioButton(this);
+                rbFirm.setText("From Firmware");
+                rbFirm.setTextColor(Color.WHITE);
+                rbFirm.setChecked(true);
+                rg.addView(rbFirm);
+
+                RadioButton rbCustom = new RadioButton(this);
+                rbCustom.setText("Custom");
+                rbCustom.setTextColor(Color.WHITE);
+                rg.addView(rbCustom);
+                content.addView(rg);
+
+                TextView fontPath = new TextView(this);
+                fontPath.setText("\nFont Path:");
+                fontPath.setTextColor(Color.parseColor("#8b949e"));
+                content.addView(fontPath);
+
+                TextView addFont = new TextView(this);
+                addFont.setText("  Add Custom Font(*.ttf, *.ttc, *.otf)");
+                addFont.setTextColor(Color.WHITE);
+                addFont.setTextSize(15);
+                addFont.setPadding(0, dpToPx(10), 0, 0);
+                addFont.setOnClickListener(v -> openFilePicker("*/*", PICK_FONT_FILE));
+                content.addView(addFont);
+                break;
+
+            case 5: // फ़ोटो 5: GPU ड्राइवर
+                TextView gpuText = new TextView(this);
+                gpuText.setText("Please select a GPU driver, you can also skip this step (the game may run with errors).");
+                gpuText.setTextColor(Color.WHITE);
+                gpuText.setTextSize(17);
+                gpuText.setPadding(0, 0, 0, dpToPx(14));
+                content.addView(gpuText);
+
+                CheckBox cbDriver = new CheckBox(this);
+                cbDriver.setText("Use Custom Driver");
+                cbDriver.setTextColor(Color.WHITE);
+                content.addView(cbDriver);
+
+                TextView driverPath = new TextView(this);
+                driverPath.setText("\nGPU Driver Path:");
+                driverPath.setTextColor(Color.parseColor("#8b949e"));
+                content.addView(driverPath);
+
+                TextView addDriver = new TextView(this);
+                addDriver.setText("  Add Custom Driver(*.zip, *.so)");
+                addDriver.setTextColor(Color.WHITE);
+                addDriver.setTextSize(15);
+                addDriver.setPadding(0, dpToPx(10), 0, 0);
+                addDriver.setOnClickListener(v -> openFilePicker("*/*", PICK_DRIVER_FILE));
+                content.addView(addDriver);
+                break;
+
+            case 6: // फ़ोटो 6: फ़िनिश स्क्रीन
+                TextView finText = new TextView(this);
+                finText.setText("The emulator will automatically select the most suitable configuration, but some configurations may cause issues on your device. You can modify them later in the settings.");
+                finText.setTextColor(Color.WHITE);
+                finText.setTextSize(17);
+                content.addView(finText);
+                break;
+        }
+
+        RelativeLayout.LayoutParams svParams = new RelativeLayout.LayoutParams(
+                RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.MATCH_PARENT);
+        svParams.addRule(RelativeLayout.BELOW, topBar.getId());
+        svParams.setMargins(0, 0, 0, dpToPx(70));
+        sv.addView(content);
+        wizardRoot.addView(sv, svParams);
+
+        // निचला नेविगेशन बार और प्रोग्रेस लाइन
+        RelativeLayout bottomNav = new RelativeLayout(this);
+        bottomNav.setPadding(dpToPx(10), dpToPx(10), dpToPx(10), dpToPx(10));
+
+        ProgressBar wizProgress = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
+        wizProgress.setMax(6);
+        wizProgress.setProgress(step);
+        wizProgress.getProgressDrawable().setColorFilter(Color.parseColor("#4dd0e1"), android.graphics.PorterDuff.Mode.SRC_IN);
+        RelativeLayout.LayoutParams progParams = new RelativeLayout.LayoutParams(
+                RelativeLayout.LayoutParams.MATCH_PARENT, dpToPx(4));
+        progParams.addRule(RelativeLayout.ALIGN_PARENT_TOP);
+        bottomNav.addView(wizProgress, progParams);
+
+        if (step > 1) {
+            Button prevBtn = new Button(this);
+            prevBtn.setText("PREV STEP");
+            prevBtn.setTextColor(Color.WHITE);
+            prevBtn.setBackgroundColor(Color.parseColor("#424242"));
+            RelativeLayout.LayoutParams prevParams = new RelativeLayout.LayoutParams(
+                    RelativeLayout.LayoutParams.WRAP_CONTENT, dpToPx(42));
+            prevParams.addRule(RelativeLayout.ALIGN_PARENT_LEFT);
+            prevParams.addRule(RelativeLayout.CENTER_VERTICAL);
+            prevParams.setMargins(0, dpToPx(8), 0, 0);
+            prevBtn.setLayoutParams(prevParams);
+            prevBtn.setOnClickListener(v -> showWelcomeWizard(step - 1));
+            bottomNav.addView(prevBtn);
+        }
+
+        Button nextBtn = new Button(this);
+        nextBtn.setText(step == 6 ? "FINISH" : "NEXT STEP");
+        nextBtn.setTextColor(Color.WHITE);
+        nextBtn.setBackgroundColor(Color.parseColor("#424242"));
+        RelativeLayout.LayoutParams nextParams = new RelativeLayout.LayoutParams(
+                RelativeLayout.LayoutParams.WRAP_CONTENT, dpToPx(42));
+        nextParams.addRule(RelativeLayout.ALIGN_PARENT_RIGHT);
+        nextParams.addRule(RelativeLayout.CENTER_VERTICAL);
+        nextParams.setMargins(0, dpToPx(8), 0, 0);
+        nextBtn.setLayoutParams(nextParams);
+        nextBtn.setOnClickListener(v -> {
+            if (step < 6) {
+                showWelcomeWizard(step + 1);
+            } else {
+                prefs.edit().putBoolean("novaps3_wizard_done", true).apply();
+                showSelectGameScreen();
+            }
+        });
+        bottomNav.addView(nextBtn);
+
+        RelativeLayout.LayoutParams bNavParams = new RelativeLayout.LayoutParams(
+                RelativeLayout.LayoutParams.MATCH_PARENT, dpToPx(65));
+        bNavParams.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
+        wizardRoot.addView(bottomNav, bNavParams);
+
+        rootContainer.addView(wizardRoot);
+    }
+
+    private Button createWizardActionButton(String text) {
+        Button b = new Button(this);
+        b.setText(text);
+        b.setTextColor(Color.WHITE);
+        b.setTextSize(13);
+        b.setBackgroundColor(Color.parseColor("#555555"));
+        b.setPadding(dpToPx(12), dpToPx(10), dpToPx(12), dpToPx(10));
+        return b;
+    }    // --- मुख्य गेम सेलेक्टर स्क्रीन ---
     private void showSelectGameScreen() {
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         rootContainer.removeAllViews();
@@ -249,7 +475,7 @@ public class MainActivity extends Activity {
         String[] items = new String[]{
                 "Install Firmware", "Install EDAT/RAP/PKG", "Key Mappers", "User Data Manager",
                 "About", "VirtualPadEdit", "Open File Manager", "Set (*.iso) Directory",
-                "Quick Start Page", "Buy Emulator Premium"
+                "Quick Start Page", "Buy NovaPS3 Premium"
         };
 
         for (String item : items) {
@@ -257,12 +483,15 @@ public class MainActivity extends Activity {
             tv.setText(item);
             tv.setTextSize(15);
             tv.setPadding(0, dpToPx(10), 0, dpToPx(10));
-            tv.setTextColor(item.equals("Buy Emulator Premium") ? Color.parseColor("#1a237e") : Color.parseColor("#212121"));
-            if (item.equals("Buy Emulator Premium")) tv.setTypeface(null, Typeface.BOLD);
+            tv.setTextColor(item.equals("Buy NovaPS3 Premium") ? Color.parseColor("#1a237e") : Color.parseColor("#212121"));
+            if (item.equals("Buy NovaPS3 Premium")) tv.setTypeface(null, Typeface.BOLD);
 
             tv.setOnClickListener(v -> {
                 popup.dismiss();
                 switch (item) {
+                    case "Quick Start Page":
+                        showWelcomeWizard(1);
+                        break;
                     case "Set (*.iso) Directory":
                         openFolderPicker(PICK_ISO_DIR);
                         break;
@@ -277,15 +506,6 @@ public class MainActivity extends Activity {
                         break;
                     case "About":
                         showAboutScreen();
-                        break;
-                    case "Open File Manager":
-                        try {
-                            Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
-                            intent.setType("*/*");
-                            startActivity(intent);
-                        } catch (Exception e) {
-                            Toast.makeText(this, "Could not open file manager", Toast.LENGTH_SHORT).show();
-                        }
                         break;
                     default:
                         Toast.makeText(this, item + " selected", Toast.LENGTH_SHORT).show();
@@ -343,8 +563,9 @@ public class MainActivity extends Activity {
         bottomNav.setTypeface(null, Typeface.BOLD);
         bottomNav.setPadding(0, dpToPx(24), 0, dpToPx(16));
         content.addView(bottomNav);
-            }
-        private void showMainSettingsScreen() {
+    }
+
+    private void showMainSettingsScreen() {
         rootContainer.removeAllViews();
 
         LinearLayout main = new LinearLayout(this);
@@ -398,9 +619,8 @@ public class MainActivity extends Activity {
         sv.addView(list);
         main.addView(sv);
         rootContainer.addView(main);
-    }
-
-    private void showCoreSettingsScreen() {
+                }
+        private void showCoreSettingsScreen() {
         showGenericSettingsHeader("Core");
         LinearLayout c = getSettingsScrollContent();
 
@@ -574,8 +794,9 @@ public class MainActivity extends Activity {
         addCheckBox(c, "Center Horizontally", false, null);
         addCheckBox(c, "Center Vertically", false, null);
         addSliderWithLabel(c, "Opacity (%)", 70, 100, null);
-            }
-        private void showAudioSettingsScreen() {
+    }
+
+    private void showAudioSettingsScreen() {
         showGenericSettingsHeader("Audio");
         LinearLayout c = getSettingsScrollContent();
 
@@ -784,7 +1005,7 @@ public class MainActivity extends Activity {
 
         gameView.addView(createMovableJoystick(dpToPx(35), dpToPx(25), true));
         gameView.addView(createFunctionalDPad(dpToPx(155), dpToPx(35)));
-        gameView.addView(createMovableJoystick(dpToPx(155), dpToPx(35), false));
+               gameView.addView(createMovableJoystick(dpToPx(155), dpToPx(35), false));
 
         RelativeLayout abxyBox = new RelativeLayout(this);
         setAbsoluteAlignBottomRight(abxyBox, dpToPx(25), dpToPx(20), dpToPx(120), dpToPx(120));
@@ -1022,7 +1243,7 @@ public class MainActivity extends Activity {
 
         ScrollView sv = new ScrollView(this);
         LinearLayout content = new LinearLayout(this);
-                content.setTag("SETTINGS_CONTENT_BOX");
+        content.setTag("SETTINGS_CONTENT_BOX");
         content.setOrientation(LinearLayout.VERTICAL);
         content.setPadding(dpToPx(16), dpToPx(16), dpToPx(16), dpToPx(24));
 
@@ -1165,7 +1386,13 @@ public class MainActivity extends Activity {
         super.onActivityResult(requestCode, resultCode, data);
         if (resultCode == RESULT_OK && data != null) {
             Uri uri = data.getData();
-            if (requestCode == PICK_ISO_DIR && uri != null) {
+            if (requestCode == PICK_PUP_FILE) {
+                isFirmwareInstalled = true;
+                Toast.makeText(this, "PS3 Firmware (PUP) Installed to dev_flash!", Toast.LENGTH_LONG).show();
+                if (currentSetupStep == 2) {
+                    showWelcomeWizard(2);
+                }
+            } else if (requestCode == PICK_ISO_DIR && uri != null) {
                 int count = 0;
                 try {
                     Uri childrenUri = DocumentsContract.buildChildDocumentsUriUsingTree(uri, DocumentsContract.getTreeDocumentId(uri));
@@ -1196,7 +1423,9 @@ public class MainActivity extends Activity {
 
                 saveGamesList();
                 Toast.makeText(this, "Mounted " + count + " item(s) from directory", Toast.LENGTH_SHORT).show();
-                showSelectGameScreen();
+                if (prefs.getBoolean("novaps3_wizard_done", false)) {
+                    showSelectGameScreen();
+                }
             } else if (requestCode == PICK_PKG_FILE) {
                 String name = (uri != null) ? getFileNameFromUri(uri) : "PS3 Disc Image.iso";
                 if (name == null || name.isEmpty()) name = "PS3 Disc Image.iso";
@@ -1206,8 +1435,10 @@ public class MainActivity extends Activity {
                 }
                 Toast.makeText(this, "Game Loaded: " + name, Toast.LENGTH_SHORT).show();
                 showSelectGameScreen();
-            } else if (requestCode == PICK_PUP_FILE) {
-                Toast.makeText(this, "PS3 Firmware (PUP) Installed to dev_flash!", Toast.LENGTH_LONG).show();
+            } else if (requestCode == PICK_FONT_FILE) {
+                Toast.makeText(this, "Custom Font Installed!", Toast.LENGTH_SHORT).show();
+            } else if (requestCode == PICK_DRIVER_FILE) {
+                Toast.makeText(this, "Custom GPU Driver Loaded!", Toast.LENGTH_SHORT).show();
             }
         }
     }
@@ -1225,4 +1456,6 @@ public class MainActivity extends Activity {
         if (result == null) result = uri.getLastPathSegment();
         return result;
     }
-}
+                          }
+            
+    
