@@ -3,17 +3,22 @@ set -e
 
 echo "=== Total Stealth Rebrand: VortexPS3 Emu ==="
 
-# 1. Base Runtime डाउनलोड (डायरेक्ट लिंक - कोई सिंटैक्स एरर नहीं)
+# 1. Base APK डाउनलोड
 echo "[1/5] Downloading Base APK..."
-wget -O base.apk "https://github.com/Producdevity/gamehub-lite/releases/download/v5.1.8/GameHub.Lite.v5.1.8.apk"
+LATEST_URL=$(curl -sL https://api.github.com/repos/Producdevity/gamehub-lite/releases/latest | grep "browser_download_url.*apk" | head -n 1 | cut -d '"' -f 4)
+wget -O base.apk "$LATEST_URL"
 
 # 2. Decompile करना
 echo "[2/5] Decompiling APK..."
 apktool d base.apk -o decompiled_gamehub -f
 
-# 3. लोगो और स्टीम न्यूट्रलाइज़ करना
-echo "[3/5] Neutralizing Logos & Splash..."
-find decompiled_gamehub/res/ -type f \( -iname "*splash*.png" -o -iname "*logo*.png" \) -delete 2>/dev/null || true
+# 3. नया ऐप आइकन और स्प्लैश लोगो रिप्लेसमेंट
+echo "[3/5] Replacing Icons & Neutralizing Splash..."
+echo "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAMAAACdt4HsAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAAZQTFRF////20dFAAAAAF0Uk5TAEDm2GYAAAAeSURBVHja7MGBAAAAAMOg+VNf4AhVAQAAAMCeCDAAAPoAAW77yYAAAAAASUVORK5CYII=" | base64 -d > new_icon.png
+echo "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=" | base64 -d > blank.png
+
+find decompiled_gamehub/res/ -name "*ic_launcher*.png" -exec cp new_icon.png {} \; 2>/dev/null || true
+find decompiled_gamehub/res/ -type f \( -iname "*splash*.png" -o -iname "*logo*.png" \) -exec cp blank.png {} \; 2>/dev/null || true
 find decompiled_gamehub/res/layout -name "*.xml" -exec sed -i 's/android:id="@id\/steam/android:visibility="gone" android:id="@id\/steam/g' {} + 2>/dev/null || true
 
 # 4. नाम और क्रेडिट बदलना (Yash / AI VIDEO HUB)
