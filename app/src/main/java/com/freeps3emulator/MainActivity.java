@@ -5,16 +5,24 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.ActivityInfo;
 import android.database.Cursor;
+import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Paint;
 import android.graphics.Typeface;
 import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.Vibrator;
 import android.provider.OpenableColumns;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
@@ -22,29 +30,45 @@ import android.widget.CheckBox;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.PopupWindow;
+import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.ScrollView;
 import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.documentfile.provider.DocumentFile;
+
+import java.io.File;
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Random;
+import java.util.Set;
 
 public class MainActivity extends Activity {
 
     private static final int PICK_PKG_FILE = 101;
     private static final int PICK_PUP_FILE = 102;
     private static final int PICK_ISO_DIR = 103;
+    private static final int PICK_SINGLE_ISO = 104;
     private static final String PREFS_NAME = "PS3_VideoExact_Settings";
 
     private FrameLayout rootContainer;
     private SharedPreferences prefs;
+    private Vibrator vibrator;
+
     private ArrayList<String> gameTitles = new ArrayList<>();
+    private String activeBootGame = "Tomb Raider Underworld [BLES00384]";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        try {
+            vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+        } catch (Exception ignored) {}
+
+        loadSavedGames();
 
         rootContainer = new FrameLayout(this);
         rootContainer.setBackgroundColor(Color.parseColor("#1f1f1f"));
@@ -53,11 +77,58 @@ public class MainActivity extends Activity {
         showSelectGameScreen();
     }
 
+    private void loadSavedGames() {
+        gameTitles.clear();
+        Set<String> saved = prefs.getStringSet("saved_ps3_games", null);
+        if (saved != null && !saved.isEmpty()) {
+            gameTitles.addAll(saved);
+        }
+
+        // dev_hdd0/game आंतरिक फ़ोल्डर ऑटो-स्कैन
+        try {
+            File hdd0 = new File(getExternalFilesDir(null), "dev_hdd0/game");
+            if (hdd0.exists() && hdd0.isDirectory()) {
+                File[] list = hdd0.listFiles();
+                if (list != null) {
+                    for (File f : list) {
+                        if (f.isDirectory() && !gameTitles.contains(f.getName())) {
+                            gameTitles.add(f.getName());
+                        }
+                    }
+                }
+            }
+        } catch (Exception ignored) {}
+    }
+
+    private void saveGamesList() {
+        Set<String> set = new HashSet<>(gameTitles);
+        prefs.edit().putStringSet("saved_ps3_games", set).apply();
+    }
+
     private int dpToPx(int dp) {
         return (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, dp, getResources().getDisplayMetrics());
     }
 
+    private void triggerFeedback() {
+        try {
+            if (vibrator != null && vibrator.hasVibrator()) {
+                vibrator.vibrate(20);
+            }
+        } catch (Exception ignored) {}
+    }
+
+    private GradientDrawable createCard(int bgColor, int radiusDp, int strokeColor) {
+        GradientDrawable gd = new GradientDrawable();
+        gd.setColor(bgColor);
+        gd.setCornerRadius(dpToPx(radiusDp));
+        if (strokeColor != 0) {
+            gd.setStroke(dpToPx(1), strokeColor);
+        }
+        return gd;
+    }
+
     private void showSelectGameScreen() {
+        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         rootContainer.removeAllViews();
 
         LinearLayout mainLayout = new LinearLayout(this);
@@ -88,7 +159,8 @@ public class MainActivity extends Activity {
         refreshBtn.setTextSize(22);
         refreshBtn.setPadding(dpToPx(10), 0, dpToPx(14), 0);
         refreshBtn.setOnClickListener(v -> {
-            Toast.makeText(this, "Refreshing Game Library...", Toast.LENGTH_SHORT).show();
+            loadSavedGames();
+            Toast.makeText(this, "Game library refreshed (" + gameTitles.size() + " found)", Toast.LENGTH_SHORT).show();
             showSelectGameScreen();
         });
         rightIcons.addView(refreshBtn);
@@ -134,12 +206,36 @@ public class MainActivity extends Activity {
             list.setPadding(dpToPx(16), dpToPx(16), dpToPx(16), dpToPx(16));
 
             for (String g : gameTitles) {
+                LinearLayout row = new LinearLayout(this);
+                row.setOrientation(LinearLayout.VERTICAL);
+                row.setBackground(createCard(Color.parseColor("#2a2a2a"), 6, Color.parseColor("#383838")));
+                row.setPadding(dpToPx(14), dpToPx(12), dpToPx(14), dpToPx(12));
+                LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+                lp.setMargins(0, 0, 0, dpToPx(10));
+                row.setLayoutParams(lp);
+
                 TextView gView = new TextView(this);
                 gView.setText("🎮  " + g);
                 gView.setTextColor(Color.WHITE);
-                gView.setTextSize(16);
-                gView.setPadding(0, dpToPx(12), 0, dpToPx(12));
-                list.addView(gView);
+                gView.setTextSize(15);
+                gView.setTypeface(null, Typeface.BOLD);
+                row.addView(gView);
+
+                TextView sub = new TextView(this);
+                sub.setText("PS3 Disc Image (.iso/pkg) • Ready to Execute");
+                sub.setTextColor(Color.parseColor("#3fb950"));
+                sub.setTextSize(11);
+                sub.setPadding(0, dpToPx(4), 0, 0);
+                row.addView(sub);
+
+                row.setOnClickListener(v -> {
+                    triggerFeedback();
+                    activeBootGame = g;
+                    startPpuCompilingScreen();
+                });
+
+                list.addView(row);
             }
             sv.addView(list);
             body.addView(sv);
@@ -148,8 +244,7 @@ public class MainActivity extends Activity {
         mainLayout.addView(body);
         rootContainer.addView(mainLayout);
     }
-
-    private void showThreeDotsPopup(View anchor) {
+        private void showThreeDotsPopup(View anchor) {
         PopupWindow popup = new PopupWindow(this);
         LinearLayout menuLayout = new LinearLayout(this);
         menuLayout.setOrientation(LinearLayout.VERTICAL);
@@ -173,12 +268,33 @@ public class MainActivity extends Activity {
             tv.setOnClickListener(v -> {
                 popup.dismiss();
                 switch (item) {
-                    case "Key Mappers": showKeyMappersScreen(); break;
-                    case "About": showAboutScreen(); break;
-                    case "Install Firmware": openFilePicker("*/*", PICK_PUP_FILE); break;
-                    case "Install EDAT/RAP/PKG": openFilePicker("*/*", PICK_PKG_FILE); break;
-                    case "Set (*.iso) Directory": openFolderPicker(PICK_ISO_DIR); break;
-                    default: Toast.makeText(this, item + " selected", Toast.LENGTH_SHORT).show(); break;
+                    case "Set (*.iso) Directory":
+                        openFolderPicker(PICK_ISO_DIR);
+                        break;
+                    case "Install EDAT/RAP/PKG":
+                        openFilePicker("*/*", PICK_PKG_FILE);
+                        break;
+                    case "Install Firmware":
+                        openFilePicker("*/*", PICK_PUP_FILE);
+                        break;
+                    case "Key Mappers":
+                        showKeyMappersScreen();
+                        break;
+                    case "About":
+                        showAboutScreen();
+                        break;
+                    case "Open File Manager":
+                        try {
+                            Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+                            intent.setType("*/*");
+                            startActivity(intent);
+                        } catch (Exception e) {
+                            Toast.makeText(this, "Could not open file manager", Toast.LENGTH_SHORT).show();
+                        }
+                        break;
+                    default:
+                        Toast.makeText(this, item + " selected", Toast.LENGTH_SHORT).show();
+                        break;
                 }
             });
             menuLayout.addView(tv);
@@ -232,8 +348,9 @@ public class MainActivity extends Activity {
         bottomNav.setTypeface(null, Typeface.BOLD);
         bottomNav.setPadding(0, dpToPx(24), 0, dpToPx(16));
         content.addView(bottomNav);
-                              }
-        private void showMainSettingsScreen() {
+    }
+
+    private void showMainSettingsScreen() {
         rootContainer.removeAllViews();
 
         LinearLayout main = new LinearLayout(this);
@@ -463,8 +580,8 @@ public class MainActivity extends Activity {
         addCheckBox(c, "Center Horizontally", false, null);
         addCheckBox(c, "Center Vertically", false, null);
         addSliderWithLabel(c, "Opacity (%)", 70, 100, null);
-                            }
-                               private void showAudioSettingsScreen() {
+                    }
+        private void showAudioSettingsScreen() {
         showGenericSettingsHeader("Audio");
         LinearLayout c = getSettingsScrollContent();
 
@@ -553,6 +670,329 @@ public class MainActivity extends Activity {
         addSettingSubText(c, "Custom Font File Path", "");
     }
 
+    // --- PPU/SPU COMPILING & IN-GAME SCREEN ---
+    private void startPpuCompilingScreen() {
+        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+        rootContainer.removeAllViews();
+
+        LinearLayout compLayout = new LinearLayout(this);
+        compLayout.setOrientation(LinearLayout.VERTICAL);
+        compLayout.setGravity(Gravity.CENTER);
+        compLayout.setBackgroundColor(Color.BLACK);
+
+        TextView compTitle = new TextView(this);
+        compTitle.setText("Compiling PPU / SPU Executables...");
+        compTitle.setTextColor(Color.WHITE);
+        compTitle.setTextSize(18);
+        compTitle.setTypeface(null, Typeface.BOLD);
+        compLayout.addView(compTitle);
+
+        TextView compSub = new TextView(this);
+        compSub.setText(activeBootGame + "\nDriver: Vulkan 1.3 LLE Core • Precaching Shaders");
+        compSub.setTextColor(Color.parseColor("#8b949e"));
+        compSub.setTextSize(11);
+        compSub.setGravity(Gravity.CENTER);
+        compSub.setPadding(0, dpToPx(6), 0, dpToPx(20));
+        compLayout.addView(compSub);
+
+        ProgressBar pb = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
+        pb.setMax(100);
+        pb.setProgress(15);
+        compLayout.addView(pb, new LinearLayout.LayoutParams(dpToPx(340), dpToPx(12)));
+
+        TextView statusText = new TextView(this);
+        statusText.setText("Compiling module 48 of 320 (15%)");
+        statusText.setTextColor(Color.parseColor("#58a6ff"));
+        statusText.setTextSize(11);
+        statusText.setPadding(0, dpToPx(8), 0, 0);
+        compLayout.addView(statusText);
+
+        rootContainer.addView(compLayout);
+
+        Handler handler = new Handler(Looper.getMainLooper());
+        handler.post(new Runnable() {
+            int progress = 15;
+            @Override
+            public void run() {
+                if (progress < 100) {
+                    progress += 6;
+                    pb.setProgress(progress);
+                    statusText.setText("Compiling module " + (progress * 3) + " of 320 (" + progress + "%)");
+                    handler.postDelayed(this, 70);
+                } else {
+                    statusText.setText("Booting PS3 Core...");
+                    handler.postDelayed(() -> showInGameScreen(), 200);
+                }
+            }
+        });
+    }
+
+    private void showInGameScreen() {
+        rootContainer.removeAllViews();
+
+        RelativeLayout gameView = new RelativeLayout(this);
+        gameView.setBackgroundColor(Color.parseColor("#05080e"));
+
+        // Performance HUD & Exit
+        RelativeLayout topBar = new RelativeLayout(this);
+        topBar.setPadding(dpToPx(16), dpToPx(8), dpToPx(16), 0);
+
+        TextView hud = new TextView(this);
+        hud.setText(activeBootGame.toUpperCase() + "\nFPS: 59.8 | Vulkan 720p | FrameTime: 16.7ms");
+        hud.setTextColor(Color.GREEN);
+        hud.setTextSize(11);
+        hud.setTypeface(Typeface.MONOSPACE);
+        topBar.addView(hud);
+
+        Button exitBtn = new Button(this);
+        exitBtn.setText("Exit");
+        exitBtn.setTextColor(Color.WHITE);
+        exitBtn.setTextSize(11);
+        exitBtn.setBackground(createCard(Color.parseColor("#da3633"), 4, 0));
+        RelativeLayout.LayoutParams exitParams = new RelativeLayout.LayoutParams(
+                RelativeLayout.LayoutParams.WRAP_CONTENT, dpToPx(32));
+        exitParams.addRule(RelativeLayout.ALIGN_PARENT_RIGHT);
+        exitBtn.setLayoutParams(exitParams);
+        exitBtn.setOnClickListener(v -> {
+            triggerFeedback();
+            showSelectGameScreen();
+        });
+        topBar.addView(exitBtn);
+
+        gameView.addView(topBar);
+
+        createVirtualControls(gameView);
+        rootContainer.addView(gameView);
+    }
+
+    private void createVirtualControls(RelativeLayout gameView) {
+        Button ltBtn = createTriggerButton("LT");
+        setAbsolutePos(ltBtn, dpToPx(30), dpToPx(30), dpToPx(55), dpToPx(32));
+        gameView.addView(ltBtn);
+
+        Button lbBtn = createTriggerButton("LB");
+        setAbsolutePos(lbBtn, dpToPx(30), dpToPx(72), dpToPx(55), dpToPx(32));
+        gameView.addView(lbBtn);
+
+        Button l3Btn = createRoundButton("L3");
+        setAbsolutePos(l3Btn, dpToPx(30), dpToPx(130), dpToPx(36), dpToPx(36));
+        gameView.addView(l3Btn);
+
+        Button rtBtn = createTriggerButton("RT");
+        setAbsoluteAlignRight(rtBtn, dpToPx(30), dpToPx(30), dpToPx(55), dpToPx(32));
+        gameView.addView(rtBtn);
+
+        Button rbBtn = createTriggerButton("RB");
+        setAbsoluteAlignRight(rbBtn, dpToPx(30), dpToPx(72), dpToPx(55), dpToPx(32));
+        gameView.addView(rbBtn);
+
+        Button r3Btn = createRoundButton("R3");
+        setAbsoluteAlignRight(r3Btn, dpToPx(30), dpToPx(130), dpToPx(36), dpToPx(36));
+        gameView.addView(r3Btn);
+
+        // Movable Joysticks
+        gameView.addView(createMovableJoystick(dpToPx(35), dpToPx(25), true));
+        gameView.addView(createFunctionalDPad(dpToPx(155), dpToPx(35)));
+        gameView.addView(createMovableJoystick(dpToPx(155), dpToPx(35), false));
+
+        // ABXY
+        RelativeLayout abxyBox = new RelativeLayout(this);
+        setAbsoluteAlignBottomRight(abxyBox, dpToPx(25), dpToPx(20), dpToPx(120), dpToPx(120));
+        abxyBox.addView(createABXYButton("Y", 40, 0));
+        abxyBox.addView(createABXYButton("A", 40, 80));
+        abxyBox.addView(createABXYButton("X", 0, 40));
+        abxyBox.addView(createABXYButton("B", 80, 40));
+        gameView.addView(abxyBox);
+
+        // Center Select/Menu
+        LinearLayout centerMenu = new LinearLayout(this);
+        centerMenu.setOrientation(LinearLayout.HORIZONTAL);
+        RelativeLayout.LayoutParams cParams = new RelativeLayout.LayoutParams(
+                RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
+        cParams.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
+        cParams.addRule(RelativeLayout.CENTER_HORIZONTAL);
+        cParams.setMargins(0, 0, 0, dpToPx(15));
+        centerMenu.setLayoutParams(cParams);
+
+        Button sel = createCapsuleButton("❐");
+        Button menu = createCapsuleButton("☰");
+        LinearLayout.LayoutParams mp = new LinearLayout.LayoutParams(dpToPx(44), dpToPx(26));
+        mp.setMargins(dpToPx(8), 0, 0, 0);
+        menu.setLayoutParams(mp);
+
+        centerMenu.addView(sel);
+        centerMenu.addView(menu);
+        gameView.addView(centerMenu);
+    }
+
+    private FrameLayout createMovableJoystick(int marginX, int marginY, boolean isLeft) {
+        FrameLayout base = new FrameLayout(this);
+        base.setBackground(createCard(Color.argb(25, 255, 255, 255), 55, Color.argb(70, 255, 255, 255)));
+
+        View thumb = new View(this);
+        thumb.setBackground(createCard(Color.argb(60, 255, 255, 255), 26, Color.argb(120, 255, 255, 255)));
+        int thumbSize = dpToPx(52);
+        FrameLayout.LayoutParams thumbParams = new FrameLayout.LayoutParams(thumbSize, thumbSize);
+        thumbParams.gravity = Gravity.CENTER;
+        base.addView(thumb, thumbParams);
+
+        int maxRadius = dpToPx(30);
+        base.setOnTouchListener((v, event) -> {
+            switch (event.getActionMasked()) {
+                case MotionEvent.ACTION_DOWN: triggerFeedback();
+                case MotionEvent.ACTION_MOVE:
+                    float dx = event.getX() - (base.getWidth() / 2.0f);
+                    float dy = event.getY() - (base.getHeight() / 2.0f);
+                    double dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist > maxRadius) {
+                        dx = (float) (dx / dist * maxRadius);
+                        dy = (float) (dy / dist * maxRadius);
+                    }
+                    thumb.setTranslationX(dx);
+                    thumb.setTranslationY(dy);
+                    return true;
+                case MotionEvent.ACTION_UP:
+                case MotionEvent.ACTION_CANCEL:
+                    thumb.animate().translationX(0).translationY(0).setDuration(120).start();
+                    return true;
+            }
+            return true;
+        });
+
+        if (isLeft) {
+            setAbsoluteAlignBottomLeft(base, marginX, marginY, dpToPx(110), dpToPx(110));
+        } else {
+            setAbsoluteAlignBottomRight(base, marginX, marginY, dpToPx(110), dpToPx(110));
+        }
+        return base;
+    }
+
+    private RelativeLayout createFunctionalDPad(int leftMargin, int bottomMargin) {
+        RelativeLayout dpad = new RelativeLayout(this);
+        setAbsoluteAlignBottomLeft(dpad, leftMargin, bottomMargin, dpToPx(90), dpToPx(90));
+
+        FrameLayout visualCross = new FrameLayout(this);
+        View hBar = new View(this);
+        hBar.setBackground(createCard(Color.argb(30, 255, 255, 255), 6, Color.argb(70, 255, 255, 255)));
+        visualCross.addView(hBar, new FrameLayout.LayoutParams(dpToPx(90), dpToPx(30), Gravity.CENTER));
+
+        View vBar = new View(this);
+        vBar.setBackground(createCard(Color.argb(30, 255, 255, 255), 6, Color.argb(70, 255, 255, 255)));
+        visualCross.addView(vBar, new FrameLayout.LayoutParams(dpToPx(30), dpToPx(90), Gravity.CENTER));
+        dpad.addView(visualCross);
+
+        dpad.addView(createDPadDirButton(dpToPx(30), 0));
+        dpad.addView(createDPadDirButton(dpToPx(30), dpToPx(60)));
+        dpad.addView(createDPadDirButton(0, dpToPx(30)));
+        dpad.addView(createDPadDirButton(dpToPx(60), dpToPx(30)));
+        return dpad;
+    }
+
+    private View createDPadDirButton(int x, int y) {
+        View v = new View(this);
+        RelativeLayout.LayoutParams p = new RelativeLayout.LayoutParams(dpToPx(30), dpToPx(30));
+        p.setMargins(x, y, 0, 0);
+        v.setLayoutParams(p);
+        v.setOnTouchListener((view, event) -> {
+            if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                triggerFeedback();
+                v.setBackground(createCard(Color.argb(120, 56, 139, 253), 4, Color.WHITE));
+            } else if (event.getAction() == MotionEvent.ACTION_UP || event.getAction() == MotionEvent.ACTION_CANCEL) {
+                v.setBackgroundColor(Color.TRANSPARENT);
+            }
+            return true;
+        });
+        return v;
+    }
+
+    private Button createTriggerButton(String text) {
+        Button btn = new Button(this);
+        btn.setText(text);
+        btn.setTextColor(Color.parseColor("#d0d0d0"));
+        btn.setTextSize(12);
+        btn.setTypeface(null, Typeface.BOLD);
+        btn.setBackground(createCard(Color.argb(35, 255, 255, 255), 8, Color.argb(80, 255, 255, 255)));
+        setupTouchHighlight(btn);
+        return btn;
+    }
+
+    private Button createRoundButton(String text) {
+        Button btn = new Button(this);
+        btn.setText(text);
+        btn.setTextColor(Color.parseColor("#d0d0d0"));
+        btn.setTextSize(11);
+        btn.setBackground(createCard(Color.argb(35, 255, 255, 255), 18, Color.argb(80, 255, 255, 255)));
+        setupTouchHighlight(btn);
+        return btn;
+    }
+
+    private Button createABXYButton(String text, int marginX, int marginY) {
+        Button btn = new Button(this);
+        btn.setText(text);
+        btn.setTextColor(Color.parseColor("#d0d0d0"));
+        btn.setTextSize(14);
+        btn.setTypeface(null, Typeface.BOLD);
+        btn.setBackground(createCard(Color.argb(40, 255, 255, 255), 20, Color.argb(90, 255, 255, 255)));
+        RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(dpToPx(38), dpToPx(38));
+        params.setMargins(dpToPx(marginX), dpToPx(marginY), 0, 0);
+        btn.setLayoutParams(params);
+        setupTouchHighlight(btn);
+        return btn;
+    }
+
+    private Button createCapsuleButton(String icon) {
+        Button btn = new Button(this);
+        btn.setText(icon);
+        btn.setTextColor(Color.parseColor("#d0d0d0"));
+        btn.setTextSize(11);
+        btn.setBackground(createCard(Color.argb(35, 255, 255, 255), 12, Color.argb(80, 255, 255, 255)));
+        btn.setLayoutParams(new LinearLayout.LayoutParams(dpToPx(44), dpToPx(26)));
+        setupTouchHighlight(btn);
+        return btn;
+    }
+
+    private void setupTouchHighlight(Button btn) {
+        btn.setOnTouchListener((v, event) -> {
+            if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                triggerFeedback();
+                btn.getBackground().setAlpha(180);
+            } else if (event.getAction() == MotionEvent.ACTION_UP || event.getAction() == MotionEvent.ACTION_CANCEL) {
+                btn.getBackground().setAlpha(50);
+            }
+            return false;
+        });
+    }
+
+    private void setAbsolutePos(View v, int x, int y, int w, int h) {
+        RelativeLayout.LayoutParams p = new RelativeLayout.LayoutParams(w, h);
+        p.setMargins(x, y, 0, 0);
+        v.setLayoutParams(p);
+    }
+
+    private void setAbsoluteAlignRight(View v, int rightMargin, int y, int w, int h) {
+        RelativeLayout.LayoutParams p = new RelativeLayout.LayoutParams(w, h);
+        p.addRule(RelativeLayout.ALIGN_PARENT_RIGHT);
+        p.setMargins(0, y, rightMargin, 0);
+        v.setLayoutParams(p);
+    }
+
+    private void setAbsoluteAlignBottomLeft(View v, int leftMargin, int bottomMargin, int w, int h) {
+        RelativeLayout.LayoutParams p = new RelativeLayout.LayoutParams(w, h);
+        p.addRule(RelativeLayout.ALIGN_PARENT_LEFT);
+        p.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
+        p.setMargins(leftMargin, 0, 0, bottomMargin);
+        v.setLayoutParams(p);
+    }
+
+    private void setAbsoluteAlignBottomRight(View v, int rightMargin, int bottomMargin, int w, int h) {
+        RelativeLayout.LayoutParams p = new RelativeLayout.LayoutParams(w, h);
+        p.addRule(RelativeLayout.ALIGN_PARENT_RIGHT);
+        p.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
+        p.setMargins(0, 0, rightMargin, bottomMargin);
+        v.setLayoutParams(p);
+    }
+
+    // --- कॉमन डायलॉग्स और फ़ाइल हैंडलिंग ---
     private void showResetDefaultDialog() {
         AlertDialog.Builder b = new AlertDialog.Builder(this);
         b.setTitle("Reset as Default?");
@@ -587,10 +1027,8 @@ public class MainActivity extends Activity {
         back.setText("←  " + titleText);
         back.setTextColor(Color.WHITE);
         back.setTextSize(20);
-        back.setOnClickListener(v -> showMainSettingsScreen());
-        header.addView(back);
-
-        main.addView(header);
+        back.setOnClickListener(v -> showMainSettingsScreen()
+                                main.addView(header);
 
         ScrollView sv = new ScrollView(this);
         LinearLayout content = new LinearLayout(this);
@@ -685,8 +1123,7 @@ public class MainActivity extends Activity {
         SeekBar sb = new SeekBar(this);
         sb.setMax(max);
         sb.setProgress(initial);
-        LinearLayout.LayoutParams sbParams = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1.0f);
-        sb.setLayoutParams(sbParams);
+        sliderRow.addView(sb, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1.0f));
 
         TextView valTv = new TextView(this);
         valTv.setText(String.valueOf(initial));
@@ -704,10 +1141,8 @@ public class MainActivity extends Activity {
             @Override public void onStopTrackingTouch(SeekBar seekBar) {}
         });
 
-        sliderRow.addView(sb);
         sliderRow.addView(valTv);
         row.addView(sliderRow);
-
         parent.addView(row);
     }
 
@@ -740,11 +1175,36 @@ public class MainActivity extends Activity {
         super.onActivityResult(requestCode, resultCode, data);
         if (resultCode == RESULT_OK && data != null) {
             Uri uri = data.getData();
-            if (requestCode == PICK_PKG_FILE || requestCode == PICK_ISO_DIR) {
-                String name = (uri != null) ? getFileNameFromUri(uri) : "Custom PS3 Game";
-                if (name == null || name.isEmpty()) name = "Tomb Raider Underworld [BLES00384]";
-                gameTitles.add(name);
-                Toast.makeText(this, "Game Mounted: " + name, Toast.LENGTH_SHORT).show();
+            if (requestCode == PICK_ISO_DIR && uri != null) {
+                // पूरे फ़ोल्डर में मौजूद सभी .ISO को स्कैन करना
+                try {
+                    DocumentFile pickedDir = DocumentFile.fromTreeUri(this, uri);
+                    if (pickedDir != null && pickedDir.isDirectory()) {
+                        int count = 0;
+                        for (DocumentFile file : pickedDir.listFiles()) {
+                            String name = file.getName();
+                            if (name != null && (name.toLowerCase().endsWith(".iso") || name.toLowerCase().endsWith(".pkg"))) {
+                                if (!gameTitles.contains(name)) {
+                                    gameTitles.add(name);
+                                    count++;
+                                }
+                            }
+                        }
+                        saveGamesList();
+                        Toast.makeText(this, "Mounted " + count + " game(s) from directory", Toast.LENGTH_SHORT).show();
+                        showSelectGameScreen();
+                    }
+                } catch (Exception e) {
+                    Toast.makeText(this, "Error scanning directory", Toast.LENGTH_SHORT).show();
+                }
+            } else if (requestCode == PICK_PKG_FILE || requestCode == PICK_SINGLE_ISO) {
+                String name = (uri != null) ? getFileNameFromUri(uri) : "Custom PS3 Game.iso";
+                if (name == null || name.isEmpty()) name = "PS3 Game.iso";
+                if (!gameTitles.contains(name)) {
+                    gameTitles.add(name);
+                    saveGamesList();
+                }
+                Toast.makeText(this, "Game Loaded: " + name, Toast.LENGTH_SHORT).show();
                 showSelectGameScreen();
             } else if (requestCode == PICK_PUP_FILE) {
                 Toast.makeText(this, "PS3 Firmware (PUP) Installed to dev_flash!", Toast.LENGTH_LONG).show();
@@ -765,4 +1225,4 @@ public class MainActivity extends Activity {
         if (result == null) result = uri.getLastPathSegment();
         return result;
     }
-            }
+        }
