@@ -3,22 +3,26 @@ set -e
 
 echo "=== Total Stealth Rebrand: VortexPS3 Emu ==="
 
-# 1. Base APK डाउनलोड
+# 1. Base APK डाउनलोड (Fail-safe direct redirect URL)
 echo "[1/5] Downloading Base APK..."
-LATEST_URL=$(curl -sL https://api.github.com/repos/Producdevity/gamehub-lite/releases/latest | grep "browser_download_url.*apk" | head -n 1 | cut -d '"' -f 4)
-wget -O base.apk "$LATEST_URL"
+wget -q --show-progress -O base.apk "https://github.com/Producdevity/gamehub-lite/releases/download/5.1.8/app-release.apk" || \
+wget -q --show-progress -O base.apk "https://github.com/Producdevity/gamehub-lite/releases/latest/download/app-release.apk" || \
+curl -sL https://api.github.com/repos/Producdevity/gamehub-lite/releases/latest | grep "browser_download_url.*apk" | head -n 1 | cut -d '"' -f 4 | xargs wget -O base.apk
 
 # 2. Decompile करना
 echo "[2/5] Decompiling APK..."
 apktool d base.apk -o decompiled_gamehub -f
 
-# 3. नया ऐप आइकन और स्प्लैश लोगो रिप्लेसमेंट
-echo "[3/5] Replacing Icons & Neutralizing Splash..."
-echo "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAMAAACdt4HsAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAAZQTFRF////20dFAAAAAF0Uk5TAEDm2GYAAAAeSURBVHja7MGBAAAAAMOg+VNf4AhVAQAAAMCeCDAAAPoAAW77yYAAAAAASUVORK5CYII=" | base64 -d > new_icon.png
+# 3. लोगो और स्टीम को न्यूट्रलाइज़ करना
+echo "[3/5] Neutralizing Logos & Splash..."
+
+# 1x1 पारदर्शी इमेज जनरेट करना
 echo "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=" | base64 -d > blank.png
 
-find decompiled_gamehub/res/ -name "*ic_launcher*.png" -exec cp new_icon.png {} \; 2>/dev/null || true
-find decompiled_gamehub/res/ -type f \( -iname "*splash*.png" -o -iname "*logo*.png" \) -exec cp blank.png {} \; 2>/dev/null || true
+# सिर्फ लोगो और स्प्लैश को ब्लैंक से रिप्लेस करना
+find decompiled_gamehub/res/ -type f \( -iname "*splash*.png" -o -iname "*logo*.png" \) ! -iname "*launcher*" -exec cp blank.png {} \; 2>/dev/null || true
+
+# Steam विजेट को छुपाना
 find decompiled_gamehub/res/layout -name "*.xml" -exec sed -i 's/android:id="@id\/steam/android:visibility="gone" android:id="@id\/steam/g' {} + 2>/dev/null || true
 
 # 4. नाम और क्रेडिट बदलना (Yash / AI VIDEO HUB)
