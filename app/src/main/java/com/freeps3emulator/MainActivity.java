@@ -73,12 +73,12 @@ public class MainActivity extends Activity {
     private String selectedResolution = "1280x720 (720p HD)";
     private String translationPreset = "Extreme Preset";
     private boolean aiFrameGenEnabled = true;
-    private float flowScale = 0.60f;
     private String selectedAudioDriver = "PulseAudio (Low Latency)";
     private boolean esyncFsyncEnabled = true;
     private String selectedSwapMemory = "4GB Swap File (ZRAM)";
     private String envVariables = "DXVK_ASYNC=1 MESA_EXTENSION_OVERRIDE=1";
     private int touchOpacity = 85;
+    private boolean frameLimitEnabled = true;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -172,7 +172,6 @@ public class MainActivity extends Activity {
         return gd;
     }
 
-    // --- स्प्लैश स्क्रीन ---
     private void showSplashScreen() {
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
         rootContainer.removeAllViews();
@@ -214,7 +213,6 @@ public class MainActivity extends Activity {
         new Handler(Looper.getMainLooper()).postDelayed(this::showConsoleHomeDashboard, 1100);
     }
 
-    // --- कंसोल होम डैशबोर्ड ---
     private void showConsoleHomeDashboard() {
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
         rootContainer.removeAllViews();
@@ -251,7 +249,6 @@ public class MainActivity extends Activity {
         centerList.setGravity(Gravity.CENTER_VERTICAL);
         centerList.setPadding(dpToPx(24), dpToPx(10), dpToPx(24), dpToPx(20));
 
-        // Import PC Game Card
         LinearLayout importCard = new LinearLayout(this);
         importCard.setOrientation(LinearLayout.VERTICAL);
         importCard.setBackground(createCard(Color.parseColor("#131722"), 14, Color.parseColor("#1e293b"), 1));
@@ -378,8 +375,7 @@ public class MainActivity extends Activity {
         root.addView(bottomBar);
         rootContainer.addView(root);
     }
-        // --- सम्पूर्ण सेटिंग्स विंडो (आपके द्वारा बताई गई सभी 14 सेटिंग्स यहाँ हैं) ---
-    private void showMasterSettingsDialog() {
+        private void showMasterSettingsDialog() {
         Dialog d = new Dialog(this);
         d.requestWindowFeature(Window.FEATURE_NO_TITLE);
         if (d.getWindow() != null) {
@@ -391,7 +387,6 @@ public class MainActivity extends Activity {
         root.setBackground(createCard(Color.parseColor("#0f172a"), 14, Color.parseColor("#1e293b"), 1));
         root.setPadding(dpToPx(20), dpToPx(14), dpToPx(20), dpToPx(16));
 
-        // हेडर
         TextView head = new TextView(this);
         head.setText("⚙ Vortex Master Engine Settings: " + (currentGameTitle.isEmpty() ? "Global" : currentGameTitle));
         head.setTextColor(Color.WHITE);
@@ -399,7 +394,7 @@ public class MainActivity extends Activity {
         head.setTypeface(null, Typeface.BOLD);
         root.addView(head);
 
-        ScrollView sv = new ScrollScrollView(this);
+        ScrollView sv = new ScrollView(this);
         LinearLayout list = new LinearLayout(this);
         list.setOrientation(LinearLayout.VERTICAL);
         list.setPadding(0, dpToPx(10), 0, dpToPx(10));
@@ -420,7 +415,7 @@ public class MainActivity extends Activity {
         cbVulkanRt.setOnCheckedChangeListener((b, val) -> vulkanRtInstalled = val);
         list.addView(cbVulkanRt);
 
-        // 2. GPU Driver (Snapdragon / Dimensity / Exynos)
+        // 2. GPU Driver
         addSectionHeader(list, "2. GPU GRAPHICS DRIVERS (CHIPSET TARGET)");
         Button gpuBtn = createSettingSelector(list, "GPU Driver: " + selectedGpuDriver, v -> {
             if (selectedGpuDriver.contains("26.2")) {
@@ -467,7 +462,7 @@ public class MainActivity extends Activity {
             ((Button) v).setText("CPU Translator: " + selectedCpuTranslator);
         });
 
-        // 5. Performance & FPS Boost
+        // 5. Performance & Resolution
         addSectionHeader(list, "5. PERFORMANCE, RESOLUTION & AI FRAME GEN");
         Button resBtn = createSettingSelector(list, "Game Resolution: " + selectedResolution, v -> {
             if (selectedResolution.contains("1280x720")) {
@@ -534,7 +529,6 @@ public class MainActivity extends Activity {
         sv.addView(list);
         root.addView(sv, new LinearLayout.LayoutParams(dpToPx(480), dpToPx(190)));
 
-        // फुटर बटन्स
         LinearLayout actRow = new LinearLayout(this);
         actRow.setOrientation(LinearLayout.HORIZONTAL);
         actRow.setGravity(Gravity.RIGHT);
@@ -589,9 +583,8 @@ public class MainActivity extends Activity {
         b.setOnClickListener(l);
         parent.addView(b);
         return b;
-                                         }
-        // --- गेम रनटाइम बूट प्रक्रिया ---
-    private void startFullVortexExecution() {
+    }
+        private void startFullVortexExecution() {
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
         rootContainer.removeAllViews();
 
@@ -639,14 +632,12 @@ public class MainActivity extends Activity {
         });
     }
 
-    // --- इन-गेम स्क्रीन, ऑन-स्क्रीन कंट्रोल्स और लाइव MangoHUD ---
     private void showRealtimeGameScreen() {
         rootContainer.removeAllViews();
 
         RelativeLayout gameScreen = new RelativeLayout(this);
         gameScreen.setBackgroundColor(Color.parseColor("#05070a"));
 
-        // लाइव MangoHUD परफ़ॉर्मेंस ओवरले (ऊपर बाएँ)
         LinearLayout mangoHud = new LinearLayout(this);
         mangoHud.setOrientation(LinearLayout.HORIZONTAL);
         mangoHud.setBackground(createCard(Color.argb(170, 0, 0, 0), 4, Color.parseColor("#334155"), 1));
@@ -661,7 +652,6 @@ public class MainActivity extends Activity {
         mangoHud.addView(hudMetrics);
         gameScreen.addView(mangoHud);
 
-        // साइड ओवरले मेन्यू बटन (❮ OVERLAY)
         Button overlayBtn = new Button(this);
         overlayBtn.setText("❮ OVERLAY");
         overlayBtn.setTextColor(Color.parseColor("#cbd5e1"));
@@ -671,7 +661,6 @@ public class MainActivity extends Activity {
         overlayBtn.setOnClickListener(v -> showIngameOverlaySettings());
         gameScreen.addView(overlayBtn);
 
-        // वर्चुअल गेमपैड (LT, LB, RT, RB, L3, R3)
         addTrigger(gameScreen, "LT", dpToPx(25), dpToPx(20));
         addTrigger(gameScreen, "LB", dpToPx(25), dpToPx(55));
         addTrigger(gameScreen, "L3", dpToPx(25), dpToPx(95));
@@ -680,10 +669,8 @@ public class MainActivity extends Activity {
         addTriggerRight(gameScreen, "RB", dpToPx(25), dpToPx(55));
         addTriggerRight(gameScreen, "R3", dpToPx(25), dpToPx(95));
 
-        // बायाँ एनालॉग जॉयस्टिक
         gameScreen.addView(createMovableJoystick(dpToPx(35), dpToPx(25)));
 
-        // दाएँ तरफ़ एक्शन बटन (Y, X, B, A)
         RelativeLayout actionPad = new RelativeLayout(this);
         setAbsoluteAlignBottomRight(actionPad, dpToPx(35), dpToPx(25), dpToPx(120), dpToPx(120));
         actionPad.addView(createActionButton("Y", 40, 0));
@@ -965,9 +952,5 @@ public class MainActivity extends Activity {
         if (result == null) result = uri.getLastPathSegment();
         return result;
     }
-
-    private static class ScrollScrollView extends ScrollView {
-        public ScrollScrollView(Context c) { super(c); }
-    }
-            }
-            
+}
+}
