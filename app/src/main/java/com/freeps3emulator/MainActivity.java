@@ -294,12 +294,28 @@ public class MainActivity extends Activity {
             item.setPadding(0, dpToPx(16), 0, dpToPx(16));
 
             item.setOnClickListener(v -> {
-                if (cat.equals("Core")) {
-                    showCoreSettingsScreen();
-                } else if (cat.equals("Reset as Default")) {
-                    Toast.makeText(this, "Settings Reset to Defaults", Toast.LENGTH_SHORT).show();
-                } else {
-                    Toast.makeText(this, cat + " Settings Opened", Toast.LENGTH_SHORT).show();
+                switch (cat) {
+                    case "Core":
+                        showCoreSettingsScreen();
+                        break;
+                    case "Video":
+                        showVideoSettingsScreen();
+                        break;
+                    case "Audio":
+                        showAudioSettingsScreen();
+                        break;
+                    case "Input/Output":
+                        showIOSettingsScreen();
+                        break;
+                    case "System":
+                        showSystemSettingsScreen();
+                        break;
+                    case "Reset as Default":
+                        Toast.makeText(this, "Settings Reset to Defaults", Toast.LENGTH_SHORT).show();
+                        break;
+                    default:
+                        Toast.makeText(this, cat + " Settings Opened", Toast.LENGTH_SHORT).show();
+                        break;
                 }
             });
 
@@ -311,32 +327,8 @@ public class MainActivity extends Activity {
         rootContainer.addView(main);
     }
         private void showCoreSettingsScreen() {
-        rootContainer.removeAllViews();
-
-        LinearLayout main = new LinearLayout(this);
-        main.setOrientation(LinearLayout.VERTICAL);
-        main.setBackgroundColor(Color.parseColor("#212121"));
-
-        RelativeLayout header = new RelativeLayout(this);
-        header.setBackgroundColor(Color.parseColor("#191919"));
-        header.setPadding(dpToPx(16), dpToPx(14), dpToPx(16), dpToPx(14));
-
-        TextView back = new TextView(this);
-        back.setText("←  Core");
-        back.setTextColor(Color.WHITE);
-        back.setTextSize(20);
-        back.setOnClickListener(v -> {
-            savePreferences();
-            showMainSettingsScreen();
-        });
-        header.addView(back);
-
-        main.addView(header);
-
-        ScrollView sv = new ScrollView(this);
-        LinearLayout content = new LinearLayout(this);
-        content.setOrientation(LinearLayout.VERTICAL);
-        content.setPadding(dpToPx(16), dpToPx(16), dpToPx(16), dpToPx(24));
+        showGenericSettingsHeader("Core");
+        LinearLayout content = getSettingsScrollContent();
 
         addSettingSubText(content, "PPU Decoder", "Recompiler (LLVM)");
         addSliderWithLabel(content, "PPU Threads", ppuThreads, 8, val -> ppuThreads = val);
@@ -350,28 +342,113 @@ public class MainActivity extends Activity {
         addSettingSubText(content, "SPU Decoder", "Recompiler (LLVM)");
         addSliderWithLabel(content, "SPU Reservation Busy Waiting Percentage", 100, 100, null);
         addCheckBox(content, "SPU Reservation Busy Waiting Enabled", false, null);
-        addSliderWithLabel(content, "SPU GETLLAR Busy Waiting Percentage", 100, 100, null);
-        addCheckBox(content, "Disable SPU GETLLAR Spin Optimization", false, null);
-        addCheckBox(content, "SPU Debug", false, null);
-        addCheckBox(content, "MFC Debug", false, null);
         addSliderWithLabel(content, "Preferred SPU Threads", 0, 6, null);
         addSliderWithLabel(content, "SPU delay penalty", 3, 10, null);
         addCheckBox(content, "SPU loop detection", false, null);
         addSliderWithLabel(content, "Max SPURS Threads", spursThreads, 6, val -> spursThreads = val);
         addSettingSubText(content, "SPU Block Size", "Safe");
-        addCheckBox(content, "Accurate SPU DMA", false, null);
         addCheckBox(content, "Accurate SPU Reservations", spuAccurate, val -> spuAccurate = val);
-        addCheckBox(content, "Accurate Cache Line Stores", false, null);
         addCheckBox(content, "SPU Verification", true, null);
         addCheckBox(content, "SPU Cache", true, null);
         addSliderWithLabel(content, "Clocks scale", clockScale, 200, val -> clockScale = val);
+    }
+
+    private void showVideoSettingsScreen() {
+        showGenericSettingsHeader("Video");
+        LinearLayout content = getSettingsScrollContent();
+
+        addSettingSubText(content, "Renderer", "Vulkan (LLE Core)");
+        addSettingSubText(content, "Graphics Device", "Adreno / Mali GPU Driver");
+        addSettingSubText(content, "Aspect Ratio", "16:9");
+        addSettingSubText(content, "Resolution", "1280x720 (Default 720p)");
+        addSliderWithLabel(content, "Resolution Scale", 100, 300, null);
+        addCheckBox(content, "Write Color Buffers", false, null);
+        addCheckBox(content, "Strict Rendering Mode", false, null);
+        addCheckBox(content, "VSync", true, null);
+        addCheckBox(content, "Frame Limit (60 FPS)", true, null);
+        addSettingSubText(content, "Anti-Aliasing", "Auto / FXAA");
+        addSettingSubText(content, "Anisotropic Filter", "16x");
+        addCheckBox(content, "Multithreaded RSX", true, null);
+    }
+
+    private void showAudioSettingsScreen() {
+        showGenericSettingsHeader("Audio");
+        LinearLayout content = getSettingsScrollContent();
+
+        addSettingSubText(content, "Audio Backend", "OpenSL ES / Oboe Low Latency");
+        addSliderWithLabel(content, "Master Volume", 100, 100, null);
+        addCheckBox(content, "Enable Audio DSP", true, null);
+        addCheckBox(content, "Audio Buffering", true, null);
+        addSliderWithLabel(content, "Audio Buffer Duration (ms)", 100, 250, null);
+        addSettingSubText(content, "Audio Channels", "Stereo (Downmix 5.1)");
+        addCheckBox(content, "Time Stretching (Prevent Cracking)", true, null);
+    }
+
+    private void showIOSettingsScreen() {
+        showGenericSettingsHeader("Input/Output");
+        LinearLayout content = getSettingsScrollContent();
+
+        addSettingSubText(content, "Pad Handler", "Virtual Touch Pad (DualShock 3)");
+        addSettingSubText(content, "Keyboard Handler", "Android Virtual Keyboard");
+        addSettingSubText(content, "Mouse Handler", "Touch Absolute Cursor");
+        addCheckBox(content, "Enable Vibration / Haptic Feedback", true, null);
+        addSliderWithLabel(content, "Touch Stick Deadzone", 15, 50, null);
+        addSliderWithLabel(content, "On-Screen Controls Opacity (%)", 45, 100, null);
+        addCheckBox(content, "Auto-hide Touch Pad on Gamepad Connect", true, null);
+    }
+
+    private void showSystemSettingsScreen() {
+        showGenericSettingsHeader("System");
+        LinearLayout content = getSettingsScrollContent();
+
+        addSettingSubText(content, "Console Region", "USA / Europe (Auto)");
+        addSettingSubText(content, "Console Language", "English (United States)");
+        addSettingSubText(content, "Firmware Version", "4.91 LLE (dev_flash)");
+        addSettingSubText(content, "PS3 Model Type", "Slim (CECH-2000)");
+        addCheckBox(content, "Automatic System Updates", false, null);
+        addCheckBox(content, "Enable PSN Emulation (RPCN)", false, null);
+        addSettingSubText(content, "Storage Root Path", "/storage/emulated/0/dev_hdd0");
+    }
+
+    private void showGenericSettingsHeader(String titleText) {
+        rootContainer.removeAllViews();
+        LinearLayout main = new LinearLayout(this);
+        main.setOrientation(LinearLayout.VERTICAL);
+        main.setBackgroundColor(Color.parseColor("#212121"));
+
+        RelativeLayout header = new RelativeLayout(this);
+        header.setBackgroundColor(Color.parseColor("#191919"));
+        header.setPadding(dpToPx(16), dpToPx(14), dpToPx(16), dpToPx(14));
+
+        TextView back = new TextView(this);
+        back.setText("←  " + titleText);
+        back.setTextColor(Color.WHITE);
+        back.setTextSize(20);
+        back.setOnClickListener(v -> {
+            savePreferences();
+            showMainSettingsScreen();
+        });
+        header.addView(back);
+
+        main.addView(header);
+
+        ScrollView sv = new ScrollView(this);
+        LinearLayout content = new LinearLayout(this);
+        content.setTag("SETTINGS_CONTENT_BOX");
+        content.setOrientation(LinearLayout.VERTICAL);
+        content.setPadding(dpToPx(16), dpToPx(16), dpToPx(16), dpToPx(24));
 
         sv.addView(content);
         main.addView(sv);
         rootContainer.addView(main);
     }
 
+    private LinearLayout getSettingsScrollContent() {
+        return (LinearLayout) rootContainer.findViewWithTag("SETTINGS_CONTENT_BOX");
+    }
+
     private void addSettingSubText(LinearLayout parent, String title, String sub) {
+        if (parent == null) return;
         LinearLayout row = new LinearLayout(this);
         row.setOrientation(LinearLayout.VERTICAL);
         row.setPadding(0, dpToPx(10), 0, dpToPx(10));
@@ -392,6 +469,7 @@ public class MainActivity extends Activity {
     }
 
     private void addCheckBox(LinearLayout parent, String title, boolean checked, ValueChangeCallback<Boolean> cb) {
+        if (parent == null) return;
         CheckBox cbView = new CheckBox(this);
         cbView.setText(title);
         cbView.setTextColor(Color.WHITE);
@@ -405,6 +483,7 @@ public class MainActivity extends Activity {
     }
 
     private void addSliderWithLabel(LinearLayout parent, String title, int initial, int max, ValueChangeCallback<Integer> cb) {
+        if (parent == null) return;
         LinearLayout row = new LinearLayout(this);
         row.setOrientation(LinearLayout.VERTICAL);
         row.setPadding(0, dpToPx(10), 0, dpToPx(10));
@@ -502,4 +581,4 @@ public class MainActivity extends Activity {
         if (result == null) result = uri.getLastPathSegment();
         return result;
     }
-                      }
+    }
