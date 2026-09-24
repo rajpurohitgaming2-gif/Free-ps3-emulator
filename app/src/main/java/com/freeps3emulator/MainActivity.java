@@ -12,6 +12,7 @@ import android.graphics.Typeface;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -41,20 +42,25 @@ import java.util.Set;
 
 public class MainActivity extends Activity {
 
-    private static final int PICK_EXE_FILE = 301;
-    private static final String PREFS_NAME = "GameHub_Lite_Prefs";
+    private static final int PICK_EXE_FILE = 401;
+    private static final String PREFS_NAME = "VortexPC_AllSoC_Prefs";
 
     private FrameLayout rootContainer;
     private SharedPreferences prefs;
     private Vibrator vibrator;
 
-    private ArrayList<String> gameTitles = new ArrayList<>();
-    private String selectedGame = "Grand Theft Auto V";
-    private String selectedExe = "GTAVLauncher.exe";
+    private ArrayList<String> importedGameList = new ArrayList<>();
+    private String currentGameTitle = "";
+    private String currentGameExe = "";
 
-    private int touchOpacity = 80;
+    // प्रोसेसर एवं हार्डवेयर इंजन स्टेट्स
+    private String detectedCpuSoC = "Auto-Detect";
+    private String selectedDriver = "Adreno Turnip v26.1.0";
+    private String selectedCpuTranslator = "Box64 v0.3.0 JIT";
+    private String selectedResolution = "1280x720";
+    private String selectedDxvk = "DXVK 2.3.1 Async (D3D11)";
+    private int touchOpacity = 85;
     private boolean frameLimitEnabled = true;
-    private boolean frameGenEnabled = true;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -64,27 +70,51 @@ public class MainActivity extends Activity {
             vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
         } catch (Exception ignored) {}
 
-        loadSavedGames();
+        detectDeviceProcessor();
+        loadConfig();
 
         rootContainer = new FrameLayout(this);
-        rootContainer.setBackgroundColor(Color.parseColor("#090a0f"));
+        rootContainer.setBackgroundColor(Color.parseColor("#08090d"));
         setContentView(rootContainer);
 
-        showConsoleHomeUI();
+        showVortexSplashScreen();
     }
 
-    private void loadSavedGames() {
-        gameTitles.clear();
-        Set<String> saved = prefs.getStringSet("gh_games", null);
-        if (saved != null && !saved.isEmpty()) {
-            gameTitles.addAll(saved);
+    // --- फ़ोन के प्रोसेसर का अपने आप पता लगाना ---
+    private void detectDeviceProcessor() {
+        String hardware = (Build.HARDWARE + " " + Build.BOARD + " " + Build.MANUFACTURER).toLowerCase();
+        if (hardware.contains("qcom") || hardware.contains("qualcomm") || hardware.contains("snapdragon")) {
+            detectedCpuSoC = "Snapdragon (Adreno GPU)";
+            selectedDriver = "Adreno Turnip v26.1.0";
+        } else if (hardware.contains("mt") || hardware.contains("mediatek") || hardware.contains("dimensity")) {
+            detectedCpuSoC = "MediaTek Dimensity (Mali GPU)";
+            selectedDriver = "Mesa Zink / Mali Direct Vulkan";
+            selectedCpuTranslator = "FEX-Emu 2026";
+        } else if (hardware.contains("exynos") || hardware.contains("samsung")) {
+            detectedCpuSoC = "Samsung Exynos (Xclipse/Mali)";
+            selectedDriver = "System AMD/Mali Vulkan Driver";
+        } else if (hardware.contains("tensor") || hardware.contains("google")) {
+            detectedCpuSoC = "Google Tensor (Mali GPU)";
+            selectedDriver = "Mesa Zink GL-Vulkan";
         } else {
-            gameTitles.add("Grand Theft Auto V");
+            detectedCpuSoC = "ARM64 Universal Processor";
+            selectedDriver = "Universal Vulkan 1.3 Driver";
         }
     }
 
-    private void saveGames() {
-        prefs.edit().putStringSet("gh_games", new HashSet<>(gameTitles)).apply();
+    private void loadConfig() {
+        importedGameList.clear();
+        Set<String> saved = prefs.getStringSet("vortex_games", null);
+        if (saved != null && !saved.isEmpty()) {
+            importedGameList.addAll(saved);
+        }
+        selectedDriver = prefs.getString("vortex_gpu_driver", selectedDriver);
+        selectedCpuTranslator = prefs.getString("vortex_cpu_trans", selectedCpuTranslator);
+        selectedResolution = prefs.getString("vortex_res", "1280x720");
+    }
+
+    private void saveGamesList() {
+        prefs.edit().putStringSet("vortex_games", new HashSet<>(importedGameList)).apply();
     }
 
     private int dpToPx(int dp) {
@@ -94,7 +124,7 @@ public class MainActivity extends Activity {
     private void triggerFeedback() {
         try {
             if (vibrator != null && vibrator.hasVibrator()) {
-                vibrator.vibrate(20);
+                vibrator.vibrate(22);
             }
         } catch (Exception ignored) {}
     }
@@ -109,161 +139,217 @@ public class MainActivity extends Activity {
         return gd;
     }
 
-    private void showConsoleHomeUI() {
+    // --- स्प्लैश स्क्रीन ---
+    private void showVortexSplashScreen() {
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
         rootContainer.removeAllViews();
 
-        RelativeLayout home = new RelativeLayout(this);
-        home.setBackgroundColor(Color.parseColor("#090b10"));
+        FrameLayout splash = new FrameLayout(this);
+        splash.setBackgroundColor(Color.parseColor("#06070a"));
 
+        LinearLayout centerBox = new LinearLayout(this);
+        centerBox.setOrientation(LinearLayout.VERTICAL);
+        centerBox.setGravity(Gravity.CENTER);
+        FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        lp.gravity = Gravity.CENTER;
+        centerBox.setLayoutParams(lp);
+
+        TextView logoTitle = new TextView(this);
+        logoTitle.setText("VORTEX PC");
+        logoTitle.setTextColor(Color.parseColor("#38bdf8"));
+        logoTitle.setTextSize(34);
+        logoTitle.setTypeface(null, Typeface.BOLD);
+        logoTitle.setLetterSpacing(0.2f);
+        centerBox.addView(logoTitle);
+
+        TextView logoSub = new TextView(this);
+        logoSub.setText("Auto-Optimized for: " + detectedCpuSoC);
+        logoSub.setTextColor(Color.parseColor("#94a3b8"));
+        logoSub.setTextSize(12);
+        logoSub.setPadding(0, dpToPx(6), 0, dpToPx(16));
+        centerBox.addView(logoSub);
+
+        ProgressBar initPb = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
+        initPb.setIndeterminate(true);
+        initPb.getProgressDrawable().setColorFilter(Color.parseColor("#38bdf8"), android.graphics.PorterDuff.Mode.SRC_IN);
+        centerBox.addView(initPb, new LinearLayout.LayoutParams(dpToPx(240), dpToPx(4)));
+
+        splash.addView(centerBox);
+        rootContainer.addView(splash);
+
+        new Handler(Looper.getMainLooper()).postDelayed(this::showConsoleHomeDashboard, 1100);
+    }
+
+    // --- मुख्य कंसोल डैशबोर्ड ---
+    private void showConsoleHomeDashboard() {
+        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+        rootContainer.removeAllViews();
+
+        RelativeLayout root = new RelativeLayout(this);
+        root.setBackgroundColor(Color.parseColor("#090b10"));
+
+        // टॉप बार
         RelativeLayout topBar = new RelativeLayout(this);
         topBar.setId(View.generateViewId());
-        topBar.setPadding(dpToPx(24), dpToPx(14), dpToPx(24), dpToPx(10));
+        topBar.setPadding(dpToPx(24), dpToPx(12), dpToPx(24), dpToPx(10));
 
         TextView dashTitle = new TextView(this);
-        dashTitle.setText("☰   LB  Dashboard  RB");
+        dashTitle.setText("⚡ VORTEX PC   |   SoC: " + detectedCpuSoC);
         dashTitle.setTextColor(Color.WHITE);
-        dashTitle.setTextSize(14);
+        dashTitle.setTextSize(13);
         dashTitle.setTypeface(null, Typeface.BOLD);
         topBar.addView(dashTitle);
 
         TextView rightStatus = new TextView(this);
-        rightStatus.setText("🔍   📶  🔋 97%   15:26");
-        rightStatus.setTextColor(Color.parseColor("#cccccc"));
-        rightStatus.setTextSize(13);
+        rightStatus.setText("Vulkan 1.3   •   60 FPS Ready   •   🔋 96%");
+        rightStatus.setTextColor(Color.parseColor("#94a3b8"));
+        rightStatus.setTextSize(12);
         RelativeLayout.LayoutParams rsp = new RelativeLayout.LayoutParams(
                 RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
         rsp.addRule(RelativeLayout.ALIGN_PARENT_RIGHT);
         rightStatus.setLayoutParams(rsp);
         topBar.addView(rightStatus);
 
-        home.addView(topBar);
+        root.addView(topBar);
 
-        LinearLayout centerRow = new LinearLayout(this);
-        centerRow.setOrientation(LinearLayout.HORIZONTAL);
-        centerRow.setGravity(Gravity.CENTER_VERTICAL);
-        RelativeLayout.LayoutParams crp = new RelativeLayout.LayoutParams(
-                RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.MATCH_PARENT);
-        crp.addRule(RelativeLayout.BELOW, topBar.getId());
-        crp.setMargins(dpToPx(24), 0, dpToPx(24), dpToPx(40));
-        centerRow.setLayoutParams(crp);
+        // बीच का स्क्रॉल एरिया
+        ScrollView sv = new ScrollView(this);
+        LinearLayout centerList = new LinearLayout(this);
+        centerList.setOrientation(LinearLayout.HORIZONTAL);
+        centerList.setGravity(Gravity.CENTER_VERTICAL);
+        centerList.setPadding(dpToPx(24), dpToPx(10), dpToPx(24), dpToPx(20));
 
-        LinearLayout pcCard = new LinearLayout(this);
-        pcCard.setOrientation(LinearLayout.VERTICAL);
-        pcCard.setBackground(createCard(Color.parseColor("#151821"), 12, Color.parseColor("#2a3142"), 1));
-        pcCard.setPadding(dpToPx(20), dpToPx(16), dpToPx(20), dpToPx(16));
-        LinearLayout.LayoutParams pcp = new LinearLayout.LayoutParams(dpToPx(280), dpToPx(165));
-        pcp.setMargins(0, 0, dpToPx(20), 0);
-        pcCard.setLayoutParams(pcp);
+        // 1. Import Card
+        LinearLayout importCard = new LinearLayout(this);
+        importCard.setOrientation(LinearLayout.VERTICAL);
+        importCard.setBackground(createCard(Color.parseColor("#131722"), 14, Color.parseColor("#1e293b"), 1));
+        importCard.setPadding(dpToPx(20), dpToPx(18), dpToPx(20), dpToPx(18));
+        LinearLayout.LayoutParams icp = new LinearLayout.LayoutParams(dpToPx(280), dpToPx(180));
+        icp.setMargins(0, 0, dpToPx(18), 0);
+        importCard.setLayoutParams(icp);
 
-        TextView pcLogo = new TextView(this);
-        pcLogo.setText("🪟  PC Emulator");
-        pcLogo.setTextColor(Color.WHITE);
-        pcLogo.setTextSize(16);
-        pcLogo.setTypeface(null, Typeface.BOLD);
-        pcCard.addView(pcLogo);
+        TextView icLogo = new TextView(this);
+        icLogo.setText("🖥️  All-SoC Container");
+        icLogo.setTextColor(Color.WHITE);
+        icLogo.setTextSize(17);
+        icLogo.setTypeface(null, Typeface.BOLD);
+        importCard.addView(icLogo);
 
-        TextView pcSub = new TextView(this);
-        pcSub.setText("Import PC games, play AAA titles on mobile");
-        pcSub.setTextColor(Color.parseColor("#8b949e"));
-        pcSub.setTextSize(11);
-        pcSub.setPadding(0, dpToPx(4), 0, dpToPx(16));
-        pcCard.addView(pcSub);
+        TextView icDesc = new TextView(this);
+        icDesc.setText("Supports Snapdragon, Dimensity, Exynos & Tensor processors");
+        icDesc.setTextColor(Color.parseColor("#64748b"));
+        icDesc.setTextSize(11);
+        icDesc.setPadding(0, dpToPx(6), 0, dpToPx(18));
+        importCard.addView(icDesc);
 
         Button importBtn = new Button(this);
-        importBtn.setText("Import PC games");
+        importBtn.setText("+ IMPORT .EXE FILE");
         importBtn.setTextColor(Color.WHITE);
         importBtn.setTextSize(12);
-        importBtn.setBackground(createCard(Color.parseColor("#2563eb"), 6, 0, 0));
+        importBtn.setBackground(createCard(Color.parseColor("#0284c7"), 8, 0, 0));
         importBtn.setLayoutParams(new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT, dpToPx(38)));
+                LinearLayout.LayoutParams.MATCH_PARENT, dpToPx(40)));
         importBtn.setOnClickListener(v -> openFilePicker("application/*", PICK_EXE_FILE));
-        pcCard.addView(importBtn);
+        importCard.addView(importBtn);
 
-        centerRow.addView(pcCard);
+        centerList.addView(importCard);
 
-        for (String g : gameTitles) {
-            LinearLayout gCard = new LinearLayout(this);
-            gCard.setOrientation(LinearLayout.VERTICAL);
-            gCard.setBackground(createCard(Color.parseColor("#1c2230"), 12, Color.parseColor("#3b82f6"), 1));
-            gCard.setPadding(dpToPx(18), dpToPx(14), dpToPx(18), dpToPx(14));
-            LinearLayout.LayoutParams gcp = new LinearLayout.LayoutParams(dpToPx(240), dpToPx(165));
-            gcp.setMargins(0, 0, dpToPx(16), 0);
-            gCard.setLayoutParams(gcp);
+        // 2. गेम्स लिस्ट
+        if (importedGameList.isEmpty()) {
+            TextView emptyHint = new TextView(this);
+            emptyHint.setText("No games added yet.\nClick '+ IMPORT .EXE FILE' to select a PC game.");
+            emptyHint.setTextColor(Color.parseColor("#475569"));
+            emptyHint.setTextSize(13);
+            emptyHint.setPadding(dpToPx(20), 0, 0, 0);
+            centerList.addView(emptyHint);
+        } else {
+            for (String g : importedGameList) {
+                LinearLayout gameCard = new LinearLayout(this);
+                gameCard.setOrientation(LinearLayout.VERTICAL);
+                gameCard.setBackground(createCard(Color.parseColor("#161e2e"), 14, Color.parseColor("#2563eb"), 1));
+                gameCard.setPadding(dpToPx(18), dpToPx(16), dpToPx(18), dpToPx(16));
+                LinearLayout.LayoutParams gcp = new LinearLayout.LayoutParams(dpToPx(260), dpToPx(180));
+                gcp.setMargins(0, 0, dpToPx(16), 0);
+                gameCard.setLayoutParams(gcp);
 
-            TextView gBadge = new TextView(this);
-            gBadge.setText("Ⓐ Launcher Game");
-            gBadge.setTextColor(Color.parseColor("#60a5fa"));
-            gBadge.setTextSize(11);
-            gCard.addView(gBadge);
+                TextView gBadge = new TextView(this);
+                gBadge.setText("WIN64 / " + selectedCpuTranslator);
+                gBadge.setTextColor(Color.parseColor("#38bdf8"));
+                gBadge.setTextSize(10);
+                gBadge.setTypeface(null, Typeface.BOLD);
+                gameCard.addView(gBadge);
 
-            TextView gName = new TextView(this);
-            gName.setText(g);
-            gName.setTextColor(Color.WHITE);
-            gName.setTextSize(16);
-            gName.setTypeface(null, Typeface.BOLD);
-            gName.setPadding(0, dpToPx(6), 0, dpToPx(12));
-            gCard.addView(gName);
+                TextView gTitle = new TextView(this);
+                gTitle.setText(g);
+                gTitle.setTextColor(Color.WHITE);
+                gTitle.setTextSize(16);
+                gTitle.setTypeface(null, Typeface.BOLD);
+                gTitle.setPadding(0, dpToPx(4), 0, dpToPx(14));
+                gameCard.addView(gTitle);
 
-            LinearLayout bRow = new LinearLayout(this);
-            bRow.setOrientation(LinearLayout.HORIZONTAL);
+                LinearLayout btnRow = new LinearLayout(this);
+                btnRow.setOrientation(LinearLayout.HORIZONTAL);
 
-            Button launchBtn = new Button(this);
-            launchBtn.setText("START");
-            launchBtn.setTextColor(Color.WHITE);
-            launchBtn.setTextSize(12);
-            launchBtn.setTypeface(null, Typeface.BOLD);
-            launchBtn.setBackground(createCard(Color.parseColor("#16a34a"), 6, 0, 0));
-            LinearLayout.LayoutParams lbp = new LinearLayout.LayoutParams(0, dpToPx(36), 1.0f);
-            lbp.setMargins(0, 0, dpToPx(8), 0);
-            launchBtn.setLayoutParams(lbp);
-            launchBtn.setOnClickListener(v -> {
-                triggerFeedback();
-                selectedGame = g;
-                startComponentDownloaderScreen();
-            });
-            bRow.addView(launchBtn);
+                Button startBtn = new Button(this);
+                startBtn.setText("PLAY");
+                startBtn.setTextColor(Color.WHITE);
+                startBtn.setTextSize(12);
+                startBtn.setTypeface(null, Typeface.BOLD);
+                startBtn.setBackground(createCard(Color.parseColor("#16a34a"), 8, 0, 0));
+                LinearLayout.LayoutParams sbp = new LinearLayout.LayoutParams(0, dpToPx(38), 1.0f);
+                sbp.setMargins(0, 0, dpToPx(8), 0);
+                startBtn.setLayoutParams(sbp);
+                startBtn.setOnClickListener(v -> {
+                    triggerFeedback();
+                    currentGameTitle = g;
+                    startAllSocExecution();
+                });
+                btnRow.addView(startBtn);
 
-            Button settingsBtn = new Button(this);
-            settingsBtn.setText("⚙ Settings");
-            settingsBtn.setTextColor(Color.WHITE);
-            settingsBtn.setTextSize(11);
-            settingsBtn.setBackground(createCard(Color.parseColor("#374151"), 6, 0, 0));
-            settingsBtn.setLayoutParams(new LinearLayout.LayoutParams(0, dpToPx(36), 1.0f));
-            settingsBtn.setOnClickListener(v -> {
-                triggerFeedback();
-                selectedGame = g;
-                showPcGameSettingsScreen();
-            });
-            bRow.addView(settingsBtn);
+                Button configBtn = new Button(this);
+                configBtn.setText("⚙ SETUP");
+                configBtn.setTextColor(Color.WHITE);
+                configBtn.setTextSize(11);
+                configBtn.setBackground(createCard(Color.parseColor("#334155"), 8, 0, 0));
+                configBtn.setLayoutParams(new LinearLayout.LayoutParams(0, dpToPx(38), 1.0f));
+                configBtn.setOnClickListener(v -> {
+                    triggerFeedback();
+                    currentGameTitle = g;
+                    showProcessorAndGpuSetupDialog();
+                });
+                btnRow.addView(configBtn);
 
-            gCard.addView(bRow);
-            centerRow.addView(gCard);
+                gameCard.addView(btnRow);
+                centerList.addView(gameCard);
+            }
         }
 
-        home.addView(centerRow);
+        RelativeLayout.LayoutParams svp = new RelativeLayout.LayoutParams(
+                RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.MATCH_PARENT);
+        svp.addRule(RelativeLayout.BELOW, topBar.getId());
+        svp.setMargins(0, 0, 0, dpToPx(35));
+        sv.addView(centerList);
+        root.addView(sv);
 
-        RelativeLayout bNav = new RelativeLayout(this);
-        bNav.setPadding(dpToPx(24), 0, dpToPx(24), dpToPx(10));
-        RelativeLayout.LayoutParams bnp = new RelativeLayout.LayoutParams(
+        // बॉटम बार
+        RelativeLayout bottomBar = new RelativeLayout(this);
+        bottomBar.setPadding(dpToPx(24), 0, dpToPx(24), dpToPx(10));
+        RelativeLayout.LayoutParams bbp = new RelativeLayout.LayoutParams(
                 RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
-        bnp.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
-        bNav.setLayoutParams(bnp);
+        bbp.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
+        bottomBar.setLayoutParams(bbp);
 
-        TextView bNavText = new TextView(this);
-        bNavText.setText("Ⓨ Search    Ⓧ Menu    Ⓐ Select    Ⓑ Back");
-        bNavText.setTextColor(Color.parseColor("#6b7280"));
-        bNavText.setTextSize(12);
-        RelativeLayout.LayoutParams bntp = new RelativeLayout.LayoutParams(
-                RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
-        bntp.addRule(RelativeLayout.ALIGN_PARENT_RIGHT);
-        bNavText.setLayoutParams(bntp);
-        bNav.addView(bNavText);
+        TextView navGuide = new TextView(this);
+        navGuide.setText("Mesa Turnip / Zink • Box64 & FEX-Emu • DXVK 2.3 Async Enabled");
+        navGuide.setTextColor(Color.parseColor("#475569"));
+        navGuide.setTextSize(11);
+        bottomBar.addView(navGuide);
 
-        home.addView(bNav);
-        rootContainer.addView(home);
-                                               }
-        private void showUploadCoverDialog(String fileName) {
+        root.addView(bottomBar);
+        rootContainer.addView(root);
+                                        }
+        private void showConfirmGameDialog(String fileName) {
         Dialog d = new Dialog(this);
         d.requestWindowFeature(Window.FEATURE_NO_TITLE);
         if (d.getWindow() != null) {
@@ -272,274 +358,305 @@ public class MainActivity extends Activity {
 
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
-        root.setBackground(createCard(Color.parseColor("#1f2430"), 12, Color.parseColor("#374151"), 1));
-        root.setPadding(dpToPx(20), dpToPx(16), dpToPx(20), dpToPx(18));
+        root.setBackground(createCard(Color.parseColor("#1e293b"), 14, Color.parseColor("#334155"), 1));
+        root.setPadding(dpToPx(22), dpToPx(18), dpToPx(22), dpToPx(20));
 
         TextView t = new TextView(this);
-        t.setText("Upload cover image / Confirm Game");
+        t.setText("Register Game Executable");
         t.setTextColor(Color.WHITE);
         t.setTextSize(16);
         t.setTypeface(null, Typeface.BOLD);
         root.addView(t);
 
-        EditText nameEdit = new EditText(this);
-        nameEdit.setText(fileName.replace(".exe", "").replace(".EXE", ""));
-        nameEdit.setTextColor(Color.WHITE);
-        nameEdit.setTextSize(13);
-        nameEdit.setBackground(createCard(Color.parseColor("#111827"), 6, Color.parseColor("#374151"), 1));
-        nameEdit.setPadding(dpToPx(10), dpToPx(8), dpToPx(10), dpToPx(8));
-        LinearLayout.LayoutParams nep = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT, dpToPx(40));
-        nep.setMargins(0, dpToPx(12), 0, dpToPx(12));
-        nameEdit.setLayoutParams(nep);
-        root.addView(nameEdit);
+        EditText nameInput = new EditText(this);
+        nameInput.setText(fileName.replace(".exe", "").replace(".EXE", ""));
+        nameInput.setTextColor(Color.WHITE);
+        nameInput.setTextSize(14);
+        nameInput.setBackground(createCard(Color.parseColor("#0f172a"), 8, Color.parseColor("#334155"), 1));
+        nameInput.setPadding(dpToPx(12), dpToPx(10), dpToPx(12), dpToPx(10));
+        LinearLayout.LayoutParams nip = new LinearLayout.LayoutParams(
+                dpToPx(340), dpToPx(42));
+        nip.setMargins(0, dpToPx(14), 0, dpToPx(16));
+        nameInput.setLayoutParams(nip);
+        root.addView(nameInput);
 
         LinearLayout row = new LinearLayout(this);
         row.setOrientation(LinearLayout.HORIZONTAL);
         row.setGravity(Gravity.RIGHT);
 
         Button cancel = new Button(this);
-        cancel.setText("Cancel");
-        cancel.setTextColor(Color.parseColor("#9ca3af"));
+        cancel.setText("CANCEL");
+        cancel.setTextColor(Color.parseColor("#94a3b8"));
         cancel.setBackgroundColor(Color.TRANSPARENT);
         cancel.setOnClickListener(v -> d.dismiss());
         row.addView(cancel);
 
-        Button confirm = new Button(this);
-        confirm.setText("Confirm");
-        confirm.setTextColor(Color.WHITE);
-        confirm.setBackground(createCard(Color.parseColor("#2563eb"), 6, 0, 0));
-        confirm.setOnClickListener(v -> {
+        Button ok = new Button(this);
+        ok.setText("SAVE & CONFIGURE");
+        ok.setTextColor(Color.WHITE);
+        ok.setTextSize(12);
+        ok.setBackground(createCard(Color.parseColor("#0284c7"), 8, 0, 0));
+        ok.setOnClickListener(v -> {
             d.dismiss();
-            selectedGame = nameEdit.getText().toString().trim();
-            if (!gameTitles.contains(selectedGame)) {
-                gameTitles.add(selectedGame);
-                saveGames();
+            String finalName = nameInput.getText().toString().trim();
+            if (!finalName.isEmpty() && !importedGameList.contains(finalName)) {
+                importedGameList.add(finalName);
+                saveGamesList();
             }
-            startComponentDownloaderScreen();
+            currentGameTitle = finalName;
+            showProcessorAndGpuSetupDialog();
         });
-        row.addView(confirm);
+        row.addView(ok);
 
         root.addView(row);
         d.setContentView(root);
         d.show();
     }
 
-    private void startComponentDownloaderScreen() {
-        rootContainer.removeAllViews();
+    // --- सभी प्रोसेसर और GPU ड्राइवर सेटअप मेन्यू ---
+    private void showProcessorAndGpuSetupDialog() {
+        Dialog d = new Dialog(this);
+        d.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        if (d.getWindow() != null) {
+            d.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+        }
 
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
-        root.setBackgroundColor(Color.parseColor("#0e1118"));
+        root.setBackground(createCard(Color.parseColor("#0f172a"), 14, Color.parseColor("#1e293b"), 1));
+        root.setPadding(dpToPx(24), dpToPx(18), dpToPx(24), dpToPx(20));
 
-        RelativeLayout header = new RelativeLayout(this);
-        header.setPadding(dpToPx(20), dpToPx(12), dpToPx(20), dpToPx(12));
-        header.setBackgroundColor(Color.parseColor("#181d28"));
+        TextView head = new TextView(this);
+        head.setText("⚙ Hardware & Engine Setup: " + currentGameTitle);
+        head.setTextColor(Color.WHITE);
+        head.setTextSize(16);
+        head.setTypeface(null, Typeface.BOLD);
+        root.addView(head);
 
-        TextView title = new TextView(this);
-        title.setText("Download Task   |   Game Management");
-        title.setTextColor(Color.WHITE);
-        title.setTextSize(15);
-        title.setTypeface(null, Typeface.BOLD);
-        header.addView(title);
-
-        root.addView(header);
-
-        ScrollView sv = new ScrollView(this);
+        ScrollView sv = new ScrollScrollView(this);
         LinearLayout list = new LinearLayout(this);
         list.setOrientation(LinearLayout.VERTICAL);
-        list.setPadding(dpToPx(20), dpToPx(14), dpToPx(20), dpToPx(20));
+        list.setPadding(0, dpToPx(10), 0, dpToPx(10));
 
-        String[][] tasks = {
-                {"vkd3d-2.12", "2.52MB", "100%"},
-                {"Fex-20251025", "18.4MB", "100%"},
-                {"Firmware (Wine 9.0)", "164.23MB", "100%"},
-                {"proton10.0-arm64x-2", "206.76MB", "100%"},
-                {"base", "79.56MB", "100%"},
-                {"dxvk-2.3.1-async", "7.55MB", "100%"},
-                {"turnip_v25.0.0_R1", "2.12MB", "100%"}
-        };
+        // 1. प्रोसेसर आर्किटेक्चर
+        TextView cpuLabel = new TextView(this);
+        cpuLabel.setText("Processor Preset / Architecture:");
+        cpuLabel.setTextColor(Color.parseColor("#38bdf8"));
+        cpuLabel.setTextSize(12);
+        list.addView(cpuLabel);
 
-        for (String[] t : tasks) {
-            LinearLayout row = new LinearLayout(this);
-            row.setOrientation(LinearLayout.VERTICAL);
-            row.setBackground(createCard(Color.parseColor("#171c26"), 8, Color.parseColor("#2a3242"), 1));
-            row.setPadding(dpToPx(14), dpToPx(10), dpToPx(14), dpToPx(10));
-            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-            lp.setMargins(0, 0, 0, dpToPx(8));
-            row.setLayoutParams(lp);
+        Button cpuBtn = new Button(this);
+        cpuBtn.setText("SoC: " + detectedCpuSoC);
+        cpuBtn.setTextColor(Color.WHITE);
+        cpuBtn.setTextSize(12);
+        cpuBtn.setBackground(createCard(Color.parseColor("#1e293b"), 8, Color.parseColor("#334155"), 1));
+        cpuBtn.setOnClickListener(v -> {
+            if (detectedCpuSoC.contains("Snapdragon")) {
+                detectedCpuSoC = "MediaTek Dimensity (Mali GPU)";
+                selectedDriver = "Mesa Zink / Mali Direct Vulkan";
+                selectedCpuTranslator = "FEX-Emu 2026";
+            } else if (detectedCpuSoC.contains("MediaTek")) {
+                detectedCpuSoC = "Samsung Exynos (Xclipse/Mali)";
+                selectedDriver = "System AMD/Mali Vulkan Driver";
+                selectedCpuTranslator = "Box64 v0.3.0 JIT";
+            } else if (detectedCpuSoC.contains("Exynos")) {
+                detectedCpuSoC = "Google Tensor (Mali GPU)";
+                selectedDriver = "Mesa Zink GL-Vulkan";
+                selectedCpuTranslator = "Box64 v0.3.0 JIT";
+            } else {
+                detectedCpuSoC = "Snapdragon (Adreno GPU)";
+                selectedDriver = "Adreno Turnip v26.1.0";
+                selectedCpuTranslator = "Box64 v0.3.0 JIT";
+            }
+            cpuBtn.setText("SoC: " + detectedCpuSoC);
+        });
+        list.addView(cpuBtn);
 
-            RelativeLayout topR = new RelativeLayout(this);
-            TextView tName = new TextView(this);
-            tName.setText("📦  " + t[0] + " (" + t[1] + ")");
-            tName.setTextColor(Color.WHITE);
-            tName.setTextSize(13);
-            topR.addView(tName);
+        // 2. GPU ड्राइवर
+        TextView drvLabel = new TextView(this);
+        drvLabel.setText("\nGPU Driver Selection:");
+        drvLabel.setTextColor(Color.parseColor("#38bdf8"));
+        drvLabel.setTextSize(12);
+        list.addView(drvLabel);
 
-            TextView status = new TextView(this);
-            status.setText("Completed");
-            status.setTextColor(Color.parseColor("#10b981"));
-            status.setTextSize(11);
-            RelativeLayout.LayoutParams sp = new RelativeLayout.LayoutParams(
-                    RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
-            sp.addRule(RelativeLayout.ALIGN_PARENT_RIGHT);
-            status.setLayoutParams(sp);
-            topR.addView(status);
+        Button drvBtn = new Button(this);
+        drvBtn.setText("Driver: " + selectedDriver);
+        drvBtn.setTextColor(Color.WHITE);
+        drvBtn.setTextSize(12);
+        drvBtn.setBackground(createCard(Color.parseColor("#1e293b"), 8, Color.parseColor("#334155"), 1));
+        drvBtn.setOnClickListener(v -> {
+            if (selectedDriver.contains("Turnip")) {
+                selectedDriver = "Mesa Zink / Mali Direct Vulkan";
+            } else if (selectedDriver.contains("Zink")) {
+                selectedDriver = "System AMD/Mali Vulkan Driver";
+            } else {
+                selectedDriver = "Adreno Turnip v26.1.0";
+            }
+            drvBtn.setText("Driver: " + selectedDriver);
+            prefs.edit().putString("vortex_gpu_driver", selectedDriver).apply();
+        });
+        list.addView(drvBtn);
 
-            row.addView(topR);
+        // 3. रेज़ोल्यूशन चयन
+        TextView resLabel = new TextView(this);
+        resLabel.setText("\nDisplay Resolution:");
+        resLabel.setTextColor(Color.parseColor("#38bdf8"));
+        resLabel.setTextSize(12);
+        list.addView(resLabel);
 
-            ProgressBar pb = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
-            pb.setMax(100);
-            pb.setProgress(100);
-            pb.getProgressDrawable().setColorFilter(Color.parseColor("#38bdf8"), android.graphics.PorterDuff.Mode.SRC_IN);
-            row.addView(pb, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dpToPx(6)));
-
-            list.addView(row);
-        }
+        Button resBtn = new Button(this);
+        resBtn.setText("Resolution: " + selectedResolution);
+        resBtn.setTextColor(Color.WHITE);
+        resBtn.setTextSize(12);
+        resBtn.setBackground(createCard(Color.parseColor("#1e293b"), 8, Color.parseColor("#334155"), 1));
+        resBtn.setOnClickListener(v -> {
+            if (selectedResolution.equals("1280x720")) {
+                selectedResolution = "1600x720 (Ultra-Wide)";
+            } else if (selectedResolution.contains("1600")) {
+                selectedResolution = "800x600 (Performance)";
+            } else {
+                selectedResolution = "1280x720";
+            }
+            resBtn.setText("Resolution: " + selectedResolution);
+            prefs.edit().putString("vortex_res", selectedResolution).apply();
+        });
+        list.addView(resBtn);
 
         sv.addView(list);
-        root.addView(sv);
-        rootContainer.addView(root);
+        root.addView(sv, new LinearLayout.LayoutParams(dpToPx(400), dpToPx(175)));
 
-        new Handler(Looper.getMainLooper()).postDelayed(this::showInGameOverlayScreen, 1800);
-    }
+        LinearLayout actRow = new LinearLayout(this);
+        actRow.setOrientation(LinearLayout.HORIZONTAL);
+        actRow.setGravity(Gravity.RIGHT);
 
-    private void showPcGameSettingsScreen() {
+        Button close = new Button(this);
+        close.setText("CLOSE");
+        close.setTextColor(Color.WHITE);
+        close.setBackgroundColor(Color.TRANSPARENT);
+        close.setOnClickListener(v -> {
+            d.dismiss();
+            showConsoleHomeDashboard();
+        });
+        actRow.addView(close);
+
+        Button launchNow = new Button(this);
+        launchNow.setText("SAVE & PLAY");
+        launchNow.setTextColor(Color.WHITE);
+        launchNow.setTextSize(12);
+        launchNow.setBackground(createCard(Color.parseColor("#16a34a"), 8, 0, 0));
+        launchNow.setOnClickListener(v -> {
+            d.dismiss();
+            startAllSocExecution();
+        });
+        actRow.addView(launchNow);
+
+        root.addView(actRow);
+        d.setContentView(root);
+        d.show();
+            }
+        // --- गेम बूट प्रक्रिया ---
+    private void startAllSocExecution() {
+        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
         rootContainer.removeAllViews();
 
-        LinearLayout root = new LinearLayout(this);
-        root.setOrientation(LinearLayout.VERTICAL);
-        root.setBackgroundColor(Color.parseColor("#090b10"));
+        LinearLayout bootLayout = new LinearLayout(this);
+        bootLayout.setOrientation(LinearLayout.VERTICAL);
+        bootLayout.setGravity(Gravity.CENTER);
+        bootLayout.setBackgroundColor(Color.BLACK);
 
-        RelativeLayout header = new RelativeLayout(this);
-        header.setPadding(dpToPx(20), dpToPx(12), dpToPx(20), dpToPx(12));
-        header.setBackgroundColor(Color.parseColor("#131722"));
+        TextView bootTitle = new TextView(this);
+        bootTitle.setText("Booting " + currentGameTitle + "...");
+        bootTitle.setTextColor(Color.WHITE);
+        bootTitle.setTextSize(18);
+        bootTitle.setTypeface(null, Typeface.BOLD);
+        bootLayout.addView(bootTitle);
 
-        TextView back = new TextView(this);
-        back.setText("← Game Settings");
-        back.setTextColor(Color.WHITE);
-        back.setTextSize(17);
-        back.setTypeface(null, Typeface.BOLD);
-        back.setOnClickListener(v -> showConsoleHomeUI());
-        header.addView(back);
+        TextView details = new TextView(this);
+        details.setText("SoC: " + detectedCpuSoC + " | " + selectedCpuTranslator + "\nDriver: " + selectedDriver + " | " + selectedResolution);
+        details.setTextColor(Color.parseColor("#38bdf8"));
+        details.setTextSize(11);
+        details.setGravity(Gravity.CENTER);
+        details.setPadding(0, dpToPx(6), 0, dpToPx(18));
+        bootLayout.addView(details);
 
-        root.addView(header);
+        ProgressBar pb = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
+        pb.setMax(100);
+        pb.setProgress(20);
+        pb.getProgressDrawable().setColorFilter(Color.parseColor("#38bdf8"), android.graphics.PorterDuff.Mode.SRC_IN);
+        bootLayout.addView(pb, new LinearLayout.LayoutParams(dpToPx(320), dpToPx(8)));
 
-        LinearLayout body = new LinearLayout(this);
-        body.setOrientation(LinearLayout.HORIZONTAL);
-        body.setLayoutParams(new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT));
+        rootContainer.addView(bootLayout);
 
-        LinearLayout sidebar = new LinearLayout(this);
-        sidebar.setOrientation(LinearLayout.VERTICAL);
-        sidebar.setBackgroundColor(Color.parseColor("#0f131c"));
-        sidebar.setPadding(dpToPx(14), dpToPx(16), dpToPx(14), dpToPx(16));
-        sidebar.setLayoutParams(new LinearLayout.LayoutParams(dpToPx(160), LinearLayout.LayoutParams.MATCH_PARENT));
-
-        String[] tabs = {"General", "Compatibility", "Backup / Restore", "Component", "Touch Controls", "Developer Options"};
-        for (String tab : tabs) {
-            TextView tv = new TextView(this);
-            tv.setText(tab);
-            tv.setTextColor(tab.equals("General") ? Color.WHITE : Color.parseColor("#9ca3af"));
-            tv.setTextSize(13);
-            tv.setPadding(dpToPx(8), dpToPx(12), dpToPx(8), dpToPx(12));
-            if (tab.equals("General")) tv.setBackground(createCard(Color.parseColor("#1e2536"), 6, 0, 0));
-            sidebar.addView(tv);
-        }
-        body.addView(sidebar);
-
-        ScrollView sv = new ScrollView(this);
-        LinearLayout content = new LinearLayout(this);
-        content.setOrientation(LinearLayout.VERTICAL);
-        content.setPadding(dpToPx(20), dpToPx(14), dpToPx(20), dpToPx(24));
-
-        addSettingItem(content, "Enter Container Desktop", "Launch Wine Container desktop environment");
-        addSettingItem(content, "Startup File Path", selectedExe);
-        addSettingItem(content, "Language", "en_GB");
-        addSettingItem(content, "Game Resolution", "1280 x 720 (16:9)");
-        addSettingItem(content, "Enable MangoHUD", "Performance Overlay: ON");
-        addSettingItem(content, "Compatibility Layer", "proton10.0-arm64x-2");
-        addSettingItem(content, "Translation Params", "Extreme (Game Presets)");
-        addSettingItem(content, "GPU Driver", "turnip_v26.1.0_b8");
-        addSettingItem(content, "DXVK Version", "dxvk-v2.6.1-async");
-        addSettingItem(content, "VKD3D Version", "vkd3d-proton-3.0.1");
-
-        sv.addView(content);
-        body.addView(sv);
-        root.addView(body);
-
-        rootContainer.addView(root);
+        Handler h = new Handler(Looper.getMainLooper());
+        h.post(new Runnable() {
+            int p = 20;
+            @Override
+            public void run() {
+                if (p < 100) {
+                    p += 15;
+                    pb.setProgress(p);
+                    h.postDelayed(this, 90);
+                } else {
+                    showRealtimeGameScreen();
+                }
+            }
+        });
     }
 
-    private void addSettingItem(LinearLayout parent, String title, String sub) {
-        LinearLayout row = new LinearLayout(this);
-        row.setOrientation(LinearLayout.VERTICAL);
-        row.setPadding(0, dpToPx(8), 0, dpToPx(8));
-
-        TextView t = new TextView(this);
-        t.setText(title);
-        t.setTextColor(Color.WHITE);
-        t.setTextSize(14);
-        t.setTypeface(null, Typeface.BOLD);
-        row.addView(t);
-
-        TextView s = new TextView(this);
-        s.setText(sub);
-        s.setTextColor(Color.parseColor("#9ca3af"));
-        s.setTextSize(11);
-        row.addView(s);
-
-        parent.addView(row);
-                           }
-        private void showInGameOverlayScreen() {
+    // --- इन-गेम स्क्रीन, ऑन-स्क्रीन कंट्रोल्स और लाइव MangoHUD ---
+    private void showRealtimeGameScreen() {
         rootContainer.removeAllViews();
 
-        RelativeLayout gameView = new RelativeLayout(this);
-        gameView.setBackgroundColor(Color.parseColor("#05080e"));
+        RelativeLayout gameScreen = new RelativeLayout(this);
+        gameScreen.setBackgroundColor(Color.parseColor("#05070a"));
 
+        // लाइव MangoHUD परफ़ॉर्मेंस ओवरले (ऊपर बाएँ)
         LinearLayout mangoHud = new LinearLayout(this);
         mangoHud.setOrientation(LinearLayout.HORIZONTAL);
-        mangoHud.setBackground(createCard(Color.argb(160, 0, 0, 0), 4, 0, 0));
-        mangoHud.setPadding(dpToPx(8), dpToPx(3), dpToPx(8), dpToPx(3));
-        setAbsolutePos(mangoHud, dpToPx(16), dpToPx(8), ViewGroup.LayoutParams.WRAP_CONTENT, dpToPx(24));
+        mangoHud.setBackground(createCard(Color.argb(170, 0, 0, 0), 4, Color.parseColor("#334155"), 1));
+        mangoHud.setPadding(dpToPx(8), dpToPx(4), dpToPx(8), dpToPx(4));
+        setAbsolutePos(mangoHud, dpToPx(16), dpToPx(10), ViewGroup.LayoutParams.WRAP_CONTENT, dpToPx(24));
 
-        TextView hudTv = new TextView(this);
-        hudTv.setText("GPU: 52% | CPU: 47% | RAM: 82% | D8VK 60 FPS");
-        hudTv.setTextColor(Color.parseColor("#4ade80"));
-        hudTv.setTextSize(10);
-        hudTv.setTypeface(Typeface.MONOSPACE);
-        mangoHud.addView(hudTv);
-        gameView.addView(mangoHud);
+        TextView hudMetrics = new TextView(this);
+        hudMetrics.setText("FPS: 60.0  •  GPU: 48%  •  CPU: 42%  •  RAM: 1.9GB  •  " + selectedResolution);
+        hudMetrics.setTextColor(Color.parseColor("#4ade80"));
+        hudMetrics.setTextSize(10);
+        hudMetrics.setTypeface(Typeface.MONOSPACE);
+        mangoHud.addView(hudMetrics);
+        gameScreen.addView(mangoHud);
 
-        Button sideMenuTrigger = new Button(this);
-        sideMenuTrigger.setText("❮ MENU");
-        sideMenuTrigger.setTextColor(Color.parseColor("#9ca3af"));
-        sideMenuTrigger.setTextSize(10);
-        sideMenuTrigger.setBackground(createCard(Color.argb(100, 20, 20, 25), 14, Color.WHITE, 1));
-        setAbsoluteAlignRight(sideMenuTrigger, dpToPx(10), dpToPx(10), dpToPx(65), dpToPx(32));
-        sideMenuTrigger.setOnClickListener(v -> showGameOverlaySidebar());
-        gameView.addView(sideMenuTrigger);
+        // साइड ओवरले मेन्यू बटन (❮ OVERLAY)
+        Button overlayBtn = new Button(this);
+        overlayBtn.setText("❮ OVERLAY");
+        overlayBtn.setTextColor(Color.parseColor("#cbd5e1"));
+        overlayBtn.setTextSize(10);
+        overlayBtn.setBackground(createCard(Color.argb(120, 15, 23, 42), 12, Color.WHITE, 1));
+        setAbsoluteAlignRight(overlayBtn, dpToPx(16), dpToPx(10), dpToPx(80), dpToPx(30));
+        overlayBtn.setOnClickListener(v -> showIngameOverlaySettings());
+        gameScreen.addView(overlayBtn);
 
-        addTrigger(gameView, "LT", dpToPx(25), dpToPx(20));
-        addTrigger(gameView, "LB", dpToPx(25), dpToPx(55));
-        addTrigger(gameView, "L3", dpToPx(25), dpToPx(95));
+        // वर्चुअल गेमपैड (LT, LB, RT, RB, L3, R3)
+        addTrigger(gameScreen, "LT", dpToPx(25), dpToPx(20));
+        addTrigger(gameScreen, "LB", dpToPx(25), dpToPx(55));
+        addTrigger(gameScreen, "L3", dpToPx(25), dpToPx(95));
 
-        addTriggerRight(gameView, "RT", dpToPx(25), dpToPx(20));
-        addTriggerRight(gameView, "RB", dpToPx(25), dpToPx(55));
-        addTriggerRight(gameView, "R3", dpToPx(25), dpToPx(95));
+        addTriggerRight(gameScreen, "RT", dpToPx(25), dpToPx(20));
+        addTriggerRight(gameScreen, "RB", dpToPx(25), dpToPx(55));
+        addTriggerRight(gameScreen, "R3", dpToPx(25), dpToPx(95));
 
-        gameView.addView(createMovableJoystick(dpToPx(35), dpToPx(20)));
+        // बायाँ एनालॉग जॉयस्टिक
+        gameScreen.addView(createMovableJoystick(dpToPx(35), dpToPx(25)));
 
-        RelativeLayout actionBox = new RelativeLayout(this);
-        setAbsoluteAlignBottomRight(actionBox, dpToPx(30), dpToPx(20), dpToPx(120), dpToPx(120));
-        actionBox.addView(createPadBtn("Y", 40, 0));
-        actionBox.addView(createPadBtn("A", 40, 80));
-        actionBox.addView(createPadBtn("X", 0, 40));
-        actionBox.addView(createPadBtn("B", 80, 40));
-        gameView.addView(actionBox);
+        // दाएँ तरफ़ एक्शन बटन (Y, X, B, A)
+        RelativeLayout actionPad = new RelativeLayout(this);
+        setAbsoluteAlignBottomRight(actionPad, dpToPx(35), dpToPx(25), dpToPx(120), dpToPx(120));
+        actionPad.addView(createActionButton("Y", 40, 0));
+        actionPad.addView(createActionButton("A", 40, 80));
+        actionPad.addView(createActionButton("X", 0, 40));
+        actionPad.addView(createActionButton("B", 80, 40));
+        gameScreen.addView(actionPad);
 
-        rootContainer.addView(gameView);
+        rootContainer.addView(gameScreen);
     }
 
     private void addTrigger(RelativeLayout parent, String text, int left, int top) {
@@ -564,7 +681,7 @@ public class MainActivity extends Activity {
         parent.addView(b);
     }
 
-    private Button createPadBtn(String text, int marginX, int marginY) {
+    private Button createActionButton(String text, int marginX, int marginY) {
         Button btn = new Button(this);
         btn.setText(text);
         btn.setTextColor(Color.WHITE);
@@ -615,7 +732,7 @@ public class MainActivity extends Activity {
         return base;
     }
 
-    private void showGameOverlaySidebar() {
+    private void showIngameOverlaySettings() {
         Dialog d = new Dialog(this);
         d.requestWindowFeature(Window.FEATURE_NO_TITLE);
         if (d.getWindow() != null) {
@@ -624,84 +741,58 @@ public class MainActivity extends Activity {
         }
 
         LinearLayout sheet = new LinearLayout(this);
-        sheet.setOrientation(LinearLayout.HORIZONTAL);
-        sheet.setBackground(createCard(Color.parseColor("#151821"), 12, Color.parseColor("#2a3242"), 1));
-        sheet.setPadding(dpToPx(14), dpToPx(14), dpToPx(14), dpToPx(14));
+        sheet.setOrientation(LinearLayout.VERTICAL);
+        sheet.setBackground(createCard(Color.parseColor("#0f172a"), 14, Color.parseColor("#1e293b"), 1));
+        sheet.setPadding(dpToPx(18), dpToPx(16), dpToPx(18), dpToPx(16));
+        sheet.setLayoutParams(new LinearLayout.LayoutParams(dpToPx(260), ViewGroup.LayoutParams.MATCH_PARENT));
 
-        LinearLayout iconBar = new LinearLayout(this);
-        iconBar.setOrientation(LinearLayout.VERTICAL);
-        iconBar.setPadding(0, 0, dpToPx(10), 0);
-
-        TextView icoControls = new TextView(this);
-        icoControls.setText("🎮\nControls");
-        icoControls.setTextColor(Color.WHITE);
-        icoControls.setTextSize(10);
-        icoControls.setGravity(Gravity.CENTER);
-        iconBar.addView(icoControls);
-
-        TextView icoPerf = new TextView(this);
-        icoPerf.setText("\n📈\nPerf");
-        icoPerf.setTextColor(Color.parseColor("#9ca3af"));
-        icoPerf.setTextSize(10);
-        icoPerf.setGravity(Gravity.CENTER);
-        iconBar.addView(icoPerf);
-
-        sheet.addView(iconBar);
-
-        ScrollView sv = new ScrollView(this);
-        LinearLayout list = new LinearLayout(this);
-        list.setOrientation(LinearLayout.VERTICAL);
-        list.setLayoutParams(new LinearLayout.LayoutParams(dpToPx(240), ViewGroup.LayoutParams.WRAP_CONTENT));
+        TextView ot = new TextView(this);
+        ot.setText("In-Game Performance & HUD");
+        ot.setTextColor(Color.WHITE);
+        ot.setTextSize(14);
+        ot.setTypeface(null, Typeface.BOLD);
+        sheet.addView(ot);
 
         TextView opLabel = new TextView(this);
-        opLabel.setText("Touch Control Opacity: " + touchOpacity + "%");
-        opLabel.setTextColor(Color.WHITE);
+        opLabel.setText("\nTouch Opacity: " + touchOpacity + "%");
+        opLabel.setTextColor(Color.parseColor("#94a3b8"));
         opLabel.setTextSize(12);
-        list.addView(opLabel);
+        sheet.addView(opLabel);
 
-        SeekBar opSeek = new SeekBar(this);
-        opSeek.setMax(100);
-        opSeek.setProgress(touchOpacity);
-        opSeek.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+        SeekBar sb = new SeekBar(this);
+        sb.setMax(100);
+        sb.setProgress(touchOpacity);
+        sb.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                touchOpacity = progress;
-                opLabel.setText("Touch Control Opacity: " + touchOpacity + "%");
+                touchOpacity = Math.max(20, progress);
+                opLabel.setText("\nTouch Opacity: " + touchOpacity + "%");
             }
             @Override public void onStartTrackingTouch(SeekBar seekBar) {}
             @Override public void onStopTrackingTouch(SeekBar seekBar) {}
         });
-        list.addView(opSeek);
+        sheet.addView(sb);
 
-        CheckBox cbFrame = new CheckBox(this);
-        cbFrame.setText("Enable Frame Limit (60 FPS)");
-        cbFrame.setTextColor(Color.WHITE);
-        cbFrame.setChecked(frameLimitEnabled);
-        list.addView(cbFrame);
+        CheckBox cbLimit = new CheckBox(this);
+        cbLimit.setText("Lock 60 FPS Target");
+        cbLimit.setTextColor(Color.WHITE);
+        cbLimit.setChecked(frameLimitEnabled);
+        sheet.addView(cbLimit);
 
-        CheckBox cbGen = new CheckBox(this);
-        cbGen.setText("Frame Generation (Flow 0.60)");
-        cbGen.setTextColor(Color.WHITE);
-        cbGen.setChecked(frameGenEnabled);
-        list.addView(cbGen);
-
-        Button exitGame = new Button(this);
-        exitGame.setText("Exit Game to Dashboard");
-        exitGame.setTextColor(Color.WHITE);
-        exitGame.setTextSize(11);
-        exitGame.setBackground(createCard(Color.parseColor("#dc2626"), 6, 0, 0));
-        LinearLayout.LayoutParams egp = new LinearLayout.LayoutParams(
+        Button exitToDash = new Button(this);
+        exitToDash.setText("STOP & RETURN TO DASHBOARD");
+        exitToDash.setTextColor(Color.WHITE);
+        exitToDash.setTextSize(11);
+        exitToDash.setBackground(createCard(Color.parseColor("#dc2626"), 8, 0, 0));
+        LinearLayout.LayoutParams ep = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, dpToPx(38));
-        egp.setMargins(0, dpToPx(16), 0, 0);
-        exitGame.setLayoutParams(egp);
-        exitGame.setOnClickListener(v -> {
+        ep.setMargins(0, dpToPx(24), 0, 0);
+        exitToDash.setLayoutParams(ep);
+        exitToDash.setOnClickListener(v -> {
             d.dismiss();
-            showConsoleHomeUI();
+            showConsoleHomeDashboard();
         });
-        list.addView(exitGame);
-
-        sv.addView(list);
-        sheet.addView(sv);
+        sheet.addView(exitToDash);
 
         d.setContentView(sheet);
         d.show();
@@ -755,8 +846,8 @@ public class MainActivity extends Activity {
             if (requestCode == PICK_EXE_FILE && uri != null) {
                 String name = getFileNameFromUri(uri);
                 if (name == null || name.isEmpty()) name = "Game.exe";
-                selectedExe = name;
-                showUploadCoverDialog(name);
+                currentGameExe = name;
+                showConfirmGameDialog(name);
             }
         }
     }
@@ -774,5 +865,9 @@ public class MainActivity extends Activity {
         if (result == null) result = uri.getLastPathSegment();
         return result;
     }
-        }
+
+    private static class ScrollScrollView extends ScrollView {
+        public ScrollScrollView(Context c) { super(c); }
+    }
+                                      }
         
