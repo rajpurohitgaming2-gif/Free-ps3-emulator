@@ -12,7 +12,7 @@ wget -O base.apk "$LATEST_URL"
 echo "[2/5] Decompiling APK..."
 apktool d base.apk -o decompiled_gamehub -f
 
-# 3. लोगो और स्प्लैश को पारदर्शी बनाना (No XML layout changes to avoid aapt2 error)
+# 3. लोगो और स्प्लैश को पारदर्शी बनाना
 echo "[3/5] Neutralizing Logos & Splash..."
 echo "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=" | base64 -d > blank.png
 
