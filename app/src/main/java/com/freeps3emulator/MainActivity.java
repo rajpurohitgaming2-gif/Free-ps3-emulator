@@ -7,9 +7,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.database.Cursor;
-import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.Paint;
 import android.graphics.Typeface;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.GradientDrawable;
@@ -19,6 +17,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Vibrator;
+import android.provider.DocumentsContract;
 import android.provider.OpenableColumns;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -37,12 +36,9 @@ import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.documentfile.provider.DocumentFile;
-
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.Random;
 import java.util.Set;
 
 public class MainActivity extends Activity {
@@ -50,7 +46,6 @@ public class MainActivity extends Activity {
     private static final int PICK_PKG_FILE = 101;
     private static final int PICK_PUP_FILE = 102;
     private static final int PICK_ISO_DIR = 103;
-    private static final int PICK_SINGLE_ISO = 104;
     private static final String PREFS_NAME = "PS3_VideoExact_Settings";
 
     private FrameLayout rootContainer;
@@ -84,7 +79,6 @@ public class MainActivity extends Activity {
             gameTitles.addAll(saved);
         }
 
-        // dev_hdd0/game आंतरिक फ़ोल्डर ऑटो-स्कैन
         try {
             File hdd0 = new File(getExternalFilesDir(null), "dev_hdd0/game");
             if (hdd0.exists() && hdd0.isDirectory()) {
@@ -244,7 +238,8 @@ public class MainActivity extends Activity {
         mainLayout.addView(body);
         rootContainer.addView(mainLayout);
     }
-        private void showThreeDotsPopup(View anchor) {
+
+    private void showThreeDotsPopup(View anchor) {
         PopupWindow popup = new PopupWindow(this);
         LinearLayout menuLayout = new LinearLayout(this);
         menuLayout.setOrientation(LinearLayout.VERTICAL);
@@ -348,9 +343,8 @@ public class MainActivity extends Activity {
         bottomNav.setTypeface(null, Typeface.BOLD);
         bottomNav.setPadding(0, dpToPx(24), 0, dpToPx(16));
         content.addView(bottomNav);
-    }
-
-    private void showMainSettingsScreen() {
+            }
+        private void showMainSettingsScreen() {
         rootContainer.removeAllViews();
 
         LinearLayout main = new LinearLayout(this);
@@ -580,7 +574,7 @@ public class MainActivity extends Activity {
         addCheckBox(c, "Center Horizontally", false, null);
         addCheckBox(c, "Center Vertically", false, null);
         addSliderWithLabel(c, "Opacity (%)", 70, 100, null);
-                    }
+            }
         private void showAudioSettingsScreen() {
         showGenericSettingsHeader("Audio");
         LinearLayout c = getSettingsScrollContent();
@@ -670,7 +664,6 @@ public class MainActivity extends Activity {
         addSettingSubText(c, "Custom Font File Path", "");
     }
 
-    // --- PPU/SPU COMPILING & IN-GAME SCREEN ---
     private void startPpuCompilingScreen() {
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
         rootContainer.removeAllViews();
@@ -733,7 +726,6 @@ public class MainActivity extends Activity {
         RelativeLayout gameView = new RelativeLayout(this);
         gameView.setBackgroundColor(Color.parseColor("#05080e"));
 
-        // Performance HUD & Exit
         RelativeLayout topBar = new RelativeLayout(this);
         topBar.setPadding(dpToPx(16), dpToPx(8), dpToPx(16), 0);
 
@@ -790,12 +782,10 @@ public class MainActivity extends Activity {
         setAbsoluteAlignRight(r3Btn, dpToPx(30), dpToPx(130), dpToPx(36), dpToPx(36));
         gameView.addView(r3Btn);
 
-        // Movable Joysticks
         gameView.addView(createMovableJoystick(dpToPx(35), dpToPx(25), true));
         gameView.addView(createFunctionalDPad(dpToPx(155), dpToPx(35)));
         gameView.addView(createMovableJoystick(dpToPx(155), dpToPx(35), false));
 
-        // ABXY
         RelativeLayout abxyBox = new RelativeLayout(this);
         setAbsoluteAlignBottomRight(abxyBox, dpToPx(25), dpToPx(20), dpToPx(120), dpToPx(120));
         abxyBox.addView(createABXYButton("Y", 40, 0));
@@ -804,7 +794,6 @@ public class MainActivity extends Activity {
         abxyBox.addView(createABXYButton("B", 80, 40));
         gameView.addView(abxyBox);
 
-        // Center Select/Menu
         LinearLayout centerMenu = new LinearLayout(this);
         centerMenu.setOrientation(LinearLayout.HORIZONTAL);
         RelativeLayout.LayoutParams cParams = new RelativeLayout.LayoutParams(
@@ -992,7 +981,6 @@ public class MainActivity extends Activity {
         v.setLayoutParams(p);
     }
 
-    // --- कॉमन डायलॉग्स और फ़ाइल हैंडलिंग ---
     private void showResetDefaultDialog() {
         AlertDialog.Builder b = new AlertDialog.Builder(this);
         b.setTitle("Reset as Default?");
@@ -1027,12 +1015,14 @@ public class MainActivity extends Activity {
         back.setText("←  " + titleText);
         back.setTextColor(Color.WHITE);
         back.setTextSize(20);
-        back.setOnClickListener(v -> showMainSettingsScreen()
-                                main.addView(header);
+        back.setOnClickListener(v -> showMainSettingsScreen());
+        header.addView(back);
+
+        main.addView(header);
 
         ScrollView sv = new ScrollView(this);
         LinearLayout content = new LinearLayout(this);
-        content.setTag("SETTINGS_CONTENT_BOX");
+                content.setTag("SETTINGS_CONTENT_BOX");
         content.setOrientation(LinearLayout.VERTICAL);
         content.setPadding(dpToPx(16), dpToPx(16), dpToPx(16), dpToPx(24));
 
@@ -1176,30 +1166,40 @@ public class MainActivity extends Activity {
         if (resultCode == RESULT_OK && data != null) {
             Uri uri = data.getData();
             if (requestCode == PICK_ISO_DIR && uri != null) {
-                // पूरे फ़ोल्डर में मौजूद सभी .ISO को स्कैन करना
+                int count = 0;
                 try {
-                    DocumentFile pickedDir = DocumentFile.fromTreeUri(this, uri);
-                    if (pickedDir != null && pickedDir.isDirectory()) {
-                        int count = 0;
-                        for (DocumentFile file : pickedDir.listFiles()) {
-                            String name = file.getName();
-                            if (name != null && (name.toLowerCase().endsWith(".iso") || name.toLowerCase().endsWith(".pkg"))) {
-                                if (!gameTitles.contains(name)) {
-                                    gameTitles.add(name);
-                                    count++;
+                    Uri childrenUri = DocumentsContract.buildChildDocumentsUriUsingTree(uri, DocumentsContract.getTreeDocumentId(uri));
+                    try (Cursor cursor = getContentResolver().query(childrenUri, new String[]{
+                            DocumentsContract.Document.COLUMN_DISPLAY_NAME
+                    }, null, null, null)) {
+                        if (cursor != null) {
+                            while (cursor.moveToNext()) {
+                                String name = cursor.getString(0);
+                                if (name != null && (name.toLowerCase().endsWith(".iso") || name.toLowerCase().endsWith(".pkg"))) {
+                                    if (!gameTitles.contains(name)) {
+                                        gameTitles.add(name);
+                                        count++;
+                                    }
                                 }
                             }
                         }
-                        saveGamesList();
-                        Toast.makeText(this, "Mounted " + count + " game(s) from directory", Toast.LENGTH_SHORT).show();
-                        showSelectGameScreen();
                     }
-                } catch (Exception e) {
-                    Toast.makeText(this, "Error scanning directory", Toast.LENGTH_SHORT).show();
+                } catch (Exception ignored) {}
+
+                if (count == 0) {
+                    String folderName = uri.getLastPathSegment();
+                    if (folderName != null && !gameTitles.contains(folderName)) {
+                        gameTitles.add(folderName);
+                        count = 1;
+                    }
                 }
-            } else if (requestCode == PICK_PKG_FILE || requestCode == PICK_SINGLE_ISO) {
-                String name = (uri != null) ? getFileNameFromUri(uri) : "Custom PS3 Game.iso";
-                if (name == null || name.isEmpty()) name = "PS3 Game.iso";
+
+                saveGamesList();
+                Toast.makeText(this, "Mounted " + count + " item(s) from directory", Toast.LENGTH_SHORT).show();
+                showSelectGameScreen();
+            } else if (requestCode == PICK_PKG_FILE) {
+                String name = (uri != null) ? getFileNameFromUri(uri) : "PS3 Disc Image.iso";
+                if (name == null || name.isEmpty()) name = "PS3 Disc Image.iso";
                 if (!gameTitles.contains(name)) {
                     gameTitles.add(name);
                     saveGamesList();
@@ -1225,4 +1225,4 @@ public class MainActivity extends Activity {
         if (result == null) result = uri.getLastPathSegment();
         return result;
     }
-        }
+}
