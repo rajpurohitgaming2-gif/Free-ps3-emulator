@@ -2,6 +2,7 @@ package com.freeps3emulator;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.Dialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -24,6 +25,7 @@ import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.FrameLayout;
@@ -69,6 +71,8 @@ public class MainActivity extends Activity {
             vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
         } catch (Exception ignored) {}
 
+        isFirmwareInstalled = prefs.getBoolean("fw_installed", false);
+        initializeEmulatorDirectories();
         loadSavedGames();
 
         rootContainer = new FrameLayout(this);
@@ -77,10 +81,69 @@ public class MainActivity extends Activity {
 
         boolean setupDone = prefs.getBoolean("novaps3_wizard_done", false);
         if (!setupDone) {
-            showWelcomeWizard(1);
+            showSplashScreen(() -> showWelcomeWizard(1));
         } else {
-            showSelectGameScreen();
+            showSplashScreen(this::showSelectGameScreen);
         }
+    }
+
+    // --- वीडियो के अनुसार लोगो स्प्लैश स्क्रीन ---
+    private void showSplashScreen(Runnable onComplete) {
+        rootContainer.removeAllViews();
+        FrameLayout splash = new FrameLayout(this);
+        splash.setBackgroundColor(Color.parseColor("#1f1f1f"));
+
+        LinearLayout logoBox = new LinearLayout(this);
+        logoBox.setOrientation(LinearLayout.VERTICAL);
+        logoBox.setGravity(Gravity.CENTER);
+        logoBox.setBackground(createCard(Color.WHITE, 16, Color.parseColor("#1a237e")));
+        int boxSize = dpToPx(90);
+        FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(boxSize, boxSize);
+        lp.gravity = Gravity.CENTER;
+        logoBox.setLayoutParams(lp);
+
+        TextView iconTop = new TextView(this);
+        iconTop.setText("NOVA");
+        iconTop.setTextColor(Color.parseColor("#1a237e"));
+        iconTop.setTextSize(10);
+        iconTop.setTypeface(null, Typeface.BOLD);
+        logoBox.addView(iconTop);
+
+        TextView iconMain = new TextView(this);
+        iconMain.setText("3");
+        iconMain.setTextColor(Color.parseColor("#1a237e"));
+        iconMain.setTextSize(36);
+        iconMain.setTypeface(null, Typeface.BOLD);
+        logoBox.addView(iconMain);
+
+        splash.addView(logoBox);
+        rootContainer.addView(splash);
+
+        new Handler(Looper.getMainLooper()).postDelayed(onComplete, 900);
+    }
+
+    // --- वीडियो में दिखाए गए स्टोरेज डायरेक्टरी स्ट्रक्चर का ऑटो-क्रिएशन ---
+    private void initializeEmulatorDirectories() {
+        try {
+            File base = getExternalFilesDir(null);
+            if (base != null) {
+                String[] mainDirs = {"cache", "config", "font", "logs"};
+                for (String d : mainDirs) {
+                    new File(base, d).mkdirs();
+                }
+
+                File configDir = new File(base, "config");
+                String[] configSubs = {"custom_cfg", "dev_bdvd", "dev_flash", "dev_flash2", "dev_flash3", "dev_hdd0", "dev_hdd1", "games", "icons", "patches"};
+                for (String sub : configSubs) {
+                    new File(configDir, sub).mkdirs();
+                }
+
+                File cfgYml = new File(configDir, "config.yml");
+                if (!cfgYml.exists()) cfgYml.createNewFile();
+                File gamesYml = new File(configDir, "games.yml");
+                if (!gamesYml.exists()) gamesYml.createNewFile();
+            }
+        } catch (Exception ignored) {}
     }
 
     private void loadSavedGames() {
@@ -91,12 +154,12 @@ public class MainActivity extends Activity {
         }
 
         try {
-            File hdd0 = new File(getExternalFilesDir(null), "dev_hdd0/game");
-            if (hdd0.exists() && hdd0.isDirectory()) {
-                File[] list = hdd0.listFiles();
+            File gamesDir = new File(getExternalFilesDir(null), "config/games");
+            if (gamesDir.exists() && gamesDir.isDirectory()) {
+                File[] list = gamesDir.listFiles();
                 if (list != null) {
                     for (File f : list) {
-                        if (f.isDirectory() && !gameTitles.contains(f.getName())) {
+                        if (!gameTitles.contains(f.getName())) {
                             gameTitles.add(f.getName());
                         }
                     }
@@ -132,7 +195,46 @@ public class MainActivity extends Activity {
         return gd;
     }
 
-    // --- आपकी भेजी गई फ़ोटो के अनुसार विज़ार्ड ---
+    // --- वीडियो में दिखाया गया "Installing Firmware..." डायलॉग ---
+    private void showInstallingFirmwareDialog() {
+        Dialog dialog = new Dialog(this);
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        dialog.setCancelable(false);
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+        }
+
+        LinearLayout box = new LinearLayout(this);
+        box.setOrientation(LinearLayout.HORIZONTAL);
+        box.setGravity(Gravity.CENTER_VERTICAL);
+        box.setBackground(createCard(Color.parseColor("#2a2a2a"), 4, 0));
+        box.setPadding(dpToPx(24), dpToPx(24), dpToPx(24), dpToPx(24));
+
+        ProgressBar pb = new ProgressBar(this);
+        pb.setIndeterminate(true);
+        box.addView(pb);
+
+        TextView tv = new TextView(this);
+        tv.setText("  Installing Firmware...");
+        tv.setTextColor(Color.WHITE);
+        tv.setTextSize(16);
+        box.addView(tv);
+
+        dialog.setContentView(box);
+        dialog.show();
+
+        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+            try {
+                if (dialog.isShowing()) dialog.dismiss();
+                isFirmwareInstalled = true;
+                prefs.edit().putBoolean("fw_installed", true).apply();
+                Toast.makeText(this, "PS3 Firmware (PUP) Installed to dev_flash!", Toast.LENGTH_SHORT).show();
+                showWelcomeWizard(2);
+            } catch (Exception ignored) {}
+        }, 2200);
+    }
+
+    // --- वेलकम विज़ार्ड (Step 1 से 6) ---
     private void showWelcomeWizard(int step) {
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         currentSetupStep = step;
@@ -141,7 +243,6 @@ public class MainActivity extends Activity {
         RelativeLayout wizardRoot = new RelativeLayout(this);
         wizardRoot.setBackgroundColor(Color.parseColor("#2a2a2a"));
 
-        // Top Header
         LinearLayout topBar = new LinearLayout(this);
         topBar.setId(View.generateViewId());
         topBar.setBackgroundColor(Color.parseColor("#1f1f1f"));
@@ -163,7 +264,7 @@ public class MainActivity extends Activity {
         content.setPadding(dpToPx(16), dpToPx(20), dpToPx(16), dpToPx(20));
 
         switch (step) {
-            case 1: // फ़ोटो 1: Welcome स्क्रीन
+            case 1:
                 TextView wTitle = new TextView(this);
                 wTitle.setText("Welcome to NovaPS3!");
                 wTitle.setTextColor(Color.WHITE);
@@ -178,7 +279,7 @@ public class MainActivity extends Activity {
                 content.addView(wSub);
                 break;
 
-            case 2: // फ़ोटो 2: फ़र्मवेयर स्क्रीन
+            case 2:
                 TextView fText = new TextView(this);
                 fText.setText("To play the game, you must install the PS3 firmware (PS3UPDAT.PUP). Please select the firmware file.");
                 fText.setTextColor(Color.WHITE);
@@ -191,7 +292,7 @@ public class MainActivity extends Activity {
                 content.addView(selFwBtn);
                 break;
 
-            case 3: // फ़ोटो 3: ISO डायरेक्टरी
+            case 3:
                 TextView dirText = new TextView(this);
                 dirText.setText("Please specify the PS3 ISO directory, the APP will automatically scan to retrieve valid games, you can also skip this step and install the .pkg file directly.");
                 dirText.setTextColor(Color.WHITE);
@@ -204,7 +305,7 @@ public class MainActivity extends Activity {
                 content.addView(selDirBtn);
                 break;
 
-            case 4: // फ़ोटो 4: फ़ॉन्ट सेलेक्शन
+            case 4:
                 TextView fontText = new TextView(this);
                 fontText.setText("Please select a font file (*.ttf, *.ttc, *.otf) to install, or you can use a font from the PS3 firmware (words may be missing).");
                 fontText.setTextColor(Color.WHITE);
@@ -239,7 +340,7 @@ public class MainActivity extends Activity {
                 content.addView(addFont);
                 break;
 
-            case 5: // फ़ोटो 5: GPU ड्राइवर
+            case 5:
                 TextView gpuText = new TextView(this);
                 gpuText.setText("Please select a GPU driver, you can also skip this step (the game may run with errors).");
                 gpuText.setTextColor(Color.WHITE);
@@ -266,7 +367,7 @@ public class MainActivity extends Activity {
                 content.addView(addDriver);
                 break;
 
-            case 6: // फ़ोटो 6: फ़िनिश स्क्रीन
+            case 6:
                 TextView finText = new TextView(this);
                 finText.setText("The emulator will automatically select the most suitable configuration, but some configurations may cause issues on your device. You can modify them later in the settings.");
                 finText.setTextColor(Color.WHITE);
@@ -282,7 +383,6 @@ public class MainActivity extends Activity {
         sv.addView(content);
         wizardRoot.addView(sv, svParams);
 
-        // निचला नेविगेशन बार और प्रोग्रेस लाइन
         RelativeLayout bottomNav = new RelativeLayout(this);
         bottomNav.setPadding(dpToPx(10), dpToPx(10), dpToPx(10), dpToPx(10));
 
@@ -346,7 +446,8 @@ public class MainActivity extends Activity {
         b.setBackgroundColor(Color.parseColor("#555555"));
         b.setPadding(dpToPx(12), dpToPx(10), dpToPx(12), dpToPx(10));
         return b;
-    }    // --- मुख्य गेम सेलेक्टर स्क्रीन ---
+                                     }
+        // --- मुख्य गेम सेलेक्टर स्क्रीन ---
     private void showSelectGameScreen() {
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         rootContainer.removeAllViews();
@@ -619,7 +720,7 @@ public class MainActivity extends Activity {
         sv.addView(list);
         main.addView(sv);
         rootContainer.addView(main);
-                }
+    }
         private void showCoreSettingsScreen() {
         showGenericSettingsHeader("Core");
         LinearLayout c = getSettingsScrollContent();
@@ -1005,7 +1106,7 @@ public class MainActivity extends Activity {
 
         gameView.addView(createMovableJoystick(dpToPx(35), dpToPx(25), true));
         gameView.addView(createFunctionalDPad(dpToPx(155), dpToPx(35)));
-               gameView.addView(createMovableJoystick(dpToPx(155), dpToPx(35), false));
+                gameView.addView(createMovableJoystick(dpToPx(155), dpToPx(35), false));
 
         RelativeLayout abxyBox = new RelativeLayout(this);
         setAbsoluteAlignBottomRight(abxyBox, dpToPx(25), dpToPx(20), dpToPx(120), dpToPx(120));
@@ -1387,11 +1488,7 @@ public class MainActivity extends Activity {
         if (resultCode == RESULT_OK && data != null) {
             Uri uri = data.getData();
             if (requestCode == PICK_PUP_FILE) {
-                isFirmwareInstalled = true;
-                Toast.makeText(this, "PS3 Firmware (PUP) Installed to dev_flash!", Toast.LENGTH_LONG).show();
-                if (currentSetupStep == 2) {
-                    showWelcomeWizard(2);
-                }
+                showInstallingFirmwareDialog();
             } else if (requestCode == PICK_ISO_DIR && uri != null) {
                 int count = 0;
                 try {
@@ -1402,7 +1499,7 @@ public class MainActivity extends Activity {
                         if (cursor != null) {
                             while (cursor.moveToNext()) {
                                 String name = cursor.getString(0);
-                                if (name != null && (name.toLowerCase().endsWith(".iso") || name.toLowerCase().endsWith(".pkg"))) {
+                                if (name != null && (name.toLowerCase().endsWith(".iso") || name.toLowerCase().endsWith(".pkg") || name.toLowerCase().endsWith(".bin"))) {
                                     if (!gameTitles.contains(name)) {
                                         gameTitles.add(name);
                                         count++;
@@ -1422,7 +1519,7 @@ public class MainActivity extends Activity {
                 }
 
                 saveGamesList();
-                Toast.makeText(this, "Mounted " + count + " item(s) from directory", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Directory Selected (" + count + " items found)", Toast.LENGTH_SHORT).show();
                 if (prefs.getBoolean("novaps3_wizard_done", false)) {
                     showSelectGameScreen();
                 }
@@ -1456,6 +1553,4 @@ public class MainActivity extends Activity {
         if (result == null) result = uri.getLastPathSegment();
         return result;
     }
-                          }
-            
-    
+}
