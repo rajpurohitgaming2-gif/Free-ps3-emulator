@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-echo "=== VortexPS3 Emu Build System ==="
+echo "=== Deep Rebranding: VortexPS3 Emu ==="
 
 # 1. Base GameHub Lite APK डाउनलोड करना
 echo "[1/5] Downloading Base APK..."
@@ -17,21 +17,23 @@ wget -O base.apk "$LATEST_URL"
 echo "[2/5] Decompiling with Apktool..."
 apktool d base.apk -o decompiled_gamehub -f
 
-# 3. नाम और क्रेडिट बदलना (अंदर के सारे फीचर्स सुरक्षित रहेंगे)
-echo "[3/5] Setting App Name to VortexPS3 Emu..."
-NEW_APP_NAME="VortexPS3 Emu"
+# 3. डीप री-ब्रांडिंग (हर जगह नाम बदलना)
+echo "[3/5] Replacing all GameHub names & credits..."
 
-# ऐप का नाम बदलना
-find decompiled_gamehub/res -name "strings.xml" -exec sed -i "s|<string name=\"app_name\">.*</string>|<string name=\"app_name\">$NEW_APP_NAME</string>|g" {} + || true
+# (A) सभी XML, SMALI और ASSETS में टेक्स्ट रिप्लेस करना
+grep -rl "GameHub Lite" decompiled_gamehub/ | xargs sed -i 's/GameHub Lite/VortexPS3 Emu/g' 2>/dev/null || true
+grep -rl "GameHubLite" decompiled_gamehub/ | xargs sed -i 's/GameHubLite/VortexPS3 Emu/g' 2>/dev/null || true
+grep -rl "GAMEHUB" decompiled_gamehub/ | xargs sed -i 's/GAMEHUB/VORTEX PS3/g' 2>/dev/null || true
+grep -rl "GameHub" decompiled_gamehub/ | xargs sed -i 's/GameHub/VortexPS3/g' 2>/dev/null || true
 
-# क्रेडिट स्क्रीन में नाम जोड़ना
-find decompiled_gamehub/res -name "strings.xml" -exec sed -i 's/Built on the shoulders of giants/VortexPS3 Emu - Modded by Yash (AI VIDEO HUB) - Built on the shoulders of giants/g' {} + || true
+# (B) क्रेडिट स्क्रीन में आपका नाम जोड़ना
+grep -rl "Built on the shoulders of giants" decompiled_gamehub/ | xargs sed -i 's/Built on the shoulders of giants/VortexPS3 Emu - Developed & Modded by Yash (AI VIDEO HUB) - Built on the shoulders of giants/g' 2>/dev/null || true
 
-# ब्लोटवेयर हटाना
+# (C) ब्लोटवेयर हटाना
 rm -rf decompiled_gamehub/smali*/com/google/firebase 2>/dev/null || true
 rm -rf decompiled_gamehub/smali*/com/umeng 2>/dev/null || true
 
-# 4. APK Rebuild
+# 4. Rebuild करना
 echo "[4/5] Recompiling APK..."
 apktool b decompiled_gamehub -o unsigned.apk
 
@@ -41,4 +43,4 @@ keytool -genkey -v -keystore test.keystore -storepass android -alias androidkey 
 zipalign -p -f 4 unsigned.apk aligned.apk
 apksigner sign --ks test.keystore --ks-pass pass:android --out VortexPS3-Ready.apk aligned.apk
 
-echo "=== Done! VortexPS3-Ready.apk Created Successfully ==="
+echo "=== Done! VortexPS3-Ready.apk Rebranded Successfully ==="
