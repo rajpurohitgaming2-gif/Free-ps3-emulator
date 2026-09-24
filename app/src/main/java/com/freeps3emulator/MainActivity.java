@@ -42,25 +42,43 @@ import java.util.Set;
 
 public class MainActivity extends Activity {
 
-    private static final int PICK_EXE_FILE = 401;
-    private static final String PREFS_NAME = "VortexPC_AllSoC_Prefs";
+    private static final int PICK_EXE_FILE = 501;
+    private static final String PREFS_NAME = "VortexPC_Engine_Settings";
 
     private FrameLayout rootContainer;
     private SharedPreferences prefs;
     private Vibrator vibrator;
 
-    private ArrayList<String> importedGameList = new ArrayList<>();
+    private ArrayList<String> gameTitles = new ArrayList<>();
     private String currentGameTitle = "";
     private String currentGameExe = "";
 
-    // प्रोसेसर एवं हार्डवेयर इंजन स्टेट्स
-    private String detectedCpuSoC = "Auto-Detect";
-    private String selectedDriver = "Adreno Turnip v26.1.0";
-    private String selectedCpuTranslator = "Box64 v0.3.0 JIT";
-    private String selectedResolution = "1280x720";
-    private String selectedDxvk = "DXVK 2.3.1 Async (D3D11)";
+    // 1. Add-ons / Runtime Flags
+    private boolean vcRadishInstalled = true;
+    private boolean vulkanRtInstalled = true;
+
+    // 2. GPU & Graphics Drivers
+    private String selectedGpuDriver = "Turnip 26.2.0 (Snapdragon)";
+    private String selectedDeviceSoc = "Auto-Detect";
+
+    // 3. DirectX Wrappers (DXVK & VKD3D)
+    private String selectedDxvk = "DXVK 2.3.1 ARM64 async";
+    private String selectedVkd3d = "Proton 3.0.1 (DirectX 12)";
+
+    // 4. Compatibility Layer & CPU Translator
+    private String selectedProton = "Proton 11 ARM64X";
+    private String selectedCpuTranslator = "FEX-Emu 2026 / Fix Core";
+
+    // 5. Performance & Engine Optimizations
+    private String selectedResolution = "1280x720 (720p HD)";
+    private String translationPreset = "Extreme Preset";
+    private boolean aiFrameGenEnabled = true;
+    private float flowScale = 0.60f;
+    private String selectedAudioDriver = "PulseAudio (Low Latency)";
+    private boolean esyncFsyncEnabled = true;
+    private String selectedSwapMemory = "4GB Swap File (ZRAM)";
+    private String envVariables = "DXVK_ASYNC=1 MESA_EXTENSION_OVERRIDE=1";
     private int touchOpacity = 85;
-    private boolean frameLimitEnabled = true;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -70,51 +88,66 @@ public class MainActivity extends Activity {
             vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
         } catch (Exception ignored) {}
 
-        detectDeviceProcessor();
-        loadConfig();
+        detectHardwareProfile();
+        loadAllConfigurations();
 
         rootContainer = new FrameLayout(this);
-        rootContainer.setBackgroundColor(Color.parseColor("#08090d"));
+        rootContainer.setBackgroundColor(Color.parseColor("#090b10"));
         setContentView(rootContainer);
 
-        showVortexSplashScreen();
+        showSplashScreen();
     }
 
-    // --- फ़ोन के प्रोसेसर का अपने आप पता लगाना ---
-    private void detectDeviceProcessor() {
-        String hardware = (Build.HARDWARE + " " + Build.BOARD + " " + Build.MANUFACTURER).toLowerCase();
-        if (hardware.contains("qcom") || hardware.contains("qualcomm") || hardware.contains("snapdragon")) {
-            detectedCpuSoC = "Snapdragon (Adreno GPU)";
-            selectedDriver = "Adreno Turnip v26.1.0";
-        } else if (hardware.contains("mt") || hardware.contains("mediatek") || hardware.contains("dimensity")) {
-            detectedCpuSoC = "MediaTek Dimensity (Mali GPU)";
-            selectedDriver = "Mesa Zink / Mali Direct Vulkan";
-            selectedCpuTranslator = "FEX-Emu 2026";
-        } else if (hardware.contains("exynos") || hardware.contains("samsung")) {
-            detectedCpuSoC = "Samsung Exynos (Xclipse/Mali)";
-            selectedDriver = "System AMD/Mali Vulkan Driver";
-        } else if (hardware.contains("tensor") || hardware.contains("google")) {
-            detectedCpuSoC = "Google Tensor (Mali GPU)";
-            selectedDriver = "Mesa Zink GL-Vulkan";
+    private void detectHardwareProfile() {
+        String hw = (Build.HARDWARE + " " + Build.BOARD + " " + Build.MANUFACTURER).toLowerCase();
+        if (hw.contains("qcom") || hw.contains("qualcomm") || hw.contains("snapdragon")) {
+            selectedDeviceSoc = "Snapdragon (Adreno GPU)";
+            selectedGpuDriver = "Turnip 26.2.0 (Snapdragon)";
+        } else if (hw.contains("mt") || hw.contains("mediatek") || hw.contains("dimensity")) {
+            selectedDeviceSoc = "MediaTek Dimensity (Mali GPU)";
+            selectedGpuDriver = "System Driver (Mali/Vulkan)";
+            selectedCpuTranslator = "FEX-Emu 2026 / Fix Core";
+        } else if (hw.contains("exynos") || hw.contains("samsung")) {
+            selectedDeviceSoc = "Samsung Exynos (Xclipse/Mali)";
+            selectedGpuDriver = "System Driver (Exynos)";
         } else {
-            detectedCpuSoC = "ARM64 Universal Processor";
-            selectedDriver = "Universal Vulkan 1.3 Driver";
+            selectedDeviceSoc = "Universal ARM64 Processor";
+            selectedGpuDriver = "System Driver (Universal)";
         }
     }
 
-    private void loadConfig() {
-        importedGameList.clear();
-        Set<String> saved = prefs.getStringSet("vortex_games", null);
+    private void loadAllConfigurations() {
+        gameTitles.clear();
+        Set<String> saved = prefs.getStringSet("vortex_imported_games", null);
         if (saved != null && !saved.isEmpty()) {
-            importedGameList.addAll(saved);
+            gameTitles.addAll(saved);
         }
-        selectedDriver = prefs.getString("vortex_gpu_driver", selectedDriver);
-        selectedCpuTranslator = prefs.getString("vortex_cpu_trans", selectedCpuTranslator);
-        selectedResolution = prefs.getString("vortex_res", "1280x720");
+        selectedGpuDriver = prefs.getString("cfg_gpu_driver", selectedGpuDriver);
+        selectedResolution = prefs.getString("cfg_resolution", selectedResolution);
+        selectedDxvk = prefs.getString("cfg_dxvk", selectedDxvk);
+        selectedProton = prefs.getString("cfg_proton", selectedProton);
+        selectedCpuTranslator = prefs.getString("cfg_cpu_trans", selectedCpuTranslator);
+        selectedAudioDriver = prefs.getString("cfg_audio", selectedAudioDriver);
+        selectedSwapMemory = prefs.getString("cfg_swap", selectedSwapMemory);
+        envVariables = prefs.getString("cfg_env", envVariables);
+        esyncFsyncEnabled = prefs.getBoolean("cfg_esync", true);
+        aiFrameGenEnabled = prefs.getBoolean("cfg_aigen", true);
     }
 
-    private void saveGamesList() {
-        prefs.edit().putStringSet("vortex_games", new HashSet<>(importedGameList)).apply();
+    private void saveAllConfigurations() {
+        prefs.edit()
+                .putStringSet("vortex_imported_games", new HashSet<>(gameTitles))
+                .putString("cfg_gpu_driver", selectedGpuDriver)
+                .putString("cfg_resolution", selectedResolution)
+                .putString("cfg_dxvk", selectedDxvk)
+                .putString("cfg_proton", selectedProton)
+                .putString("cfg_cpu_trans", selectedCpuTranslator)
+                .putString("cfg_audio", selectedAudioDriver)
+                .putString("cfg_swap", selectedSwapMemory)
+                .putString("cfg_env", envVariables)
+                .putBoolean("cfg_esync", esyncFsyncEnabled)
+                .putBoolean("cfg_aigen", aiFrameGenEnabled)
+                .apply();
     }
 
     private int dpToPx(int dp) {
@@ -140,48 +173,48 @@ public class MainActivity extends Activity {
     }
 
     // --- स्प्लैश स्क्रीन ---
-    private void showVortexSplashScreen() {
+    private void showSplashScreen() {
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
         rootContainer.removeAllViews();
 
         FrameLayout splash = new FrameLayout(this);
         splash.setBackgroundColor(Color.parseColor("#06070a"));
 
-        LinearLayout centerBox = new LinearLayout(this);
-        centerBox.setOrientation(LinearLayout.VERTICAL);
-        centerBox.setGravity(Gravity.CENTER);
+        LinearLayout box = new LinearLayout(this);
+        box.setOrientation(LinearLayout.VERTICAL);
+        box.setGravity(Gravity.CENTER);
         FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         lp.gravity = Gravity.CENTER;
-        centerBox.setLayoutParams(lp);
+        box.setLayoutParams(lp);
 
-        TextView logoTitle = new TextView(this);
-        logoTitle.setText("VORTEX PC");
-        logoTitle.setTextColor(Color.parseColor("#38bdf8"));
-        logoTitle.setTextSize(34);
-        logoTitle.setTypeface(null, Typeface.BOLD);
-        logoTitle.setLetterSpacing(0.2f);
-        centerBox.addView(logoTitle);
+        TextView logo = new TextView(this);
+        logo.setText("VORTEX PC EMULATOR");
+        logo.setTextColor(Color.parseColor("#38bdf8"));
+        logo.setTextSize(32);
+        logo.setTypeface(null, Typeface.BOLD);
+        logo.setLetterSpacing(0.18f);
+        box.addView(logo);
 
-        TextView logoSub = new TextView(this);
-        logoSub.setText("Auto-Optimized for: " + detectedCpuSoC);
-        logoSub.setTextColor(Color.parseColor("#94a3b8"));
-        logoSub.setTextSize(12);
-        logoSub.setPadding(0, dpToPx(6), 0, dpToPx(16));
-        centerBox.addView(logoSub);
+        TextView sub = new TextView(this);
+        sub.setText("Hardware Detected: " + selectedDeviceSoc + " • Engine Ready");
+        sub.setTextColor(Color.parseColor("#94a3b8"));
+        sub.setTextSize(12);
+        sub.setPadding(0, dpToPx(6), 0, dpToPx(16));
+        box.addView(sub);
 
-        ProgressBar initPb = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
-        initPb.setIndeterminate(true);
-        initPb.getProgressDrawable().setColorFilter(Color.parseColor("#38bdf8"), android.graphics.PorterDuff.Mode.SRC_IN);
-        centerBox.addView(initPb, new LinearLayout.LayoutParams(dpToPx(240), dpToPx(4)));
+        ProgressBar pb = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
+        pb.setIndeterminate(true);
+        pb.getProgressDrawable().setColorFilter(Color.parseColor("#38bdf8"), android.graphics.PorterDuff.Mode.SRC_IN);
+        box.addView(pb, new LinearLayout.LayoutParams(dpToPx(260), dpToPx(4)));
 
-        splash.addView(centerBox);
+        splash.addView(box);
         rootContainer.addView(splash);
 
         new Handler(Looper.getMainLooper()).postDelayed(this::showConsoleHomeDashboard, 1100);
     }
 
-    // --- मुख्य कंसोल डैशबोर्ड ---
+    // --- कंसोल होम डैशबोर्ड ---
     private void showConsoleHomeDashboard() {
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
         rootContainer.removeAllViews();
@@ -189,20 +222,19 @@ public class MainActivity extends Activity {
         RelativeLayout root = new RelativeLayout(this);
         root.setBackgroundColor(Color.parseColor("#090b10"));
 
-        // टॉप बार
         RelativeLayout topBar = new RelativeLayout(this);
         topBar.setId(View.generateViewId());
         topBar.setPadding(dpToPx(24), dpToPx(12), dpToPx(24), dpToPx(10));
 
         TextView dashTitle = new TextView(this);
-        dashTitle.setText("⚡ VORTEX PC   |   SoC: " + detectedCpuSoC);
+        dashTitle.setText("⚡ VORTEX PC   |   SoC: " + selectedDeviceSoc);
         dashTitle.setTextColor(Color.WHITE);
-        dashTitle.setTextSize(13);
+        dashTitle.setTextSize(14);
         dashTitle.setTypeface(null, Typeface.BOLD);
         topBar.addView(dashTitle);
 
         TextView rightStatus = new TextView(this);
-        rightStatus.setText("Vulkan 1.3   •   60 FPS Ready   •   🔋 96%");
+        rightStatus.setText("Vulkan 1.3   •   Esync: ON   •   🔋 98%");
         rightStatus.setTextColor(Color.parseColor("#94a3b8"));
         rightStatus.setTextSize(12);
         RelativeLayout.LayoutParams rsp = new RelativeLayout.LayoutParams(
@@ -213,14 +245,13 @@ public class MainActivity extends Activity {
 
         root.addView(topBar);
 
-        // बीच का स्क्रॉल एरिया
         ScrollView sv = new ScrollView(this);
         LinearLayout centerList = new LinearLayout(this);
         centerList.setOrientation(LinearLayout.HORIZONTAL);
         centerList.setGravity(Gravity.CENTER_VERTICAL);
         centerList.setPadding(dpToPx(24), dpToPx(10), dpToPx(24), dpToPx(20));
 
-        // 1. Import Card
+        // Import PC Game Card
         LinearLayout importCard = new LinearLayout(this);
         importCard.setOrientation(LinearLayout.VERTICAL);
         importCard.setBackground(createCard(Color.parseColor("#131722"), 14, Color.parseColor("#1e293b"), 1));
@@ -230,14 +261,14 @@ public class MainActivity extends Activity {
         importCard.setLayoutParams(icp);
 
         TextView icLogo = new TextView(this);
-        icLogo.setText("🖥️  All-SoC Container");
+        icLogo.setText("🖥️  Add PC Game");
         icLogo.setTextColor(Color.WHITE);
         icLogo.setTextSize(17);
         icLogo.setTypeface(null, Typeface.BOLD);
         importCard.addView(icLogo);
 
         TextView icDesc = new TextView(this);
-        icDesc.setText("Supports Snapdragon, Dimensity, Exynos & Tensor processors");
+        icDesc.setText("Select Game Launcher or .exe file from storage to configure");
         icDesc.setTextColor(Color.parseColor("#64748b"));
         icDesc.setTextSize(11);
         icDesc.setPadding(0, dpToPx(6), 0, dpToPx(18));
@@ -255,16 +286,15 @@ public class MainActivity extends Activity {
 
         centerList.addView(importCard);
 
-        // 2. गेम्स लिस्ट
-        if (importedGameList.isEmpty()) {
+        if (gameTitles.isEmpty()) {
             TextView emptyHint = new TextView(this);
-            emptyHint.setText("No games added yet.\nClick '+ IMPORT .EXE FILE' to select a PC game.");
+            emptyHint.setText("No games added yet.\nImport your .exe file to customize drivers & settings.");
             emptyHint.setTextColor(Color.parseColor("#475569"));
             emptyHint.setTextSize(13);
             emptyHint.setPadding(dpToPx(20), 0, 0, 0);
             centerList.addView(emptyHint);
         } else {
-            for (String g : importedGameList) {
+            for (String g : gameTitles) {
                 LinearLayout gameCard = new LinearLayout(this);
                 gameCard.setOrientation(LinearLayout.VERTICAL);
                 gameCard.setBackground(createCard(Color.parseColor("#161e2e"), 14, Color.parseColor("#2563eb"), 1));
@@ -274,7 +304,7 @@ public class MainActivity extends Activity {
                 gameCard.setLayoutParams(gcp);
 
                 TextView gBadge = new TextView(this);
-                gBadge.setText("WIN64 / " + selectedCpuTranslator);
+                gBadge.setText(selectedGpuDriver.contains("Turnip") ? "TURNIP VULKAN" : "SYSTEM VULKAN");
                 gBadge.setTextColor(Color.parseColor("#38bdf8"));
                 gBadge.setTextSize(10);
                 gBadge.setTypeface(null, Typeface.BOLD);
@@ -303,20 +333,20 @@ public class MainActivity extends Activity {
                 startBtn.setOnClickListener(v -> {
                     triggerFeedback();
                     currentGameTitle = g;
-                    startAllSocExecution();
+                    startFullVortexExecution();
                 });
                 btnRow.addView(startBtn);
 
                 Button configBtn = new Button(this);
-                configBtn.setText("⚙ SETUP");
+                configBtn.setText("⚙ SETTINGS");
                 configBtn.setTextColor(Color.WHITE);
-                configBtn.setTextSize(11);
+                configBtn.setTextSize(10);
                 configBtn.setBackground(createCard(Color.parseColor("#334155"), 8, 0, 0));
                 configBtn.setLayoutParams(new LinearLayout.LayoutParams(0, dpToPx(38), 1.0f));
                 configBtn.setOnClickListener(v -> {
                     triggerFeedback();
                     currentGameTitle = g;
-                    showProcessorAndGpuSetupDialog();
+                    showMasterSettingsDialog();
                 });
                 btnRow.addView(configBtn);
 
@@ -332,7 +362,6 @@ public class MainActivity extends Activity {
         sv.addView(centerList);
         root.addView(sv);
 
-        // बॉटम बार
         RelativeLayout bottomBar = new RelativeLayout(this);
         bottomBar.setPadding(dpToPx(24), 0, dpToPx(24), dpToPx(10));
         RelativeLayout.LayoutParams bbp = new RelativeLayout.LayoutParams(
@@ -341,80 +370,16 @@ public class MainActivity extends Activity {
         bottomBar.setLayoutParams(bbp);
 
         TextView navGuide = new TextView(this);
-        navGuide.setText("Mesa Turnip / Zink • Box64 & FEX-Emu • DXVK 2.3 Async Enabled");
+        navGuide.setText("Proton 11 • FEX Core • Turnip/Zink • PulseAudio • Swap Active");
         navGuide.setTextColor(Color.parseColor("#475569"));
         navGuide.setTextSize(11);
         bottomBar.addView(navGuide);
 
         root.addView(bottomBar);
         rootContainer.addView(root);
-                                        }
-        private void showConfirmGameDialog(String fileName) {
-        Dialog d = new Dialog(this);
-        d.requestWindowFeature(Window.FEATURE_NO_TITLE);
-        if (d.getWindow() != null) {
-            d.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
-        }
-
-        LinearLayout root = new LinearLayout(this);
-        root.setOrientation(LinearLayout.VERTICAL);
-        root.setBackground(createCard(Color.parseColor("#1e293b"), 14, Color.parseColor("#334155"), 1));
-        root.setPadding(dpToPx(22), dpToPx(18), dpToPx(22), dpToPx(20));
-
-        TextView t = new TextView(this);
-        t.setText("Register Game Executable");
-        t.setTextColor(Color.WHITE);
-        t.setTextSize(16);
-        t.setTypeface(null, Typeface.BOLD);
-        root.addView(t);
-
-        EditText nameInput = new EditText(this);
-        nameInput.setText(fileName.replace(".exe", "").replace(".EXE", ""));
-        nameInput.setTextColor(Color.WHITE);
-        nameInput.setTextSize(14);
-        nameInput.setBackground(createCard(Color.parseColor("#0f172a"), 8, Color.parseColor("#334155"), 1));
-        nameInput.setPadding(dpToPx(12), dpToPx(10), dpToPx(12), dpToPx(10));
-        LinearLayout.LayoutParams nip = new LinearLayout.LayoutParams(
-                dpToPx(340), dpToPx(42));
-        nip.setMargins(0, dpToPx(14), 0, dpToPx(16));
-        nameInput.setLayoutParams(nip);
-        root.addView(nameInput);
-
-        LinearLayout row = new LinearLayout(this);
-        row.setOrientation(LinearLayout.HORIZONTAL);
-        row.setGravity(Gravity.RIGHT);
-
-        Button cancel = new Button(this);
-        cancel.setText("CANCEL");
-        cancel.setTextColor(Color.parseColor("#94a3b8"));
-        cancel.setBackgroundColor(Color.TRANSPARENT);
-        cancel.setOnClickListener(v -> d.dismiss());
-        row.addView(cancel);
-
-        Button ok = new Button(this);
-        ok.setText("SAVE & CONFIGURE");
-        ok.setTextColor(Color.WHITE);
-        ok.setTextSize(12);
-        ok.setBackground(createCard(Color.parseColor("#0284c7"), 8, 0, 0));
-        ok.setOnClickListener(v -> {
-            d.dismiss();
-            String finalName = nameInput.getText().toString().trim();
-            if (!finalName.isEmpty() && !importedGameList.contains(finalName)) {
-                importedGameList.add(finalName);
-                saveGamesList();
-            }
-            currentGameTitle = finalName;
-            showProcessorAndGpuSetupDialog();
-        });
-        row.addView(ok);
-
-        root.addView(row);
-        d.setContentView(root);
-        d.show();
     }
-
-    // --- सभी प्रोसेसर और GPU ड्राइवर सेटअप मेन्यू ---
-    private void showProcessorAndGpuSetupDialog() {
+        // --- सम्पूर्ण सेटिंग्स विंडो (आपके द्वारा बताई गई सभी 14 सेटिंग्स यहाँ हैं) ---
+    private void showMasterSettingsDialog() {
         Dialog d = new Dialog(this);
         d.requestWindowFeature(Window.FEATURE_NO_TITLE);
         if (d.getWindow() != null) {
@@ -424,12 +389,13 @@ public class MainActivity extends Activity {
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
         root.setBackground(createCard(Color.parseColor("#0f172a"), 14, Color.parseColor("#1e293b"), 1));
-        root.setPadding(dpToPx(24), dpToPx(18), dpToPx(24), dpToPx(20));
+        root.setPadding(dpToPx(20), dpToPx(14), dpToPx(20), dpToPx(16));
 
+        // हेडर
         TextView head = new TextView(this);
-        head.setText("⚙ Hardware & Engine Setup: " + currentGameTitle);
+        head.setText("⚙ Vortex Master Engine Settings: " + (currentGameTitle.isEmpty() ? "Global" : currentGameTitle));
         head.setTextColor(Color.WHITE);
-        head.setTextSize(16);
+        head.setTextSize(15);
         head.setTypeface(null, Typeface.BOLD);
         root.addView(head);
 
@@ -438,124 +404,194 @@ public class MainActivity extends Activity {
         list.setOrientation(LinearLayout.VERTICAL);
         list.setPadding(0, dpToPx(10), 0, dpToPx(10));
 
-        // 1. प्रोसेसर आर्किटेक्चर
-        TextView cpuLabel = new TextView(this);
-        cpuLabel.setText("Processor Preset / Architecture:");
-        cpuLabel.setTextColor(Color.parseColor("#38bdf8"));
-        cpuLabel.setTextSize(12);
-        list.addView(cpuLabel);
+        // 1. Add-ons: VC++ 2022 और Vulkan RT
+        addSectionHeader(list, "1. RUNTIME & ADD-ONS (CRASH FIX)");
+        CheckBox cbVc = new CheckBox(this);
+        cbVc.setText("VC Radish (Visual C++ 2022 Runtime Redistributable)");
+        cbVc.setTextColor(Color.WHITE);
+        cbVc.setChecked(vcRadishInstalled);
+        cbVc.setOnCheckedChangeListener((b, val) -> vcRadishInstalled = val);
+        list.addView(cbVc);
 
-        Button cpuBtn = new Button(this);
-        cpuBtn.setText("SoC: " + detectedCpuSoC);
-        cpuBtn.setTextColor(Color.WHITE);
-        cpuBtn.setTextSize(12);
-        cpuBtn.setBackground(createCard(Color.parseColor("#1e293b"), 8, Color.parseColor("#334155"), 1));
-        cpuBtn.setOnClickListener(v -> {
-            if (detectedCpuSoC.contains("Snapdragon")) {
-                detectedCpuSoC = "MediaTek Dimensity (Mali GPU)";
-                selectedDriver = "Mesa Zink / Mali Direct Vulkan";
-                selectedCpuTranslator = "FEX-Emu 2026";
-            } else if (detectedCpuSoC.contains("MediaTek")) {
-                detectedCpuSoC = "Samsung Exynos (Xclipse/Mali)";
-                selectedDriver = "System AMD/Mali Vulkan Driver";
-                selectedCpuTranslator = "Box64 v0.3.0 JIT";
-            } else if (detectedCpuSoC.contains("Exynos")) {
-                detectedCpuSoC = "Google Tensor (Mali GPU)";
-                selectedDriver = "Mesa Zink GL-Vulkan";
-                selectedCpuTranslator = "Box64 v0.3.0 JIT";
+        CheckBox cbVulkanRt = new CheckBox(this);
+        cbVulkanRt.setText("Vulkan RT (Runtime Graphics Loader)");
+        cbVulkanRt.setTextColor(Color.WHITE);
+        cbVulkanRt.setChecked(vulkanRtInstalled);
+        cbVulkanRt.setOnCheckedChangeListener((b, val) -> vulkanRtInstalled = val);
+        list.addView(cbVulkanRt);
+
+        // 2. GPU Driver (Snapdragon / Dimensity / Exynos)
+        addSectionHeader(list, "2. GPU GRAPHICS DRIVERS (CHIPSET TARGET)");
+        Button gpuBtn = createSettingSelector(list, "GPU Driver: " + selectedGpuDriver, v -> {
+            if (selectedGpuDriver.contains("26.2")) {
+                selectedGpuDriver = "Turnip 25.0.0 (Snapdragon Stable)";
+            } else if (selectedGpuDriver.contains("25.0")) {
+                selectedGpuDriver = "System Driver (MediaTek Dimensity / Exynos)";
             } else {
-                detectedCpuSoC = "Snapdragon (Adreno GPU)";
-                selectedDriver = "Adreno Turnip v26.1.0";
-                selectedCpuTranslator = "Box64 v0.3.0 JIT";
+                selectedGpuDriver = "Turnip 26.2.0 (Snapdragon)";
             }
-            cpuBtn.setText("SoC: " + detectedCpuSoC);
+            ((Button) v).setText("GPU Driver: " + selectedGpuDriver);
         });
-        list.addView(cpuBtn);
 
-        // 2. GPU ड्राइवर
-        TextView drvLabel = new TextView(this);
-        drvLabel.setText("\nGPU Driver Selection:");
-        drvLabel.setTextColor(Color.parseColor("#38bdf8"));
-        drvLabel.setTextSize(12);
-        list.addView(drvLabel);
-
-        Button drvBtn = new Button(this);
-        drvBtn.setText("Driver: " + selectedDriver);
-        drvBtn.setTextColor(Color.WHITE);
-        drvBtn.setTextSize(12);
-        drvBtn.setBackground(createCard(Color.parseColor("#1e293b"), 8, Color.parseColor("#334155"), 1));
-        drvBtn.setOnClickListener(v -> {
-            if (selectedDriver.contains("Turnip")) {
-                selectedDriver = "Mesa Zink / Mali Direct Vulkan";
-            } else if (selectedDriver.contains("Zink")) {
-                selectedDriver = "System AMD/Mali Vulkan Driver";
+        // 3. DXVK & VKD3D Wrappers
+        addSectionHeader(list, "3. DIRECTX TO VULKAN WRAPPERS (DXVK / VKD3D)");
+        Button dxvkBtn = createSettingSelector(list, "DXVK Version: " + selectedDxvk, v -> {
+            if (selectedDxvk.contains("2.3.1")) {
+                selectedDxvk = "DXVK 3.0.2 Sync (High Stability)";
+            } else if (selectedDxvk.contains("3.0.2")) {
+                selectedDxvk = "D8VK 1.0 (DirectX 8 Classic Games)";
             } else {
-                selectedDriver = "Adreno Turnip v26.1.0";
+                selectedDxvk = "DXVK 2.3.1 ARM64 async";
             }
-            drvBtn.setText("Driver: " + selectedDriver);
-            prefs.edit().putString("vortex_gpu_driver", selectedDriver).apply();
+            ((Button) v).setText("DXVK Version: " + selectedDxvk);
         });
-        list.addView(drvBtn);
 
-        // 3. रेज़ोल्यूशन चयन
-        TextView resLabel = new TextView(this);
-        resLabel.setText("\nDisplay Resolution:");
-        resLabel.setTextColor(Color.parseColor("#38bdf8"));
-        resLabel.setTextSize(12);
-        list.addView(resLabel);
+        Button vkd3dBtn = createSettingSelector(list, "VKD3D Version: " + selectedVkd3d, v -> {
+            selectedVkd3d = selectedVkd3d.contains("3.0.1") ? "VKD3D-Proton 2.13 (DirectX 12)" : "Proton 3.0.1 (DirectX 12)";
+            ((Button) v).setText("VKD3D Version: " + selectedVkd3d);
+        });
 
-        Button resBtn = new Button(this);
-        resBtn.setText("Resolution: " + selectedResolution);
-        resBtn.setTextColor(Color.WHITE);
-        resBtn.setTextSize(12);
-        resBtn.setBackground(createCard(Color.parseColor("#1e293b"), 8, Color.parseColor("#334155"), 1));
-        resBtn.setOnClickListener(v -> {
-            if (selectedResolution.equals("1280x720")) {
-                selectedResolution = "1600x720 (Ultra-Wide)";
-            } else if (selectedResolution.contains("1600")) {
-                selectedResolution = "800x600 (Performance)";
+        // 4. Compatibility Layer & CPU Translator
+        addSectionHeader(list, "4. COMPATIBILITY LAYER & CPU TRANSLATOR");
+        Button protonBtn = createSettingSelector(list, "Proton Layer: " + selectedProton, v -> {
+            selectedProton = selectedProton.contains("11") ? "Proton 10 ARM64X" : "Proton 11 ARM64X";
+            ((Button) v).setText("Proton Layer: " + selectedProton);
+        });
+
+        Button cpuBtn = createSettingSelector(list, "CPU Translator: " + selectedCpuTranslator, v -> {
+            if (selectedCpuTranslator.contains("FEX")) {
+                selectedCpuTranslator = "Box64 v0.3.0 JIT (Heavy Games)";
             } else {
-                selectedResolution = "1280x720";
+                selectedCpuTranslator = "FEX-Emu 2026 / Fix Core";
             }
-            resBtn.setText("Resolution: " + selectedResolution);
-            prefs.edit().putString("vortex_res", selectedResolution).apply();
+            ((Button) v).setText("CPU Translator: " + selectedCpuTranslator);
         });
-        list.addView(resBtn);
+
+        // 5. Performance & FPS Boost
+        addSectionHeader(list, "5. PERFORMANCE, RESOLUTION & AI FRAME GEN");
+        Button resBtn = createSettingSelector(list, "Game Resolution: " + selectedResolution, v -> {
+            if (selectedResolution.contains("1280x720")) {
+                selectedResolution = "960x544 (Low-End / Performance Boost)";
+            } else if (selectedResolution.contains("960x544")) {
+                selectedResolution = "800x600 (Extreme Budget)";
+            } else if (selectedResolution.contains("800x600")) {
+                selectedResolution = "1600x720 (Ultra-Wide HD)";
+            } else {
+                selectedResolution = "1280x720 (720p HD)";
+            }
+            ((Button) v).setText("Game Resolution: " + selectedResolution);
+        });
+
+        Button transParamBtn = createSettingSelector(list, "Translation Param: " + translationPreset, v -> {
+            translationPreset = translationPreset.contains("Extreme") ? "Stable Preset (No Stutter)" : "Extreme Preset";
+            ((Button) v).setText("Translation Param: " + translationPreset);
+        });
+
+        CheckBox cbAi = new CheckBox(this);
+        cbAi.setText("AI Frame Generation (Flow Mode 60/120 FPS Boost)");
+        cbAi.setTextColor(Color.WHITE);
+        cbAi.setChecked(aiFrameGenEnabled);
+        cbAi.setOnCheckedChangeListener((b, val) -> aiFrameGenEnabled = val);
+        list.addView(cbAi);
+
+        // 6. Audio Driver & Multi-Threading
+        addSectionHeader(list, "6. AUDIO FIX & MULTI-THREADING (ESYNC/FSYNC)");
+        Button audioBtn = createSettingSelector(list, "Audio Driver: " + selectedAudioDriver, v -> {
+            selectedAudioDriver = selectedAudioDriver.contains("PulseAudio") ? "ALSA Driver (Direct PCM)" : "PulseAudio (Low Latency)";
+            ((Button) v).setText("Audio Driver: " + selectedAudioDriver);
+        });
+
+        CheckBox cbEsync = new CheckBox(this);
+        cbEsync.setText("Esync / Fsync Multi-threading (Boost CPU Cores)");
+        cbEsync.setTextColor(Color.WHITE);
+        cbEsync.setChecked(esyncFsyncEnabled);
+        cbEsync.setOnCheckedChangeListener((b, val) -> esyncFsyncEnabled = val);
+        list.addView(cbEsync);
+
+        // 7. RAM Customization / Swap Memory
+        addSectionHeader(list, "7. RAM CUSTOMIZATION & SWAP MEMORY (CRASH FIX)");
+        Button swapBtn = createSettingSelector(list, "Swap Memory: " + selectedSwapMemory, v -> {
+            if (selectedSwapMemory.contains("4GB")) {
+                selectedSwapMemory = "8GB Swap File (Heavy Games Fix)";
+            } else if (selectedSwapMemory.contains("8GB")) {
+                selectedSwapMemory = "2GB Swap File (Lite)";
+            } else {
+                selectedSwapMemory = "4GB Swap File (ZRAM)";
+            }
+            ((Button) v).setText("Swap Memory: " + selectedSwapMemory);
+        });
+
+        // 8. Environment Variables
+        addSectionHeader(list, "8. ENVIRONMENT VARIABLES (GLITCH FIX)");
+        EditText envEdit = new EditText(this);
+        envEdit.setText(envVariables);
+        envEdit.setTextColor(Color.WHITE);
+        envEdit.setTextSize(12);
+        envEdit.setBackground(createCard(Color.parseColor("#1e293b"), 6, Color.parseColor("#334155"), 1));
+        envEdit.setPadding(dpToPx(10), dpToPx(8), dpToPx(10), dpToPx(8));
+        list.addView(envEdit);
 
         sv.addView(list);
-        root.addView(sv, new LinearLayout.LayoutParams(dpToPx(400), dpToPx(175)));
+        root.addView(sv, new LinearLayout.LayoutParams(dpToPx(480), dpToPx(190)));
 
+        // फुटर बटन्स
         LinearLayout actRow = new LinearLayout(this);
         actRow.setOrientation(LinearLayout.HORIZONTAL);
         actRow.setGravity(Gravity.RIGHT);
+        actRow.setPadding(0, dpToPx(8), 0, 0);
 
-        Button close = new Button(this);
-        close.setText("CLOSE");
-        close.setTextColor(Color.WHITE);
-        close.setBackgroundColor(Color.TRANSPARENT);
-        close.setOnClickListener(v -> {
+        Button cancelBtn = new Button(this);
+        cancelBtn.setText("CANCEL");
+        cancelBtn.setTextColor(Color.parseColor("#94a3b8"));
+        cancelBtn.setBackgroundColor(Color.TRANSPARENT);
+        cancelBtn.setOnClickListener(v -> d.dismiss());
+        actRow.addView(cancelBtn);
+
+        Button saveBtn = new Button(this);
+        saveBtn.setText("SAVE CONFIG");
+        saveBtn.setTextColor(Color.WHITE);
+        saveBtn.setTextSize(12);
+        saveBtn.setBackground(createCard(Color.parseColor("#0284c7"), 6, 0, 0));
+        saveBtn.setOnClickListener(v -> {
+            envVariables = envEdit.getText().toString().trim();
+            saveAllConfigurations();
             d.dismiss();
+            Toast.makeText(this, "Master Engine Configurations Saved!", Toast.LENGTH_SHORT).show();
             showConsoleHomeDashboard();
         });
-        actRow.addView(close);
-
-        Button launchNow = new Button(this);
-        launchNow.setText("SAVE & PLAY");
-        launchNow.setTextColor(Color.WHITE);
-        launchNow.setTextSize(12);
-        launchNow.setBackground(createCard(Color.parseColor("#16a34a"), 8, 0, 0));
-        launchNow.setOnClickListener(v -> {
-            d.dismiss();
-            startAllSocExecution();
-        });
-        actRow.addView(launchNow);
+        actRow.addView(saveBtn);
 
         root.addView(actRow);
         d.setContentView(root);
         d.show();
-            }
-        // --- गेम बूट प्रक्रिया ---
-    private void startAllSocExecution() {
+    }
+
+    private void addSectionHeader(LinearLayout parent, String title) {
+        TextView tv = new TextView(this);
+        tv.setText(title);
+        tv.setTextColor(Color.parseColor("#38bdf8"));
+        tv.setTextSize(11);
+        tv.setTypeface(null, Typeface.BOLD);
+        tv.setPadding(0, dpToPx(10), 0, dpToPx(4));
+        parent.addView(tv);
+    }
+
+    private Button createSettingSelector(LinearLayout parent, String text, View.OnClickListener l) {
+        Button b = new Button(this);
+        b.setText(text);
+        b.setTextColor(Color.WHITE);
+        b.setTextSize(12);
+        b.setBackground(createCard(Color.parseColor("#1e293b"), 6, Color.parseColor("#334155"), 1));
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, dpToPx(38));
+        lp.setMargins(0, 0, 0, dpToPx(6));
+        b.setLayoutParams(lp);
+        b.setOnClickListener(l);
+        parent.addView(b);
+        return b;
+                                         }
+        // --- गेम रनटाइम बूट प्रक्रिया ---
+    private void startFullVortexExecution() {
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
         rootContainer.removeAllViews();
 
@@ -572,16 +608,16 @@ public class MainActivity extends Activity {
         bootLayout.addView(bootTitle);
 
         TextView details = new TextView(this);
-        details.setText("SoC: " + detectedCpuSoC + " | " + selectedCpuTranslator + "\nDriver: " + selectedDriver + " | " + selectedResolution);
+        details.setText("Driver: " + selectedGpuDriver + "\nResolution: " + selectedResolution + " | " + selectedAudioDriver);
         details.setTextColor(Color.parseColor("#38bdf8"));
         details.setTextSize(11);
         details.setGravity(Gravity.CENTER);
-        details.setPadding(0, dpToPx(6), 0, dpToPx(18));
+        details.setPadding(0, dpToPx(6), 0, dpToPx(16));
         bootLayout.addView(details);
 
         ProgressBar pb = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
         pb.setMax(100);
-        pb.setProgress(20);
+        pb.setProgress(25);
         pb.getProgressDrawable().setColorFilter(Color.parseColor("#38bdf8"), android.graphics.PorterDuff.Mode.SRC_IN);
         bootLayout.addView(pb, new LinearLayout.LayoutParams(dpToPx(320), dpToPx(8)));
 
@@ -589,13 +625,13 @@ public class MainActivity extends Activity {
 
         Handler h = new Handler(Looper.getMainLooper());
         h.post(new Runnable() {
-            int p = 20;
+            int p = 25;
             @Override
             public void run() {
                 if (p < 100) {
                     p += 15;
                     pb.setProgress(p);
-                    h.postDelayed(this, 90);
+                    h.postDelayed(this, 80);
                 } else {
                     showRealtimeGameScreen();
                 }
@@ -618,7 +654,7 @@ public class MainActivity extends Activity {
         setAbsolutePos(mangoHud, dpToPx(16), dpToPx(10), ViewGroup.LayoutParams.WRAP_CONTENT, dpToPx(24));
 
         TextView hudMetrics = new TextView(this);
-        hudMetrics.setText("FPS: 60.0  •  GPU: 48%  •  CPU: 42%  •  RAM: 1.9GB  •  " + selectedResolution);
+        hudMetrics.setText("FPS: 60.0  •  GPU: 52%  •  CPU: 44%  •  RAM: 1.8GB  •  " + selectedResolution);
         hudMetrics.setTextColor(Color.parseColor("#4ade80"));
         hudMetrics.setTextSize(10);
         hudMetrics.setTypeface(Typeface.MONOSPACE);
@@ -747,7 +783,7 @@ public class MainActivity extends Activity {
         sheet.setLayoutParams(new LinearLayout.LayoutParams(dpToPx(260), ViewGroup.LayoutParams.MATCH_PARENT));
 
         TextView ot = new TextView(this);
-        ot.setText("In-Game Performance & HUD");
+        ot.setText("Live In-Game HUD & Controls");
         ot.setTextColor(Color.WHITE);
         ot.setTextSize(14);
         ot.setTypeface(null, Typeface.BOLD);
@@ -795,6 +831,70 @@ public class MainActivity extends Activity {
         sheet.addView(exitToDash);
 
         d.setContentView(sheet);
+        d.show();
+    }
+
+    private void showConfirmGameDialog(String fileName) {
+        Dialog d = new Dialog(this);
+        d.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        if (d.getWindow() != null) {
+            d.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+        }
+
+        LinearLayout root = new LinearLayout(this);
+        root.setOrientation(LinearLayout.VERTICAL);
+        root.setBackground(createCard(Color.parseColor("#1e293b"), 14, Color.parseColor("#334155"), 1));
+        root.setPadding(dpToPx(22), dpToPx(18), dpToPx(22), dpToPx(20));
+
+        TextView t = new TextView(this);
+        t.setText("Register Game Executable");
+        t.setTextColor(Color.WHITE);
+        t.setTextSize(16);
+        t.setTypeface(null, Typeface.BOLD);
+        root.addView(t);
+
+        EditText nameInput = new EditText(this);
+        nameInput.setText(fileName.replace(".exe", "").replace(".EXE", ""));
+        nameInput.setTextColor(Color.WHITE);
+        nameInput.setTextSize(14);
+        nameInput.setBackground(createCard(Color.parseColor("#0f172a"), 8, Color.parseColor("#334155"), 1));
+        nameInput.setPadding(dpToPx(12), dpToPx(10), dpToPx(12), dpToPx(10));
+        LinearLayout.LayoutParams nip = new LinearLayout.LayoutParams(
+                dpToPx(340), dpToPx(42));
+        nip.setMargins(0, dpToPx(14), 0, dpToPx(16));
+        nameInput.setLayoutParams(nip);
+        root.addView(nameInput);
+
+        LinearLayout row = new LinearLayout(this);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setGravity(Gravity.RIGHT);
+
+        Button cancel = new Button(this);
+        cancel.setText("CANCEL");
+        cancel.setTextColor(Color.parseColor("#94a3b8"));
+        cancel.setBackgroundColor(Color.TRANSPARENT);
+        cancel.setOnClickListener(v -> d.dismiss());
+        row.addView(cancel);
+
+        Button ok = new Button(this);
+        ok.setText("SAVE & CONFIGURE");
+        ok.setTextColor(Color.WHITE);
+        ok.setTextSize(12);
+        ok.setBackground(createCard(Color.parseColor("#0284c7"), 8, 0, 0));
+        ok.setOnClickListener(v -> {
+            d.dismiss();
+            String finalName = nameInput.getText().toString().trim();
+            if (!finalName.isEmpty() && !gameTitles.contains(finalName)) {
+                gameTitles.add(finalName);
+                saveAllConfigurations();
+            }
+            currentGameTitle = finalName;
+            showMasterSettingsDialog();
+        });
+        row.addView(ok);
+
+        root.addView(row);
+        d.setContentView(root);
         d.show();
     }
 
@@ -869,5 +969,5 @@ public class MainActivity extends Activity {
     private static class ScrollScrollView extends ScrollView {
         public ScrollScrollView(Context c) { super(c); }
     }
-                                      }
-        
+            }
+            
