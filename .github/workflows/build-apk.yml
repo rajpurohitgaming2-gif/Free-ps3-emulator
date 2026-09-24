@@ -22,9 +22,9 @@ jobs:
     - name: Install Apktool & Dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y wget zipalign apksigner
-        wget -q https://raw.githubusercontent.com/iBotPeaches/Apktool/master/scripts/linux/apktool -O apktool
-        wget -q https://bitbucket.org/iBotPeaches/apktool/downloads/apktool_2.9.3.jar -O apktool.jar
+        sudo apt-get install -y zipalign apksigner curl
+        curl -s https://api.github.com/repos/iBotPeaches/Apktool/releases/latest | grep "browser_download_url.*jar" | cut -d : -f 2,3 | tr -d \" | wget -qi - -O apktool.jar
+        curl -s -o apktool https://raw.githubusercontent.com/iBotPeaches/Apktool/master/scripts/linux/apktool
         chmod +x apktool apktool.jar
         sudo mv apktool apktool.jar /usr/local/bin/
 
