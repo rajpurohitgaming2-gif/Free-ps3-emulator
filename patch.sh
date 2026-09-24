@@ -8,24 +8,19 @@ echo "[1/5] Downloading Base APK..."
 LATEST_URL=$(curl -sL https://api.github.com/repos/Producdevity/gamehub-lite/releases/latest | grep "browser_download_url.*apk" | head -n 1 | cut -d '"' -f 4)
 wget -O base.apk "$LATEST_URL"
 
-# 2. Decompile करना
+# 2. Decompile करना (सोर्स कोड छुए बिना सिर्फ जरूरी रिसोर्स खोलना)
 echo "[2/5] Decompiling APK..."
 apktool d base.apk -o decompiled_gamehub -f
 
-# 3. नाम और क्रेडिट बदलना (Yash / AI VIDEO HUB)
-echo "[3/5] Setting Yash as Owner & Developer..."
-grep -rli "GameHub Lite" decompiled_gamehub/ | xargs sed -i 's/GameHub Lite/VortexPS3 Emu/gI' 2>/dev/null || true
-grep -rli "GameHubLite" decompiled_gamehub/ | xargs sed -i 's/GameHubLite/VortexPS3 Emu/gI' 2>/dev/null || true
-grep -rli "GameHub" decompiled_gamehub/ | xargs sed -i 's/GameHub/VortexPS3/gI' 2>/dev/null || true
-grep -rli "EmuReady" decompiled_gamehub/ | xargs sed -i 's/EmuReady/Vortex Team/gI' 2>/dev/null || true
+# 3. सिर्फ strings.xml में सुरक्षित तरीके से नाम और क्रेडिट बदलना
+echo "[3/5] Setting Yash as Owner & Developer in Strings..."
+find decompiled_gamehub/res/values* -name "strings.xml" -exec sed -i 's/GameHub Lite/VortexPS3 Emu/gI' {} + 2>/dev/null || true
+find decompiled_gamehub/res/values* -name "strings.xml" -exec sed -i 's/GameHubLite/VortexPS3 Emu/gI' {} + 2>/dev/null || true
+find decompiled_gamehub/res/values* -name "strings.xml" -exec sed -i 's/GameHub/VortexPS3/gI' {} + 2>/dev/null || true
+find decompiled_gamehub/res/values* -name "strings.xml" -exec sed -i 's/EmuReady/Vortex Team/gI' {} + 2>/dev/null || true
 
-# डेवलपर और ओनर क्रेडिट अपडेट
-CREDIT_REPLACEMENT="VORTEX PS3 EMULATOR - OFFICIAL BUILD\nOWNER & LEAD DEVELOPER: Yash (AI VIDEO HUB)\nProprietary Wine & Turnip Graphics Subsystem"
-find decompiled_gamehub/ -type f \( -name "*.smali" -o -name "*.xml" -o -name "*.json" \) -exec sed -i "s/Built on the shoulders of giants.*/$CREDIT_REPLACEMENT/g" {} + 2>/dev/null || true
-
-# ट्रैकर हटाना
-rm -rf decompiled_gamehub/smali*/com/google/firebase 2>/dev/null || true
-rm -rf decompiled_gamehub/smali*/com/umeng 2>/dev/null || true
+# डेवलपर क्रेडिट सेट करना
+find decompiled_gamehub/res/values* -name "strings.xml" -exec sed -i 's/>Built on the shoulders of giants.*</>VORTEX PS3 EMULATOR - OFFICIAL BUILD | DEVELOPER: Yash (AI VIDEO HUB)</g' {} + 2>/dev/null || true
 
 # 4. Rebuild और Sign
 echo "[4/5] Recompiling and Signing APK..."
