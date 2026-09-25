@@ -22,16 +22,20 @@ jobs:
         run: |
           yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
 
-      - name: Generate Clean Project Files
+      - name: Build Full VortexPS3 UI
         run: |
           rm -rf app gradle gradlew gradlew.bat build.gradle settings.gradle
           mkdir -p app/src/main/java/com/vortexps3/emu
           mkdir -p app/src/main/res/layout
           mkdir -p app/src/main/res/values
 
-          # AndroidManifest.xml
+          # 1. AndroidManifest.xml (Storage Permission Added)
           cat << 'EOF' > app/src/main/AndroidManifest.xml
           <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+              <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+              <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+              <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
+
               <application
                   android:label="@string/app_name"
                   android:theme="@android:style/Theme.NoTitleBar.Fullscreen">
@@ -48,97 +52,173 @@ jobs:
           </manifest>
           EOF
 
-          # strings.xml
+          # 2. strings.xml
           cat << 'EOF' > app/src/main/res/values/strings.xml
           <resources>
               <string name="app_name">VortexPS3 Emu</string>
-              <string name="welcome_title">WELCOME</string>
-              <string name="welcome_sub">VORTEXPS3 EMULATOR</string>
-              <string name="author">DEVELOPER: Yash (AI VIDEO HUB)</string>
+              <string name="menu_home">⌂  Home</string>
+              <string name="menu_game">🎮  Game</string>
+              <string name="menu_download">⬇  Download</string>
+              <string name="menu_setting">⚙  Setting</string>
+              <string name="no_games">No Games Found</string>
+              <string name="btn_add_game">+ Add Game File</string>
           </resources>
           EOF
 
-          # Layout
+          # 3. Complete Dashboard Layout (Sidebar + Games Grid)
           cat << 'EOF' > app/src/main/res/layout/activity_main.xml
           <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
               android:layout_width="match_parent"
               android:layout_height="match_parent"
-              android:background="#050505"
-              android:gravity="center"
-              android:orientation="vertical">
+              android:background="#0A0E17"
+              android:orientation="horizontal">
 
-              <TextView
-                  android:layout_width="wrap_content"
-                  android:layout_height="wrap_content"
-                  android:text="@string/welcome_title"
-                  android:textColor="#FFFFFF"
-                  android:textSize="38sp"
-                  android:textStyle="bold" />
+              <!-- Left Sidebar -->
+              <LinearLayout
+                  android:layout_width="220dp"
+                  android:layout_height="match_parent"
+                  android:background="#101726"
+                  android:orientation="vertical"
+                  android:padding="20dp">
 
-              <TextView
-                  android:layout_width="wrap_content"
-                  android:layout_height="wrap_content"
-                  android:layout_marginTop="12dp"
-                  android:text="@string/welcome_sub"
-                  android:textColor="#00E5FF"
-                  android:textSize="20sp"
-                  android:textStyle="bold" />
+                  <!-- Header / App Brand -->
+                  <TextView
+                      android:layout_width="wrap_content"
+                      android:layout_height="wrap_content"
+                      android:text="🌀 VortexPS3"
+                      android:textColor="#00E5FF"
+                      android:textSize="22sp"
+                      android:textStyle="bold" />
 
-              <TextView
-                  android:layout_width="wrap_content"
-                  android:layout_height="wrap_content"
-                  android:layout_marginTop="8dp"
-                  android:text="@string/author"
-                  android:textColor="#777777"
-                  android:textSize="14sp" />
+                  <View
+                      android:layout_width="match_parent"
+                      android:layout_height="1dp"
+                      android:layout_marginTop="16dp"
+                      android:layout_marginBottom="24dp"
+                      android:background="#1F2A40" />
+
+                  <!-- Menu Items -->
+                  <TextView
+                      android:id="@+id/btnHome"
+                      android:layout_width="match_parent"
+                      android:layout_height="wrap_content"
+                      android:background="#1B263B"
+                      android:padding="12dp"
+                      android:text="@string/menu_home"
+                      android:textColor="#FFFFFF"
+                      android:textSize="16sp"
+                      android:textStyle="bold" />
+
+                  <TextView
+                      android:id="@+id/btnGame"
+                      android:layout_width="match_parent"
+                      android:layout_height="wrap_content"
+                      android:layout_marginTop="10dp"
+                      android:padding="12dp"
+                      android:text="@string/menu_game"
+                      android:textColor="#8A99AD"
+                      android:textSize="16sp" />
+
+                  <TextView
+                      android:id="@+id/btnDownload"
+                      android:layout_width="match_parent"
+                      android:layout_height="wrap_content"
+                      android:layout_marginTop="10dp"
+                      android:padding="12dp"
+                      android:text="@string/menu_download"
+                      android:textColor="#8A99AD"
+                      android:textSize="16sp" />
+
+                  <TextView
+                      android:id="@+id/btnSetting"
+                      android:layout_width="match_parent"
+                      android:layout_height="wrap_content"
+                      android:layout_marginTop="10dp"
+                      android:padding="12dp"
+                      android:text="@string/menu_setting"
+                      android:textColor="#8A99AD"
+                      android:textSize="16sp" />
+              </LinearLayout>
+
+              <!-- Main Content Area -->
+              <LinearLayout
+                  android:layout_width="0dp"
+                  android:layout_height="match_parent"
+                  android:layout_weight="1"
+                  android:gravity="center"
+                  android:orientation="vertical"
+                  android:padding="30dp">
+
+                  <TextView
+                      android:layout_width="wrap_content"
+                      android:layout_height="wrap_content"
+                      android:text="@string/no_games"
+                      android:textColor="#FFFFFF"
+                      android:textSize="26sp"
+                      android:textStyle="bold" />
+
+                  <TextView
+                      android:layout_width="wrap_content"
+                      android:layout_height="wrap_content"
+                      android:layout_marginTop="8dp"
+                      android:text="Tap below to import your game ROMs into VortexPS3"
+                      android:textColor="#7A8B9E"
+                      android:textSize="15sp" />
+
+                  <Button
+                      android:id="@+id/btnAddGame"
+                      android:layout_width="wrap_content"
+                      android:layout_height="wrap_content"
+                      android:layout_marginTop="24dp"
+                      android:background="#00E5FF"
+                      android:paddingLeft="24dp"
+                      android:paddingRight="24dp"
+                      android:text="@string/btn_add_game"
+                      android:textColor="#000000"
+                      android:textStyle="bold" />
+              </LinearLayout>
           </LinearLayout>
           EOF
 
-          # MainActivity.java
+          # 4. MainActivity.java (Handles clicks)
           cat << 'EOF' > app/src/main/java/com/vortexps3/emu/MainActivity.java
           package com.vortexps3.emu;
 
           import android.app.Activity;
           import android.os.Bundle;
+          import android.widget.Button;
+          import android.widget.Toast;
 
           public class MainActivity extends Activity {
               @Override
               protected void onCreate(Bundle savedInstanceState) {
                   super.onCreate(savedInstanceState);
                   setContentView(R.layout.activity_main);
+
+                  Button btnAddGame = findViewById(R.id.btnAddGame);
+                  btnAddGame.setOnClickListener(v -> {
+                      Toast.makeText(this, "File Picker: Select game file (.iso/.pkg/.exe)", Toast.LENGTH_SHORT).show();
+                  });
               }
           }
           EOF
 
-          # Root build.gradle
+          # 5. Gradle Config
           cat << 'EOF' > build.gradle
           buildscript {
-              repositories {
-                  google()
-                  mavenCentral()
-              }
-              dependencies {
-                  classpath 'com.android.tools.build:gradle:8.2.2'
-              }
+              repositories { google(); mavenCentral() }
+              dependencies { classpath 'com.android.tools.build:gradle:8.2.2' }
           }
           allprojects {
-              repositories {
-                  google()
-                  mavenCentral()
-              }
+              repositories { google(); mavenCentral() }
           }
           EOF
 
-          # App build.gradle
           cat << 'EOF' > app/build.gradle
-          plugins {
-              id 'com.android.application'
-          }
-
+          plugins { id 'com.android.application' }
           android {
               namespace 'com.vortexps3.emu'
               compileSdk 34
-
               defaultConfig {
                   applicationId "com.vortexps3.emu"
                   minSdk 24
@@ -156,7 +236,7 @@ jobs:
         with:
           gradle-version: '8.5'
 
-      - name: Build APK with Gradle
+      - name: Build Dashboard APK
         run: gradle assembleDebug
 
       - name: Upload VortexPS3 APK
