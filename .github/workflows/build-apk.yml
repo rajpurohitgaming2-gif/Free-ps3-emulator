@@ -1,4 +1,4 @@
-name: Build VortexPS3 GameHub Engine
+name: Step 1 - Base Engine Test
 
 on:
   workflow_dispatch:
@@ -18,33 +18,42 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Install System Dependencies
+      - name: Install Sign Tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y zipalign apksigner curl wget
+          sudo apt-get install -y zipalign apksigner zip unzip wget curl
 
-      - name: Clone Official GameHub-Lite Engine & Patch
+      - name: Download & Resign Original Engine
         run: |
-          # 1. Official GameHub Lite source repo clone
-          git clone --depth=1 https://github.com/Producdevity/gamehub-lite.git ghl_source
-          cd ghl_source
+          # 1. Base GameHub Lite APK Download
+          LATEST_URL=$(curl -sL https://api.github.com/repos/Producdevity/gamehub-lite/releases/latest | grep "browser_download_url.*apk" | head -n 1 | cut -d '"' -f 4)
+          wget -q -O base.apk "$LATEST_URL"
 
-          # 2. Patch file executable permission
-          chmod +x patch.sh tools/* 2>/dev/null || true
+          # 2. Extract APK
+          mkdir -p raw_apk
+          unzip -q base.apk -d raw_apk
 
-          # 3. Rename app to VortexPS3 Emu safely in strings
-          find patches -type f -name "*.patch" -exec sed -i 's/GameHub Lite/VortexPS3 Emu/g' {} + 2>/dev/null || true
-          find patches -type f -name "*.xml" -exec sed -i 's/GameHub Lite/VortexPS3 Emu/g' {} + 2>/dev/null || true
+          # 3. Remove old signature only
+          rm -rf raw_apk/META-INF
 
-          # 4. Run official clean patch build
-          ./patch.sh
+          # 4. Pack back properly
+          cd raw_apk
+          zip -q -r -0 ../clean_unaligned.apk resources.arsc AndroidManifest.xml lib/
+          zip -q -r -9 ../clean_unaligned.apk . -x "resources.arsc" -x "AndroidManifest.xml" -x "lib/*"
+          cd ..
 
-          # 5. Copy built APK
-          cp output/*.apk ../VortexPS3-Working-Engine.apk
+          # 5. Page Align (4-byte)
+          zipalign -v -p 4 clean_unaligned.apk clean_aligned.apk
 
-      - name: Upload Clean Working APK
+          # 6. Generate Clean Keystore
+          keytool -genkey -v -keystore test.keystore -storepass android123 -alias vortexkey -keypass android123 -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=VortexPS3, OU=Mobile, O=Emulator, L=City, S=State, C=IN"
+
+          # 7. Sign APK
+          apksigner sign --ks test.keystore --ks-pass pass:android123 --key-pass pass:android123 --v1-signing-enabled true --v2-signing-enabled true --v3-signing-enabled true --out VortexPS3-Base-Test.apk clean_aligned.apk
+
+      - name: Upload Test APK
         uses: actions/upload-artifact@v4
         with:
-          name: VortexPS3-Working-Engine
-          path: VortexPS3-Working-Engine.apk
+          name: VortexPS3-Base-Test
+          path: VortexPS3-Base-Test.apk
           
