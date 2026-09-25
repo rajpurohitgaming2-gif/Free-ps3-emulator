@@ -18,17 +18,23 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Build Clean Tabbed Emulator Structure
+      - name: Generate Project Files Safely via Python
+        shell: python
         run: |
-          rm -rf app build.gradle settings.gradle
-          mkdir -p app/src/main/java/com/vortexps3/emu
-          mkdir -p app/src/main/res/layout
-          mkdir -p app/src/main/res/values
-          mkdir -p app/src/main/res/drawable
+          import os, shutil
 
-          # 1. High Quality Vector Icon
-          cat << 'EOF' > app/src/main/res/drawable/ic_launcher.xml
-          <vector xmlns:android="http://schemas.android.com/apk/res/android"
+          for path in ['app', 'build.gradle', 'settings.gradle']:
+              if os.path.exists(path):
+                  if os.path.isdir(path): shutil.rmtree(path)
+                  else: os.remove(path)
+
+          os.makedirs('app/src/main/java/com/vortexps3/emu', exist_ok=True)
+          os.makedirs('app/src/main/res/layout', exist_ok=True)
+          os.makedirs('app/src/main/res/values', exist_ok=True)
+          os.makedirs('app/src/main/res/drawable', exist_ok=True)
+
+          # 1. Launcher Icon
+          icon_xml = '''<vector xmlns:android="http://schemas.android.com/apk/res/android"
               android:width="108dp"
               android:height="108dp"
               android:viewportWidth="108"
@@ -37,16 +43,15 @@ jobs:
               <path android:strokeColor="#00E5FF" android:strokeWidth="5" android:pathData="M54,24 A30,30 0 1,0 84,54" android:strokeLineCap="round"/>
               <path android:strokeColor="#7928CA" android:strokeWidth="5" android:pathData="M54,84 A30,30 0 1,0 24,54" android:strokeLineCap="round"/>
               <path android:fillColor="#FFFFFF" android:pathData="M48,42 L66,54 L48,66 Z"/>
-          </vector>
-          EOF
+          </vector>'''
+          with open('app/src/main/res/drawable/ic_launcher.xml', 'w', encoding='utf-8') as f:
+              f.write(icon_xml.strip())
 
-          # 2. Manifest
-          cat << 'EOF' > app/src/main/AndroidManifest.xml
-          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+          # 2. Android Manifest
+          manifest_xml = '''<manifest xmlns:android="http://schemas.android.com/apk/res/android">
               <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
               <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
               <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
-
               <application
                   android:label="@string/app_name"
                   android:icon="@drawable/ic_launcher"
@@ -62,79 +67,63 @@ jobs:
                       </intent-filter>
                   </activity>
               </application>
-          </manifest>
-          EOF
+          </manifest>'''
+          with open('app/src/main/AndroidManifest.xml', 'w', encoding='utf-8') as f:
+              f.write(manifest_xml.strip())
 
-          # 3. Hardware Presets & Controls Data
-          cat << 'EOF' > app/src/main/res/values/strings.xml
-          <resources>
+          # 3. Settings Strings Data
+          strings_xml = '''<resources>
               <string name="app_name">VortexPS3 Emu</string>
-
-              <!-- GPU Drivers Options -->
               <string-array name="gpu_drivers">
                   <item>Mesa Turnip v26.1.0 (Snapdragon Adreno 6xx/7xx)</item>
                   <item>Turnip v24.3.0 Aggressive (High Performance)</item>
                   <item>VirGL Universal (Mali / MediaTek Dimensity)</item>
                   <item>System Default Driver</item>
               </string-array>
-
-              <!-- Resolutions -->
               <string-array name="screen_resolutions">
-                  <item>1280 x 720 (16:9 HD Recommended)</item>
-                  <item>960 x 540 (qHD Fast / Low-End Devices)</item>
+                  <item>1280 x 720 (16:9 Standard HD)</item>
+                  <item>960 x 540 (qHD Fast Performance)</item>
                   <item>1920 x 1080 (Full HD 1080p)</item>
                   <item>800 x 600 (4:3 Classic PC)</item>
               </string-array>
-
-              <!-- Input Profiles -->
               <string-array name="input_profiles">
                   <item>Virtual Gamepad (Touch Overlay)</item>
                   <item>Keyboard &amp; Mouse Mode</item>
                   <item>External USB / Bluetooth Controller</item>
                   <item>Disable All Overlays</item>
               </string-array>
-
-              <!-- Input Opacity -->
               <string-array name="input_opacity">
-                  <item>100% Opacity (Solid)</item>
+                  <item>100% Opacity (Solid Buttons)</item>
                   <item>75% Opacity (Balanced)</item>
                   <item>50% Opacity (Semi-Transparent)</item>
-                  <item>25% Opacity (Minimal)</item>
+                  <item>25% Opacity (Minimal Ghost)</item>
               </string-array>
-
-              <!-- DXVK Engine -->
               <string-array name="dxvk_versions">
                   <item>DXVK 2.4.1-async (Best Smooth FPS)</item>
                   <item>DXVK 2.3.1 (Stable Standard)</item>
                   <item>DXVK 1.10.3 (DirectX 9 / Old Games)</item>
               </string-array>
-
-              <!-- Box64 / Proton Layers -->
               <string-array name="proton_layers">
                   <item>proton11.0-arm64x (Latest Best Compat)</item>
                   <item>proton10.0-arm64x-2 (AAA Games Stable)</item>
                   <item>wine10.0-x64-2 (Pure Engine)</item>
               </string-array>
-
-              <!-- RAM Limit -->
               <string-array name="ram_limits">
-                  <item>4 GB (Standard Phones)</item>
+                  <item>4 GB (Standard Gaming)</item>
                   <item>6 GB (Medium Gaming Phones)</item>
                   <item>8 GB (High-End Snapdragon)</item>
                   <item>2 GB (Low-End Phones)</item>
               </string-array>
-          </resources>
-          EOF
-
-          # 4. Multi-Category Modern UI (Left Tabs: GPU/Display, Input/Controls, Engine/Advanced)
-          cat << 'EOF' > app/src/main/res/layout/activity_main.xml
-          <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+          </resources>'''
+          with open('app/src/main/res/values/strings.xml', 'w', encoding='utf-8') as f:
+              f.write(strings_xml.strip())
+                        # 4. Multi-Category Modern UI (Left Tabs, Right Content Panels)
+          layout_xml = '''<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
               android:layout_width="match_parent"
               android:layout_height="match_parent"
               android:background="#070A11"
               android:orientation="horizontal">
 
-              <!-- Left Sidebar: App Header & Category Tabs -->
               <LinearLayout
                   android:layout_width="230dp"
                   android:layout_height="match_parent"
@@ -165,7 +154,6 @@ jobs:
                       android:layout_marginBottom="14dp"
                       android:background="#1B283E" />
 
-                  <!-- Tab Buttons -->
                   <Button
                       android:id="@+id/tabDisplay"
                       android:layout_width="match_parent"
@@ -208,24 +196,20 @@ jobs:
                       android:textStyle="bold" />
               </LinearLayout>
 
-              <!-- Right Content Area (Swappable Category Pages) -->
               <FrameLayout
                   android:layout_width="match_parent"
                   android:layout_height="match_parent"
                   android:padding="20dp">
 
-                  <!-- 1. Display & GPU Settings Panel -->
                   <ScrollView
                       android:id="@+id/panelDisplay"
                       android:layout_width="match_parent"
                       android:layout_height="match_parent"
                       android:visibility="visible">
-
                       <LinearLayout
                           android:layout_width="match_parent"
                           android:layout_height="wrap_content"
                           android:orientation="vertical">
-
                           <TextView
                               android:layout_width="wrap_content"
                               android:layout_height="wrap_content"
@@ -234,14 +218,12 @@ jobs:
                               android:textSize="16sp"
                               android:textStyle="bold" />
 
-                          <!-- GPU Driver -->
                           <LinearLayout
                               android:layout_width="match_parent"
                               android:layout_height="wrap_content"
                               android:layout_marginTop="18dp"
                               android:gravity="center_vertical"
                               android:orientation="horizontal">
-
                               <TextView
                                   android:layout_width="160dp"
                                   android:layout_height="wrap_content"
@@ -249,7 +231,6 @@ jobs:
                                   android:textColor="#00E5FF"
                                   android:textSize="13sp"
                                   android:textStyle="bold" />
-
                               <Spinner
                                   android:id="@+id/spnGpu"
                                   android:layout_width="match_parent"
@@ -258,14 +239,12 @@ jobs:
                                   android:entries="@array/gpu_drivers" />
                           </LinearLayout>
 
-                          <!-- Resolution -->
                           <LinearLayout
                               android:layout_width="match_parent"
                               android:layout_height="wrap_content"
                               android:layout_marginTop="16dp"
                               android:gravity="center_vertical"
                               android:orientation="horizontal">
-
                               <TextView
                                   android:layout_width="160dp"
                                   android:layout_height="wrap_content"
@@ -273,7 +252,6 @@ jobs:
                                   android:textColor="#00E5FF"
                                   android:textSize="13sp"
                                   android:textStyle="bold" />
-
                               <Spinner
                                   android:id="@+id/spnResolution"
                                   android:layout_width="match_parent"
@@ -284,18 +262,15 @@ jobs:
                       </LinearLayout>
                   </ScrollView>
 
-                  <!-- 2. Controls & Input Settings Panel -->
                   <ScrollView
                       android:id="@+id/panelControls"
                       android:layout_width="match_parent"
                       android:layout_height="match_parent"
                       android:visibility="gone">
-
                       <LinearLayout
                           android:layout_width="match_parent"
                           android:layout_height="wrap_content"
                           android:orientation="vertical">
-
                           <TextView
                               android:layout_width="wrap_content"
                               android:layout_height="wrap_content"
@@ -304,14 +279,12 @@ jobs:
                               android:textSize="16sp"
                               android:textStyle="bold" />
 
-                          <!-- Control Type -->
                           <LinearLayout
                               android:layout_width="match_parent"
                               android:layout_height="wrap_content"
                               android:layout_marginTop="18dp"
                               android:gravity="center_vertical"
                               android:orientation="horizontal">
-
                               <TextView
                                   android:layout_width="160dp"
                                   android:layout_height="wrap_content"
@@ -319,7 +292,6 @@ jobs:
                                   android:textColor="#00E5FF"
                                   android:textSize="13sp"
                                   android:textStyle="bold" />
-
                               <Spinner
                                   android:id="@+id/spnInput"
                                   android:layout_width="match_parent"
@@ -328,14 +300,12 @@ jobs:
                                   android:entries="@array/input_profiles" />
                           </LinearLayout>
 
-                          <!-- Opacity -->
                           <LinearLayout
                               android:layout_width="match_parent"
                               android:layout_height="wrap_content"
                               android:layout_marginTop="16dp"
                               android:gravity="center_vertical"
                               android:orientation="horizontal">
-
                               <TextView
                                   android:layout_width="160dp"
                                   android:layout_height="wrap_content"
@@ -343,7 +313,6 @@ jobs:
                                   android:textColor="#00E5FF"
                                   android:textSize="13sp"
                                   android:textStyle="bold" />
-
                               <Spinner
                                   android:id="@+id/spnOpacity"
                                   android:layout_width="match_parent"
@@ -354,18 +323,15 @@ jobs:
                       </LinearLayout>
                   </ScrollView>
 
-                  <!-- 3. Engine & Performance Settings Panel -->
                   <ScrollView
                       android:id="@+id/panelEngine"
                       android:layout_width="match_parent"
                       android:layout_height="match_parent"
                       android:visibility="gone">
-
                       <LinearLayout
                           android:layout_width="match_parent"
                           android:layout_height="wrap_content"
                           android:orientation="vertical">
-
                           <TextView
                               android:layout_width="wrap_content"
                               android:layout_height="wrap_content"
@@ -374,14 +340,12 @@ jobs:
                               android:textSize="16sp"
                               android:textStyle="bold" />
 
-                          <!-- DXVK -->
                           <LinearLayout
                               android:layout_width="match_parent"
                               android:layout_height="wrap_content"
                               android:layout_marginTop="18dp"
                               android:gravity="center_vertical"
                               android:orientation="horizontal">
-
                               <TextView
                                   android:layout_width="160dp"
                                   android:layout_height="wrap_content"
@@ -389,7 +353,6 @@ jobs:
                                   android:textColor="#00E5FF"
                                   android:textSize="13sp"
                                   android:textStyle="bold" />
-
                               <Spinner
                                   android:id="@+id/spnDxvk"
                                   android:layout_width="match_parent"
@@ -398,14 +361,12 @@ jobs:
                                   android:entries="@array/dxvk_versions" />
                           </LinearLayout>
 
-                          <!-- Proton Layer -->
                           <LinearLayout
                               android:layout_width="match_parent"
                               android:layout_height="wrap_content"
                               android:layout_marginTop="16dp"
                               android:gravity="center_vertical"
                               android:orientation="horizontal">
-
                               <TextView
                                   android:layout_width="160dp"
                                   android:layout_height="wrap_content"
@@ -413,7 +374,6 @@ jobs:
                                   android:textColor="#00E5FF"
                                   android:textSize="13sp"
                                   android:textStyle="bold" />
-
                               <Spinner
                                   android:id="@+id/spnProton"
                                   android:layout_width="match_parent"
@@ -422,12 +382,34 @@ jobs:
                                   android:entries="@array/proton_layers" />
                           </LinearLayout>
 
-                          <!-- RAM -->
                           <LinearLayout
                               android:layout_width="match_parent"
-                                       # 5. MainActivity.java (Tab Switcher & Launcher)
-          cat << 'EOF' > app/src/main/java/com/vortexps3/emu/MainActivity.java
-          package com.vortexps3.emu;
+                              android:layout_height="wrap_content"
+                              android:layout_marginTop="16dp"
+                              android:gravity="center_vertical"
+                              android:orientation="horizontal">
+                              <TextView
+                                  android:layout_width="160dp"
+                                  android:layout_height="wrap_content"
+                                  android:text="RAM Allocation:"
+                                  android:textColor="#00E5FF"
+                                  android:textSize="13sp"
+                                  android:textStyle="bold" />
+                              <Spinner
+                                  android:id="@+id/spnRam"
+                                  android:layout_width="match_parent"
+                                  android:layout_height="44dp"
+                                  android:background="#111B2C"
+                                  android:entries="@array/ram_limits" />
+                          </LinearLayout>
+                      </LinearLayout>
+                  </ScrollView>
+              </FrameLayout>
+          </LinearLayout>'''
+          with open('app/src/main/res/layout/activity_main.xml', 'w', encoding='utf-8') as f:
+              f.write(layout_xml.strip())
+                        # 5. MainActivity.java
+          main_java = '''package com.vortexps3.emu;
 
           import android.app.Activity;
           import android.content.Intent;
@@ -493,22 +475,22 @@ jobs:
                       Toast.makeText(this, "Launching Container with: " + fileName, Toast.LENGTH_LONG).show();
                   }
               }
-          }
-          EOF
+          }'''
+          with open('app/src/main/java/com/vortexps3/emu/MainActivity.java', 'w', encoding='utf-8') as f:
+              f.write(main_java.strip())
 
-          # 6. Build Gradle Setup
-          cat << 'EOF' > build.gradle
-          buildscript {
+          # 6. Gradle Files
+          root_gradle = '''buildscript {
               repositories { google(); mavenCentral() }
               dependencies { classpath 'com.android.tools.build:gradle:8.2.2' }
           }
           allprojects {
               repositories { google(); mavenCentral() }
-          }
-          EOF
+          }'''
+          with open('build.gradle', 'w', encoding='utf-8') as f:
+              f.write(root_gradle.strip())
 
-          cat << 'EOF' > app/build.gradle
-          plugins { id 'com.android.application' }
+          app_gradle = '''plugins { id 'com.android.application' }
 
           android {
               namespace 'com.vortexps3.emu'
@@ -521,10 +503,12 @@ jobs:
                   versionCode 1
                   versionName "1.0"
               }
-          }
-          EOF
+          }'''
+          with open('app/build.gradle', 'w', encoding='utf-8') as f:
+              f.write(app_gradle.strip())
 
-          echo "include ':app'" > settings.gradle
+          with open('settings.gradle', 'w', encoding='utf-8') as f:
+              f.write("include ':app'\n")
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
@@ -534,7 +518,7 @@ jobs:
       - name: Compile VortexPS3 Modular APK
         run: gradle assembleDebug
 
-      - name: Upload Finished Modular APK
+      - name: Upload Clean Emulator APK
         uses: actions/upload-artifact@v4
         with:
           name: VortexPS3-Modular-Settings
