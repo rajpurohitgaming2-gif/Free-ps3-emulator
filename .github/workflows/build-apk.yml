@@ -1,4 +1,4 @@
-name: Build Fresh VortexPS3 Emu
+name: Build VortexPS3 Full Emulator
 
 on:
   workflow_dispatch:
@@ -18,230 +18,51 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Accept Android Licenses
+      - name: Install Tools
         run: |
-          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
+          sudo apt-get update
+          sudo apt-get install -y zipalign apksigner imagemagick
+          wget -q https://raw.githubusercontent.com/iBotPeaches/Apktool/master/scripts/linux/apktool -O apktool
+          wget -q https://bitbucket.org/iBotPeaches/apktool/downloads/apktool_2.9.3.jar -O apktool.jar
+          chmod +x apktool apktool.jar
+          sudo mv apktool apktool.jar /usr/local/bin/
 
-      - name: Build Full VortexPS3 UI
+      - name: Process Full GameHub Engine to VortexPS3
         run: |
-          rm -rf app gradle gradlew gradlew.bat build.gradle settings.gradle
-          mkdir -p app/src/main/java/com/vortexps3/emu
-          mkdir -p app/src/main/res/layout
-          mkdir -p app/src/main/res/values
+          # 1. Base GameHub Lite APK Download (Full Engine)
+          LATEST_URL=$(curl -sL https://api.github.com/repos/Producdevity/gamehub-lite/releases/latest | grep "browser_download_url.*apk" | head -n 1 | cut -d '"' -f 4)
+          wget -q -O base.apk "$LATEST_URL"
 
-          # 1. AndroidManifest.xml (Storage Permission Added)
-          cat << 'EOF' > app/src/main/AndroidManifest.xml
-          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-              <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
-              <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
-              <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
+          # 2. Decompile preserving resources
+          apktool d -r base.apk -o vortex_full -f
 
-              <application
-                  android:label="@string/app_name"
-                  android:theme="@android:style/Theme.NoTitleBar.Fullscreen">
-                  <activity
-                      android:name="com.vortexps3.emu.MainActivity"
-                      android:exported="true"
-                      android:screenOrientation="sensorLandscape">
-                      <intent-filter>
-                          <action android:name="android.intent.action.MAIN" />
-                          <category android:name="android.intent.category.LAUNCHER" />
-                      </intent-filter>
-                  </activity>
-              </application>
-          </manifest>
-          EOF
+          # 3. Create Welcome Image (Black background with WELCOME & VortexPS3)
+          convert -size 1080x1920 xc:black -gravity center \
+            -fill white -pointsize 70 -annotate 0 "WELCOME" \
+            -fill cyan -pointsize 40 -annotate +0+120 "VORTEXPS3 EMU" \
+            welcome_splash.png
 
-          # 2. strings.xml
-          cat << 'EOF' > app/src/main/res/values/strings.xml
-          <resources>
-              <string name="app_name">VortexPS3 Emu</string>
-              <string name="menu_home">⌂  Home</string>
-              <string name="menu_game">🎮  Game</string>
-              <string name="menu_download">⬇  Download</string>
-              <string name="menu_setting">⚙  Setting</string>
-              <string name="no_games">No Games Found</string>
-              <string name="btn_add_game">+ Add Game File</string>
-          </resources>
-          EOF
+          # 4. Replace Startup Splash Logos safely
+          find vortex_full/res -type f \( -iname "*splash*" -o -iname "*logo*" -o -iname "*launch*" \) \( -name "*.png" -o -name "*.webp" \) | while read -r img; do
+            # Original dimension read karke resize karke replace
+            W=$(identify -format "%w" "$img" 2>/dev/null || echo 1080)
+            H=$(identify -format "%h" "$img" 2>/dev/null || echo 1920)
+            convert welcome_splash.png -resize "${W}x${H}!" "$img" 2>/dev/null || true
+          done
 
-          # 3. Complete Dashboard Layout (Sidebar + Games Grid)
-          cat << 'EOF' > app/src/main/res/layout/activity_main.xml
-          <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-              android:layout_width="match_parent"
-              android:layout_height="match_parent"
-              android:background="#0A0E17"
-              android:orientation="horizontal">
+          # 5. App ka Display Name update karna
+          find vortex_full/res/values* -name "strings.xml" -exec sed -i 's/<string name="app_name">.*<\/string>/<string name="app_name">VortexPS3 Emu<\/string>/g' {} + 2>/dev/null || true
 
-              <!-- Left Sidebar -->
-              <LinearLayout
-                  android:layout_width="220dp"
-                  android:layout_height="match_parent"
-                  android:background="#101726"
-                  android:orientation="vertical"
-                  android:padding="20dp">
+          # 6. Rebuild & Sign (Retaining full Wine/Proton/Box64 engine)
+          apktool b vortex_full -o unsigned.apk
 
-                  <!-- Header / App Brand -->
-                  <TextView
-                      android:layout_width="wrap_content"
-                      android:layout_height="wrap_content"
-                      android:text="🌀 VortexPS3"
-                      android:textColor="#00E5FF"
-                      android:textSize="22sp"
-                      android:textStyle="bold" />
+          keytool -genkey -v -keystore test.keystore -storepass android -alias androidkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Yash, OU=AI VIDEO HUB, O=VortexPS3 Studios, L=City, S=State, C=IN"
+          zipalign -p -f 4 unsigned.apk aligned.apk
+          apksigner sign --ks test.keystore --ks-pass pass:android --out VortexPS3-Full-Emulator.apk aligned.apk
 
-                  <View
-                      android:layout_width="match_parent"
-                      android:layout_height="1dp"
-                      android:layout_marginTop="16dp"
-                      android:layout_marginBottom="24dp"
-                      android:background="#1F2A40" />
-
-                  <!-- Menu Items -->
-                  <TextView
-                      android:id="@+id/btnHome"
-                      android:layout_width="match_parent"
-                      android:layout_height="wrap_content"
-                      android:background="#1B263B"
-                      android:padding="12dp"
-                      android:text="@string/menu_home"
-                      android:textColor="#FFFFFF"
-                      android:textSize="16sp"
-                      android:textStyle="bold" />
-
-                  <TextView
-                      android:id="@+id/btnGame"
-                      android:layout_width="match_parent"
-                      android:layout_height="wrap_content"
-                      android:layout_marginTop="10dp"
-                      android:padding="12dp"
-                      android:text="@string/menu_game"
-                      android:textColor="#8A99AD"
-                      android:textSize="16sp" />
-
-                  <TextView
-                      android:id="@+id/btnDownload"
-                      android:layout_width="match_parent"
-                      android:layout_height="wrap_content"
-                      android:layout_marginTop="10dp"
-                      android:padding="12dp"
-                      android:text="@string/menu_download"
-                      android:textColor="#8A99AD"
-                      android:textSize="16sp" />
-
-                  <TextView
-                      android:id="@+id/btnSetting"
-                      android:layout_width="match_parent"
-                      android:layout_height="wrap_content"
-                      android:layout_marginTop="10dp"
-                      android:padding="12dp"
-                      android:text="@string/menu_setting"
-                      android:textColor="#8A99AD"
-                      android:textSize="16sp" />
-              </LinearLayout>
-
-              <!-- Main Content Area -->
-              <LinearLayout
-                  android:layout_width="0dp"
-                  android:layout_height="match_parent"
-                  android:layout_weight="1"
-                  android:gravity="center"
-                  android:orientation="vertical"
-                  android:padding="30dp">
-
-                  <TextView
-                      android:layout_width="wrap_content"
-                      android:layout_height="wrap_content"
-                      android:text="@string/no_games"
-                      android:textColor="#FFFFFF"
-                      android:textSize="26sp"
-                      android:textStyle="bold" />
-
-                  <TextView
-                      android:layout_width="wrap_content"
-                      android:layout_height="wrap_content"
-                      android:layout_marginTop="8dp"
-                      android:text="Tap below to import your game ROMs into VortexPS3"
-                      android:textColor="#7A8B9E"
-                      android:textSize="15sp" />
-
-                  <Button
-                      android:id="@+id/btnAddGame"
-                      android:layout_width="wrap_content"
-                      android:layout_height="wrap_content"
-                      android:layout_marginTop="24dp"
-                      android:background="#00E5FF"
-                      android:paddingLeft="24dp"
-                      android:paddingRight="24dp"
-                      android:text="@string/btn_add_game"
-                      android:textColor="#000000"
-                      android:textStyle="bold" />
-              </LinearLayout>
-          </LinearLayout>
-          EOF
-
-          # 4. MainActivity.java (Handles clicks)
-          cat << 'EOF' > app/src/main/java/com/vortexps3/emu/MainActivity.java
-          package com.vortexps3.emu;
-
-          import android.app.Activity;
-          import android.os.Bundle;
-          import android.widget.Button;
-          import android.widget.Toast;
-
-          public class MainActivity extends Activity {
-              @Override
-              protected void onCreate(Bundle savedInstanceState) {
-                  super.onCreate(savedInstanceState);
-                  setContentView(R.layout.activity_main);
-
-                  Button btnAddGame = findViewById(R.id.btnAddGame);
-                  btnAddGame.setOnClickListener(v -> {
-                      Toast.makeText(this, "File Picker: Select game file (.iso/.pkg/.exe)", Toast.LENGTH_SHORT).show();
-                  });
-              }
-          }
-          EOF
-
-          # 5. Gradle Config
-          cat << 'EOF' > build.gradle
-          buildscript {
-              repositories { google(); mavenCentral() }
-              dependencies { classpath 'com.android.tools.build:gradle:8.2.2' }
-          }
-          allprojects {
-              repositories { google(); mavenCentral() }
-          }
-          EOF
-
-          cat << 'EOF' > app/build.gradle
-          plugins { id 'com.android.application' }
-          android {
-              namespace 'com.vortexps3.emu'
-              compileSdk 34
-              defaultConfig {
-                  applicationId "com.vortexps3.emu"
-                  minSdk 24
-                  targetSdk 34
-                  versionCode 1
-                  versionName "1.0"
-              }
-          }
-          EOF
-
-          echo "include ':app'" > settings.gradle
-
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v3
-        with:
-          gradle-version: '8.5'
-
-      - name: Build Dashboard APK
-        run: gradle assembleDebug
-
-      - name: Upload VortexPS3 APK
+      - name: Upload Full VortexPS3 APK
         uses: actions/upload-artifact@v4
         with:
-          name: VortexPS3-New-Emulator
-          path: app/build/outputs/apk/debug/app-debug.apk
+          name: VortexPS3-Full-Emulator
+          path: VortexPS3-Full-Emulator.apk
           
