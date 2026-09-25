@@ -18,54 +18,57 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Install Build Tools
+      - name: Install Tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y zipalign apksigner imagemagick
-          wget -q https://raw.githubusercontent.com/iBotPeaches/Apktool/master/scripts/linux/apktool -O apktool
-          wget -q https://bitbucket.org/iBotPeaches/apktool/downloads/apktool_2.9.3.jar -O apktool.jar
-          chmod +x apktool apktool.jar
-          sudo mv apktool apktool.jar /usr/local/bin/
+          sudo apt-get install -y zipalign apksigner imagemagick zip unzip
 
-      - name: Build Clean Installable Engine APK
+      - name: Rebrand & Perfectly Sign APK
         run: |
-          # 1. Download Base APK
+          # 1. Base GameHub Lite APK Download (Full Engine)
           LATEST_URL=$(curl -sL https://api.github.com/repos/Producdevity/gamehub-lite/releases/latest | grep "browser_download_url.*apk" | head -n 1 | cut -d '"' -f 4)
           wget -q -O base.apk "$LATEST_URL"
 
-          # 2. Decompile WITHOUT breaking resources (-s and -r)
-          apktool d -s -r base.apk -o engine_work -f
+          # 2. APK Unpack
+          mkdir -p apk_dir
+          unzip -q base.apk -d apk_dir
 
-          # 3. Create Welcome Image
+          # 3. Purana Signature (META-INF) Puri Tarah Delete Karein (Crucial for Install Fix)
+          rm -rf apk_dir/META-INF
+
+          # 4. Create Clean Welcome Screen Image
           convert -size 1080x1920 xc:black -gravity center \
             -fill white -pointsize 80 -annotate 0 "WELCOME" \
             -fill cyan -pointsize 45 -annotate +0+140 "VORTEXPS3 EMU" \
             welcome_splash.png
 
-          # 4. Safe image replace
-          find engine_work/res -type f \( -iname "*splash*" -o -iname "*logo*" -o -iname "*launch*" \) \( -name "*.png" -o -name "*.webp" \) | while read -r img; do
+          # 5. Startup Logo / Splash Replace
+          find apk_dir/res -type f \( -iname "*splash*" -o -iname "*logo*" -o -iname "*launch*" \) \( -name "*.png" -o -name "*.webp" \) | while read -r img; do
             W=$(identify -format "%w" "$img" 2>/dev/null || echo 1080)
             H=$(identify -format "%h" "$img" 2>/dev/null || echo 1920)
             convert welcome_splash.png -resize "${W}x${H}!" "$img" 2>/dev/null || true
           done
 
-          # 5. Rebuild with proper Android manifest structure
-          apktool b engine_work -o unsigned.apk
+          # 6. Rebuild APK without Compression on Resources
+          cd apk_dir
+          zip -q -r -0 ../rebuilt_unaligned.apk ./*
+          cd ..
 
-          # 6. Proper alignment (4-byte boundary)
-          zipalign -v -p 4 unsigned.apk aligned.apk
+          # 7. 4-Byte ZipAlign
+          zipalign -v -p 4 rebuilt_unaligned.apk aligned.apk
 
-          # 7. Generate debug signature (v1 + v2 + v3 scheme enabled)
-          keytool -genkey -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+          # 8. Standard Keystore Generation
+          keytool -genkey -v -keystore release.keystore -storepass android -alias androidkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=VortexPS3, OU=Mobile, O=Emulator, L=City, S=State, C=IN"
 
-          apksigner sign --ks debug.keystore --ks-pass pass:android --v1-signing-enabled true --v2-signing-enabled true --v3-signing-enabled true --out VortexPS3-Final-Installable.apk aligned.apk
+          # 9. Sign with v1, v2 and v3 (Guarantees Installation on Android 8 to 15)
+          apksigner sign --ks release.keystore --ks-pass pass:android --v1-signing-enabled true --v2-signing-enabled true --v3-signing-enabled true --out VortexPS3-Installable.apk aligned.apk
 
-          # Verify signature
-          apksigner verify --verbose VortexPS3-Final-Installable.apk
+          # 10. Verify Signature
+          apksigner verify --verbose VortexPS3-Installable.apk
 
-      - name: Upload Final APK
+      - name: Upload Finished APK
         uses: actions/upload-artifact@v4
         with:
-          name: VortexPS3-Final-Installable
-          path: VortexPS3-Final-Installable.apk
+          name: VortexPS3-Working-App
+          path: VortexPS3-Installable.apk
           
