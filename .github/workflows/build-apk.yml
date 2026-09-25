@@ -59,7 +59,7 @@ jobs:
                   </application>
               </manifest>''')
 
-          # 3. All Hardware Database
+          # 3. All Hardware Database (Fixed XML ampersand)
           gpus = [
               "Turnip v26.1.0-devel (Adreno 6xx/7xx/8xx)", "Turnip v25.0.0 Stable (Snapdragon 8 Gen 1/2/3)",
               "Turnip v24.3.0 Aggressive (High FPS)", "Turnip v24.2.0-rc4 (Balanced Stability)",
@@ -99,11 +99,11 @@ jobs:
               "1024 x 768 (4:3 Standard)"
           ]
           rams = ["4 GB (Standard Phones)", "6 GB (Medium Gaming)", "8 GB (High-End Snapdragon)", "3 GB (Balanced)", "2 GB (Low-End Phones)"]
-          inputs = ["Virtual Gamepad (Touch Overlay)", "Keyboard & Mouse Mode", "External Controller", "Disable Overlays"]
+          inputs = ["Virtual Gamepad (Touch Overlay)", "Keyboard and Mouse Mode", "External Controller", "Disable Overlays"]
           opacities = ["100% Opacity (Solid)", "75% Opacity (Balanced)", "50% Opacity (Semi-Transparent)", "25% Opacity (Minimal)"]
 
           def xml_arr(name, lst):
-              items = "".join([f"<item>{x}</item>" for x in lst])
+              items = "".join([f"<item>{x.replace('&', '&amp;')}</item>" for x in lst])
               return f'<string-array name="{name}">{items}</string-array>'
 
           with open('app/src/main/res/values/strings.xml', 'w') as f:
@@ -282,7 +282,7 @@ jobs:
               f.write("buildscript { repositories { google(); mavenCentral() }; dependencies { classpath 'com.android.tools.build:gradle:8.2.2' } }\nallprojects { repositories { google(); mavenCentral() } }")
 
           with open('app/build.gradle', 'w') as f:
-              f.write("plugins { id 'com.android.application' }\nandroid { namespace 'com.vortexps3.emu'; compileSdk 34; defaultConfig { applicationId 'com.vortexps3.emu'; minSdk 24; targetSdk 34; versionCode 120; versionName '3.1' } }")
+              f.write("plugins { id 'com.android.application' }\nandroid { namespace 'com.vortexps3.emu'; compileSdk 34; defaultConfig { applicationId 'com.vortexps3.emu'; minSdk 24; targetSdk 34; versionCode 130; versionName '3.2' } }")
 
           with open('settings.gradle', 'w') as f:
               f.write("include ':app'\n")
