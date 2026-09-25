@@ -21,43 +21,40 @@ jobs:
       - name: Install Tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y zipalign apksigner imagemagick
-          wget -q https://raw.githubusercontent.com/iBotPeaches/Apktool/master/scripts/linux/apktool -O apktool
-          wget -q https://bitbucket.org/iBotPeaches/apktool/downloads/apktool_2.9.3.jar -O apktool.jar
-          chmod +x apktool apktool.jar
-          sudo mv apktool apktool.jar /usr/local/bin/
+          sudo apt-get install -y zipalign apksigner imagemagick zip unzip
 
-      - name: Process Full GameHub Engine to VortexPS3
+      - name: Download & Rebrand GameHub Engine
         run: |
-          # 1. Base GameHub Lite APK Download (Full Engine)
+          # 1. Base GameHub Lite APK Download
           LATEST_URL=$(curl -sL https://api.github.com/repos/Producdevity/gamehub-lite/releases/latest | grep "browser_download_url.*apk" | head -n 1 | cut -d '"' -f 4)
           wget -q -O base.apk "$LATEST_URL"
 
-          # 2. Decompile preserving resources
-          apktool d -r base.apk -o vortex_full -f
+          # 2. APK Unpack
+          mkdir -p apk_extracted
+          unzip -q base.apk -d apk_extracted
 
-          # 3. Create Welcome Image (Black background with WELCOME & VortexPS3)
+          # 3. Create Clean WELCOME / VortexPS3 Splash
           convert -size 1080x1920 xc:black -gravity center \
-            -fill white -pointsize 70 -annotate 0 "WELCOME" \
-            -fill cyan -pointsize 40 -annotate +0+120 "VORTEXPS3 EMU" \
+            -fill white -pointsize 80 -annotate 0 "WELCOME" \
+            -fill cyan -pointsize 45 -annotate +0+140 "VORTEXPS3 EMU" \
             welcome_splash.png
 
-          # 4. Replace Startup Splash Logos safely
-          find vortex_full/res -type f \( -iname "*splash*" -o -iname "*logo*" -o -iname "*launch*" \) \( -name "*.png" -o -name "*.webp" \) | while read -r img; do
-            # Original dimension read karke resize karke replace
+          # 4. Replace Startup Splash Logos
+          find apk_extracted/res -type f \( -iname "*splash*" -o -iname "*logo*" -o -iname "*launch*" \) \( -name "*.png" -o -name "*.webp" \) | while read -r img; do
             W=$(identify -format "%w" "$img" 2>/dev/null || echo 1080)
             H=$(identify -format "%h" "$img" 2>/dev/null || echo 1920)
             convert welcome_splash.png -resize "${W}x${H}!" "$img" 2>/dev/null || true
           done
 
-          # 5. App ka Display Name update karna
-          find vortex_full/res/values* -name "strings.xml" -exec sed -i 's/<string name="app_name">.*<\/string>/<string name="app_name">VortexPS3 Emu<\/string>/g' {} + 2>/dev/null || true
+          # 5. Pack back to APK
+          cd apk_extracted
+          zip -q -r ../rebuilt.apk ./*
+          cd ..
 
-          # 6. Rebuild & Sign (Retaining full Wine/Proton/Box64 engine)
-          apktool b vortex_full -o unsigned.apk
+          # 6. Align and Sign
+          zipalign -p -f 4 rebuilt.apk aligned.apk
 
           keytool -genkey -v -keystore test.keystore -storepass android -alias androidkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Yash, OU=AI VIDEO HUB, O=VortexPS3 Studios, L=City, S=State, C=IN"
-          zipalign -p -f 4 unsigned.apk aligned.apk
           apksigner sign --ks test.keystore --ks-pass pass:android --out VortexPS3-Full-Emulator.apk aligned.apk
 
       - name: Upload Full VortexPS3 APK
