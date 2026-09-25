@@ -12,23 +12,27 @@ wget -O base.apk "$LATEST_URL"
 echo "[2/4] Decompiling APK..."
 apktool d base.apk -o decompiled_gamehub -f
 
-# 3. नाम और अंदरूनी टेक्स्ट बदलना (Safe Rebrand)
-echo "[3/4] Renaming Strings & App Identity..."
+# 3. GameHub हटाकर Welcome और VortexPS3 सेट करना
+echo "[3/4] Renaming Strings & Setting Welcome..."
 
-# ऐप का नाम और strings.xml बदलना
+# ऐप का नाम VortexPS3 Emu करना
 find decompiled_gamehub/res/values* -name "strings.xml" -exec sed -i 's/<string name="app_name">.*<\/string>/<string name="app_name">VortexPS3 Emu<\/string>/g' {} + 2>/dev/null || true
-find decompiled_gamehub/res/values* -name "strings.xml" -exec sed -i 's/>GameHub Lite</>VortexPS3 Emu</gI' {} + 2>/dev/null || true
-find decompiled_gamehub/res/values* -name "strings.xml" -exec sed -i 's/>GameHubLite</>VortexPS3 Emu</gI' {} + 2>/dev/null || true
-find decompiled_gamehub/res/values* -name "strings.xml" -exec sed -i 's/>GameHub</>VortexPS3</gI' {} + 2>/dev/null || true
 
-# लेआउट के अंदर दिखने वाले टेक्स्ट
-find decompiled_gamehub/res/layout* -name "*.xml" -exec sed -i 's/android:text="GameHub Lite"/android:text="VortexPS3 Emu"/gI' {} + 2>/dev/null || true
-find decompiled_gamehub/res/layout* -name "*.xml" -exec sed -i 's/android:text="GameHubLite"/android:text="VortexPS3 Emu"/gI' {} + 2>/dev/null || true
-find decompiled_gamehub/res/layout* -name "*.xml" -exec sed -i 's/android:text="GameHub"/android:text="VortexPS3"/gI' {} + 2>/dev/null || true
+# वेलकम और स्टार्टअप टेक्स्ट बदलना
+find decompiled_gamehub/res/values* -name "strings.xml" -exec sed -i 's/>Welcome to GameHub.*</>Welcome to VortexPS3</gI' {} + 2>/dev/null || true
+find decompiled_gamehub/res/values* -name "strings.xml" -exec sed -i 's/>GameHub Lite</>Welcome</gI' {} + 2>/dev/null || true
+find decompiled_gamehub/res/values* -name "strings.xml" -exec sed -i 's/>GameHubLite</>Welcome</gI' {} + 2>/dev/null || true
+find decompiled_gamehub/res/values* -name "strings.xml" -exec sed -i 's/>GameHub</>Welcome</gI' {} + 2>/dev/null || true
 
-# Smali कोड के टेक्स्ट
-find decompiled_gamehub/smali* -type f -name "*.smali" -exec sed -i 's/"GameHub Lite"/"VortexPS3 Emu"/gI' {} + 2>/dev/null || true
-find decompiled_gamehub/smali* -type f -name "*.smali" -exec sed -i 's/"GameHubLite"/"VortexPS3 Emu"/gI' {} + 2>/dev/null || true
+# लेआउट के टेक्स्ट बदलना
+find decompiled_gamehub/res/layout* -name "*.xml" -exec sed -i 's/android:text="GameHub Lite"/android:text="Welcome"/gI' {} + 2>/dev/null || true
+find decompiled_gamehub/res/layout* -name "*.xml" -exec sed -i 's/android:text="GameHubLite"/android:text="Welcome"/gI' {} + 2>/dev/null || true
+find decompiled_gamehub/res/layout* -name "*.xml" -exec sed -i 's/android:text="GameHub"/android:text="Welcome"/gI' {} + 2>/dev/null || true
+
+# Smali कोड के टेक्स्ट बदलना
+find decompiled_gamehub/smali* -type f -name "*.smali" -exec sed -i 's/"GameHub Lite"/"Welcome"/gI' {} + 2>/dev/null || true
+find decompiled_gamehub/smali* -type f -name "*.smali" -exec sed -i 's/"GameHubLite"/"Welcome"/gI' {} + 2>/dev/null || true
+find decompiled_gamehub/smali* -type f -name "*.smali" -exec sed -i 's/"GameHub"/"Welcome"/gI' {} + 2>/dev/null || true
 
 # डेवलपर क्रेडिट सेट करना (Yash / AI VIDEO HUB)
 CREDIT_REPLACEMENT="VORTEX PS3 EMULATOR - OFFICIAL BUILD\nOWNER & LEAD DEVELOPER: Yash (AI VIDEO HUB)\nProprietary Wine & Turnip Graphics Subsystem"
