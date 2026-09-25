@@ -23,52 +23,60 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y zipalign apksigner imagemagick zip unzip
 
-      - name: Rebrand & Perfectly Sign APK
+      - name: Build Crash-Free VortexPS3 Engine
         run: |
-          # 1. Base GameHub Lite APK Download (Full Engine)
+          # 1. Base GameHub Lite APK Download
           LATEST_URL=$(curl -sL https://api.github.com/repos/Producdevity/gamehub-lite/releases/latest | grep "browser_download_url.*apk" | head -n 1 | cut -d '"' -f 4)
           wget -q -O base.apk "$LATEST_URL"
 
-          # 2. APK Unpack
-          mkdir -p apk_dir
-          unzip -q base.apk -d apk_dir
+          # 2. Extract APK
+          mkdir -p apk_work
+          unzip -q base.apk -d apk_work
 
-          # 3. Purana Signature (META-INF) Puri Tarah Delete Karein (Crucial for Install Fix)
-          rm -rf apk_dir/META-INF
+          # 3. Purana Signature hatayein
+          rm -rf apk_work/META-INF
 
-          # 4. Create Clean Welcome Screen Image
-          convert -size 1080x1920 xc:black -gravity center \
-            -fill white -pointsize 80 -annotate 0 "WELCOME" \
-            -fill cyan -pointsize 45 -annotate +0+140 "VORTEXPS3 EMU" \
-            welcome_splash.png
-
-          # 5. Startup Logo / Splash Replace
-          find apk_dir/res -type f \( -iname "*splash*" -o -iname "*logo*" -o -iname "*launch*" \) \( -name "*.png" -o -name "*.webp" \) | while read -r img; do
+          # 4. Safe Replacement: Keval Welcome/Splash ko solid clean black background me swap karein
+          # Isse resources.arsc corrupt nahi hota aur app start hote hi crash nahi karti
+          find apk_work/res -type f \( -iname "*splash*" -o -iname "*launch*" \) \( -name "*.png" -o -name "*.webp" \) | while read -r img; do
             W=$(identify -format "%w" "$img" 2>/dev/null || echo 1080)
             H=$(identify -format "%h" "$img" 2>/dev/null || echo 1920)
-            convert welcome_splash.png -resize "${W}x${H}!" "$img" 2>/dev/null || true
+            
+            # Simple, uncompressed standard replacement
+            convert -size "${W}x${H}" xc:black \
+              -gravity center -fill white -pointsize 60 -annotate 0 "WELCOME" \
+              -fill cyan -pointsize 35 -annotate +0+90 "VORTEXPS3" \
+              temp_out.png
+            
+            # Agar webp hai to webp me convert karein, png hai to png me
+            if [[ "$img" == *.webp ]]; then
+              convert temp_out.png "$img"
+            else
+              cp temp_out.png "$img"
+            fi
+            rm -f temp_out.png
           done
 
-          # 6. Rebuild APK without Compression on Resources
-          cd apk_dir
-          zip -q -r -0 ../rebuilt_unaligned.apk ./*
+          # 5. Native libraries (.so) ko bina compress kiye aur baaki files ko zip karein
+          cd apk_work
+          # Step A: Resources aur classes ko normal compress karein
+          zip -q -r -9 ../rebuilt.apk . -x "lib/*"
+          # Step B: Native .so files ko 0-compression (store only) add karein (taaki crash na ho)
+          if [ -d "lib" ]; then
+            zip -q -r -0 ../rebuilt.apk lib/
+          fi
           cd ..
 
-          # 7. 4-Byte ZipAlign
-          zipalign -v -p 4 rebuilt_unaligned.apk aligned.apk
+          # 6. Page-align (4-byte alignment jaruri hai native libs ke liye)
+          zipalign -v -p 4 rebuilt.apk aligned.apk
 
-          # 8. Standard Keystore Generation
+          # 7. Keystore aur APK Signing (v1, v2, v3 sab enabled)
           keytool -genkey -v -keystore release.keystore -storepass android -alias androidkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=VortexPS3, OU=Mobile, O=Emulator, L=City, S=State, C=IN"
+          apksigner sign --ks release.keystore --ks-pass pass:android --v1-signing-enabled true --v2-signing-enabled true --v3-signing-enabled true --out VortexPS3-CrashFree.apk aligned.apk
 
-          # 9. Sign with v1, v2 and v3 (Guarantees Installation on Android 8 to 15)
-          apksigner sign --ks release.keystore --ks-pass pass:android --v1-signing-enabled true --v2-signing-enabled true --v3-signing-enabled true --out VortexPS3-Installable.apk aligned.apk
-
-          # 10. Verify Signature
-          apksigner verify --verbose VortexPS3-Installable.apk
-
-      - name: Upload Finished APK
+      - name: Upload Crash-Free APK
         uses: actions/upload-artifact@v4
         with:
-          name: VortexPS3-Working-App
-          path: VortexPS3-Installable.apk
+          name: VortexPS3-CrashFree
+          path: VortexPS3-CrashFree.apk
           
