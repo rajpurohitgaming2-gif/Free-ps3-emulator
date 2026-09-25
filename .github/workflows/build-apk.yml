@@ -1,4 +1,4 @@
-name: Build VortexPS3 Full Emulator
+name: Build VortexPS3 GameHub Engine
 
 on:
   workflow_dispatch:
@@ -18,65 +18,33 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Install Tools
+      - name: Install System Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y zipalign apksigner imagemagick zip unzip
+          sudo apt-get install -y zipalign apksigner curl wget
 
-      - name: Build Crash-Free VortexPS3 Engine
+      - name: Clone Official GameHub-Lite Engine & Patch
         run: |
-          # 1. Base GameHub Lite APK Download
-          LATEST_URL=$(curl -sL https://api.github.com/repos/Producdevity/gamehub-lite/releases/latest | grep "browser_download_url.*apk" | head -n 1 | cut -d '"' -f 4)
-          wget -q -O base.apk "$LATEST_URL"
+          # 1. Official GameHub Lite source repo clone
+          git clone --depth=1 https://github.com/Producdevity/gamehub-lite.git ghl_source
+          cd ghl_source
 
-          # 2. Extract APK
-          mkdir -p apk_work
-          unzip -q base.apk -d apk_work
+          # 2. Patch file executable permission
+          chmod +x patch.sh tools/* 2>/dev/null || true
 
-          # 3. Purana Signature hatayein
-          rm -rf apk_work/META-INF
+          # 3. Rename app to VortexPS3 Emu safely in strings
+          find patches -type f -name "*.patch" -exec sed -i 's/GameHub Lite/VortexPS3 Emu/g' {} + 2>/dev/null || true
+          find patches -type f -name "*.xml" -exec sed -i 's/GameHub Lite/VortexPS3 Emu/g' {} + 2>/dev/null || true
 
-          # 4. Safe Replacement: Keval Welcome/Splash ko solid clean black background me swap karein
-          # Isse resources.arsc corrupt nahi hota aur app start hote hi crash nahi karti
-          find apk_work/res -type f \( -iname "*splash*" -o -iname "*launch*" \) \( -name "*.png" -o -name "*.webp" \) | while read -r img; do
-            W=$(identify -format "%w" "$img" 2>/dev/null || echo 1080)
-            H=$(identify -format "%h" "$img" 2>/dev/null || echo 1920)
-            
-            # Simple, uncompressed standard replacement
-            convert -size "${W}x${H}" xc:black \
-              -gravity center -fill white -pointsize 60 -annotate 0 "WELCOME" \
-              -fill cyan -pointsize 35 -annotate +0+90 "VORTEXPS3" \
-              temp_out.png
-            
-            # Agar webp hai to webp me convert karein, png hai to png me
-            if [[ "$img" == *.webp ]]; then
-              convert temp_out.png "$img"
-            else
-              cp temp_out.png "$img"
-            fi
-            rm -f temp_out.png
-          done
+          # 4. Run official clean patch build
+          ./patch.sh
 
-          # 5. Native libraries (.so) ko bina compress kiye aur baaki files ko zip karein
-          cd apk_work
-          # Step A: Resources aur classes ko normal compress karein
-          zip -q -r -9 ../rebuilt.apk . -x "lib/*"
-          # Step B: Native .so files ko 0-compression (store only) add karein (taaki crash na ho)
-          if [ -d "lib" ]; then
-            zip -q -r -0 ../rebuilt.apk lib/
-          fi
-          cd ..
+          # 5. Copy built APK
+          cp output/*.apk ../VortexPS3-Working-Engine.apk
 
-          # 6. Page-align (4-byte alignment jaruri hai native libs ke liye)
-          zipalign -v -p 4 rebuilt.apk aligned.apk
-
-          # 7. Keystore aur APK Signing (v1, v2, v3 sab enabled)
-          keytool -genkey -v -keystore release.keystore -storepass android -alias androidkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=VortexPS3, OU=Mobile, O=Emulator, L=City, S=State, C=IN"
-          apksigner sign --ks release.keystore --ks-pass pass:android --v1-signing-enabled true --v2-signing-enabled true --v3-signing-enabled true --out VortexPS3-CrashFree.apk aligned.apk
-
-      - name: Upload Crash-Free APK
+      - name: Upload Clean Working APK
         uses: actions/upload-artifact@v4
         with:
-          name: VortexPS3-CrashFree
-          path: VortexPS3-CrashFree.apk
+          name: VortexPS3-Working-Engine
+          path: VortexPS3-Working-Engine.apk
           
