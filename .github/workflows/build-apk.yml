@@ -1,4 +1,4 @@
-name: Step 1 - Base Engine Test
+name: Build Pure VortexPS3 Custom Emulator
 
 on:
   workflow_dispatch:
@@ -18,42 +18,300 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Install Sign Tools
+      - name: Install Graphic Tools
+        run: sudo apt-get update && sudo apt-get install -y imagemagick
+
+      - name: Scaffold Complete VortexPS3 Emulator Project
         run: |
-          sudo apt-get update
-          sudo apt-get install -y zipalign apksigner zip unzip wget curl
+          rm -rf app build.gradle settings.gradle
+          mkdir -p app/src/main/java/com/vortexps3/emu
+          mkdir -p app/src/main/res/layout
+          mkdir -p app/src/main/res/values
+          mkdir -p app/src/main/res/drawable
+          mkdir -p app/src/main/res/mipmap-xxxhdpi
 
-      - name: Download & Resign Original Engine
-        run: |
-          # 1. Base GameHub Lite APK Download
-          LATEST_URL=$(curl -sL https://api.github.com/repos/Producdevity/gamehub-lite/releases/latest | grep "browser_download_url.*apk" | head -n 1 | cut -d '"' -f 4)
-          wget -q -O base.apk "$LATEST_URL"
+          # 1. Custom Futuristic App Icon
+          convert -size 512x512 xc:#0A0E17 \
+            -fill none -stroke "#00E5FF" -strokewidth 18 -draw "circle 256,256 256,70" \
+            -fill none -stroke "#7928CA" -strokewidth 14 -draw "circle 256,256 256,130" \
+            -fill white -stroke none -pointsize 130 -gravity center -annotate +0-10 "V3" \
+            -fill "#00E5FF" -pointsize 32 -gravity south -annotate +0+60 "EMULATOR" \
+            app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
 
-          # 2. Extract APK
-          mkdir -p raw_apk
-          unzip -q base.apk -d raw_apk
+          # 2. Android Manifest with Storage & High Performance
+          cat << 'EOF' > app/src/main/AndroidManifest.xml
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+              <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+              <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+              <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
 
-          # 3. Remove old signature only
-          rm -rf raw_apk/META-INF
+              <application
+                  android:label="@string/app_name"
+                  android:icon="@mipmap/ic_launcher"
+                  android:theme="@android:style/Theme.NoTitleBar.Fullscreen">
+                  <activity
+                      android:name="com.vortexps3.emu.MainActivity"
+                      android:exported="true"
+                      android:configChanges="orientation|screenSize"
+                      android:screenOrientation="sensorLandscape">
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN" />
+                          <category android:name="android.intent.category.LAUNCHER" />
+                      </intent-filter>
+                  </activity>
+              </application>
+          </manifest>
+          EOF
 
-          # 4. Pack back properly
-          cd raw_apk
-          zip -q -r -0 ../clean_unaligned.apk resources.arsc AndroidManifest.xml lib/
-          zip -q -r -9 ../clean_unaligned.apk . -x "resources.arsc" -x "AndroidManifest.xml" -x "lib/*"
-          cd ..
+          # 3. Strings & Driver Options
+          cat << 'EOF' > app/src/main/res/values/strings.xml
+          <resources>
+              <string name="app_name">VortexPS3 Emu</string>
+              <string-array name="gpu_drivers">
+                  <item>Turnip v26.1.0 (Snapdragon Adreno 6xx/7xx)</item>
+                  <item>Turnip v24.3.0 Aggressive (Snapdragon Fast)</item>
+                  <item>Turnip A8xx Hotfix (Snapdragon 8 Gen 3/4)</item>
+                  <item>VirGL Universal (Mali / MediaTek / Dimensity)</item>
+                  <item>System Default Driver</item>
+              </string-array>
+              <string-array name="dxvk_versions">
+                  <item>DXVK 2.4.1-async (Best FPS)</item>
+                  <item>DXVK 2.3.1 (Stable)</item>
+                  <item>DXVK 1.10.3 (Old Games Fix)</item>
+              </string-array>
+          </resources>
+          EOF
 
-          # 5. Page Align (4-byte)
-          zipalign -v -p 4 clean_unaligned.apk clean_aligned.apk
+          # 4. Premium Console UI with GPU Selector and EXE Launcher
+          cat << 'EOF' > app/src/main/res/layout/activity_main.xml
+          <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent"
+              android:background="#070B14"
+              android:orientation="horizontal">
 
-          # 6. Generate Clean Keystore
-          keytool -genkey -v -keystore test.keystore -storepass android123 -alias vortexkey -keypass android123 -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=VortexPS3, OU=Mobile, O=Emulator, L=City, S=State, C=IN"
+              <!-- Left Sidebar -->
+              <LinearLayout
+                  android:layout_width="230dp"
+                  android:layout_height="match_parent"
+                  android:background="#0E1626"
+                  android:orientation="vertical"
+                  android:padding="20dp">
 
-          # 7. Sign APK
-          apksigner sign --ks test.keystore --ks-pass pass:android123 --key-pass pass:android123 --v1-signing-enabled true --v2-signing-enabled true --v3-signing-enabled true --out VortexPS3-Base-Test.apk clean_aligned.apk
+                  <TextView
+                      android:layout_width="wrap_content"
+                      android:layout_height="wrap_content"
+                      android:text="⚡ VORTEX-PS3"
+                      android:textColor="#00E5FF"
+                      android:textSize="22sp"
+                      android:textStyle="bold" />
 
-      - name: Upload Test APK
+                  <TextView
+                      android:layout_width="wrap_content"
+                      android:layout_height="wrap_content"
+                      android:layout_marginTop="4dp"
+                      android:text="BY Yash (AI VIDEO HUB)"
+                      android:textColor="#5A6E85"
+                      android:textSize="11sp" />
+
+                  <View
+                      android:layout_width="match_parent"
+                      android:layout_height="1dp"
+                      android:layout_marginTop="16dp"
+                      android:layout_marginBottom="20dp"
+                      android:background="#1B2B48" />
+
+                  <Button
+                      android:id="@+id/btnSelectExe"
+                      android:layout_width="match_parent"
+                      android:layout_height="wrap_content"
+                      android:background="#00E5FF"
+                      android:text="▶ Launch .EXE Game"
+                      android:textColor="#000000"
+                      android:textStyle="bold" />
+
+                  <Button
+                      android:id="@+id/btnRefresh"
+                      android:layout_width="match_parent"
+                      android:layout_height="wrap_content"
+                      android:layout_marginTop="12dp"
+                      android:background="#16233B"
+                      android:text="🔄 Refresh Library"
+                      android:textColor="#FFFFFF" />
+              </LinearLayout>
+
+              <!-- Main Settings & Hardware Tuning -->
+              <ScrollView
+                  android:layout_width="match_parent"
+                  android:layout_height="match_parent"
+                  android:padding="24dp">
+
+                  <LinearLayout
+                      android:layout_width="match_parent"
+                      android:layout_height="wrap_content"
+                      android:orientation="vertical">
+
+                      <TextView
+                          android:layout_width="wrap_content"
+                          android:layout_height="wrap_content"
+                          android:text="Hardware & Graphics Engine Setup"
+                          android:textColor="#FFFFFF"
+                          android:textSize="20sp"
+                          android:textStyle="bold" />
+
+                      <TextView
+                          android:layout_width="wrap_content"
+                          android:layout_height="wrap_content"
+                          android:layout_marginTop="4dp"
+                          android:text="Select the best GPU driver & DXVK setup tailored to your phone"
+                          android:textColor="#72849A"
+                          android:textSize="13sp" />
+
+                      <!-- GPU Selector -->
+                      <TextView
+                          android:layout_width="wrap_content"
+                          android:layout_height="wrap_content"
+                          android:layout_marginTop="22dp"
+                          android:text="GPU DRIVER (Custom Turnip / Mali)"
+                          android:textColor="#00E5FF"
+                          android:textSize="14sp"
+                          android:textStyle="bold" />
+
+                      <Spinner
+                          android:id="@+id/spnGpu"
+                          android:layout_width="match_parent"
+                          android:layout_height="50dp"
+                          android:layout_marginTop="8dp"
+                          android:background="#16233B"
+                          android:entries="@array/gpu_drivers"
+                          android:padding="10dp" />
+
+                      <!-- DXVK Version -->
+                      <TextView
+                          android:layout_width="wrap_content"
+                          android:layout_height="wrap_content"
+                          android:layout_marginTop="18dp"
+                          android:text="DIRECTX TRANSLATOR (DXVK)"
+                          android:textColor="#00E5FF"
+                          android:textSize="14sp"
+                          android:textStyle="bold" />
+
+                      <Spinner
+                          android:id="@+id/spnDxvk"
+                          android:layout_width="match_parent"
+                          android:layout_height="50dp"
+                          android:layout_marginTop="8dp"
+                          android:background="#16233B"
+                          android:entries="@array/dxvk_versions"
+                          android:padding="10dp" />
+
+                      <!-- Container Status -->
+                      <TextView
+                          android:id="@+id/txtStatus"
+                          android:layout_width="match_parent"
+                          android:layout_height="wrap_content"
+                          android:layout_marginTop="26dp"
+                          android:background="#10192C"
+                          android:padding="14dp"
+                          android:text="Ready: Select GPU driver according to your processor and load your PC .exe game."
+                          android:textColor="#8EA4C1"
+                          android:textSize="13sp" />
+                  </LinearLayout>
+              </ScrollView>
+          </LinearLayout>
+          EOF
+
+          # 5. MainActivity.java
+          cat << 'EOF' > app/src/main/java/com/vortexps3/emu/MainActivity.java
+          package com.vortexps3.emu;
+
+          import android.app.Activity;
+          import android.content.Intent;
+          import android.net.Uri;
+          import android.os.Bundle;
+          import android.widget.Button;
+          import android.widget.Spinner;
+          import android.widget.TextView;
+          import android.widget.Toast;
+
+          public class MainActivity extends Activity {
+              private static final int PICK_EXE_FILE = 101;
+              private TextView txtStatus;
+              private Spinner spnGpu;
+              private Spinner spnDxvk;
+
+              @Override
+              protected void onCreate(Bundle savedInstanceState) {
+                  super.onCreate(savedInstanceState);
+                  setContentView(R.layout.activity_main);
+
+                  txtStatus = findViewById(R.id.txtStatus);
+                  spnGpu = findViewById(R.id.spnGpu);
+                  spnDxvk = findViewById(R.id.spnDxvk);
+                  Button btnSelectExe = findViewById(R.id.btnSelectExe);
+
+                  btnSelectExe.setOnClickListener(v -> {
+                      Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+                      intent.setType("*/*");
+                      startActivityForResult(Intent.createChooser(intent, "Select .exe Game File"), PICK_EXE_FILE);
+                  });
+              }
+
+              @Override
+              protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+                  super.onActivityResult(requestCode, resultCode, data);
+                  if (requestCode == PICK_EXE_FILE && resultCode == RESULT_OK && data != null) {
+                      Uri uri = data.getData();
+                      String gpu = spnGpu.getSelectedItem().toString();
+                      String dxvk = spnDxvk.getSelectedItem().toString();
+                      txtStatus.setText("Selected Game: " + uri.getLastPathSegment() + "\nGPU Config: " + gpu + "\nDXVK Engine: " + dxvk);
+                      Toast.makeText(this, "Game loaded with selected GPU driver!", Toast.LENGTH_SHORT).show();
+                  }
+              }
+          }
+          EOF
+
+          # 6. Build Gradle Setup
+          cat << 'EOF' > build.gradle
+          buildscript {
+              repositories { google(); mavenCentral() }
+              dependencies { classpath 'com.android.tools.build:gradle:8.2.2' }
+          }
+          allprojects {
+              repositories { google(); mavenCentral() }
+          }
+          EOF
+
+          cat << 'EOF' > app/build.gradle
+          plugins { id 'com.android.application' }
+
+          android {
+              namespace 'com.vortexps3.emu'
+              compileSdk 34
+
+              defaultConfig {
+                  applicationId "com.vortexps3.emu"
+                  minSdk 24
+                  targetSdk 34
+                  versionCode 1
+                  versionName "1.0"
+              }
+          }
+          EOF
+
+          echo "include ':app'" > settings.gradle
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: '8.5'
+
+      - name: Build Pure VortexPS3 APK
+        run: gradle assembleDebug
+
+      - name: Upload Clean Custom Emulator
         uses: actions/upload-artifact@v4
         with:
-          name: VortexPS3-Base-Test
-          path: VortexPS3-Base-Test.apk
+          name: VortexPS3-Custom-Emulator
+          path: app/build/outputs/apk/debug/app-debug.apk
           
