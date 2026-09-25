@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-echo "=== Setting Startup to Clean WELCOME Screen ==="
+echo "=== Total Rebrand: Setting WELCOME & VortexPS3 ==="
 
 # 1. Base APK Download
 echo "[1/4] Downloading Base APK..."
@@ -12,27 +12,18 @@ wget -O base.apk "$LATEST_URL"
 echo "[2/4] Decompiling APK..."
 apktool d base.apk -o decompiled_gamehub -f
 
-# 3. Startup screen par logo hide karke WELCOME dikhana
-echo "[3/4] Customizing Startup Screen..."
+# 3. Safe string replacement (No layout touch)
+echo "[3/4] Renaming to WELCOME & VortexPS3 Emu..."
 
-# Splash / Welcome layout me se purana logo image hide karna
-find decompiled_gamehub/res/layout* -type f \( -iname "*splash*.xml" -o -iname "*launch*.xml" -o -iname "*startup*.xml" -o -iname "*welcome*.xml" \) | while read -r layout; do
-    sed -i 's/<ImageView/<ImageView android:visibility="gone"/gI' "$layout" 2>/dev/null || true
-    sed -i 's/android:visibility="visible"/android:visibility="gone"/gI' "$layout" 2>/dev/null || true
-done
-
-# App ke sabhi visible strings me Welcome aur VortexPS3 Emu set karna
+# App Name change
 find decompiled_gamehub/res/values* -name "strings.xml" -exec sed -i 's/<string name="app_name">.*<\/string>/<string name="app_name">VortexPS3 Emu<\/string>/g' {} + 2>/dev/null || true
+
+# Display strings me GameHub ki jagah WELCOME
 find decompiled_gamehub/res/values* -name "strings.xml" -exec sed -i 's/>GameHub Lite</>WELCOME</gI' {} + 2>/dev/null || true
 find decompiled_gamehub/res/values* -name "strings.xml" -exec sed -i 's/>GameHubLite</>WELCOME</gI' {} + 2>/dev/null || true
 find decompiled_gamehub/res/values* -name "strings.xml" -exec sed -i 's/>GameHub</>WELCOME</gI' {} + 2>/dev/null || true
 
-# Layout text views ko update karna
-find decompiled_gamehub/res/layout* -name "*.xml" -exec sed -i 's/android:text="GameHub Lite"/android:text="WELCOME"/gI' {} + 2>/dev/null || true
-find decompiled_gamehub/res/layout* -name "*.xml" -exec sed -i 's/android:text="GameHubLite"/android:text="WELCOME"/gI' {} + 2>/dev/null || true
-find decompiled_gamehub/res/layout* -name "*.xml" -exec sed -i 's/android:text="GameHub"/android:text="WELCOME"/gI' {} + 2>/dev/null || true
-
-# Smali code strings update karna
+# Smali code strings safe update
 find decompiled_gamehub/smali* -type f -name "*.smali" -exec sed -i 's/"GameHub Lite"/"WELCOME"/gI' {} + 2>/dev/null || true
 find decompiled_gamehub/smali* -type f -name "*.smali" -exec sed -i 's/"GameHubLite"/"WELCOME"/gI' {} + 2>/dev/null || true
 find decompiled_gamehub/smali* -type f -name "*.smali" -exec sed -i 's/"GameHub"/"WELCOME"/gI' {} + 2>/dev/null || true
