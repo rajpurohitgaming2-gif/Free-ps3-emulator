@@ -1,4 +1,4 @@
-name: Build VortexPS3 Modular Emulator
+name: Build VortexPS3 Ultimate Emulator
 
 on:
   workflow_dispatch:
@@ -18,7 +18,7 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Generate Project Files Safely via Python
+      - name: Generate Ultimate Driver & Engine Lists via Python
         shell: python
         run: |
           import os, shutil
@@ -71,27 +71,56 @@ jobs:
           with open('app/src/main/AndroidManifest.xml', 'w', encoding='utf-8') as f:
               f.write(manifest_xml.strip())
 
-          # 3. Complete Expanded Hardware Presets (Snapdragon, Dimensity, Mali, Exynos, Unisoc)
+          # 3. All Worldwide GPU Drivers & CPU Translators
           strings_xml = '''<resources>
               <string name="app_name">VortexPS3 Emu</string>
 
-              <!-- GPU Drivers for ALL Mobile Processors -->
+              <!-- ALL Available GPU Drivers Worldwide -->
               <string-array name="gpu_drivers">
-                  <item>Mesa Turnip v26.1.0-devel (Adreno 6xx/7xx/8xx)</item>
+                  <!-- Snapdragon Turnip Mesa Drivers -->
+                  <item>Turnip v26.1.0-devel (Latest Adreno 6xx/7xx/8xx)</item>
                   <item>Turnip v25.0.0 Stable (Snapdragon 8 Gen 1/2/3)</item>
-                  <item>Turnip v24.3.0 Aggressive (High FPS Adreno 650/660)</item>
-                  <item>Turnip v24.1.0 Classic (Snapdragon 720G/778G/870)</item>
-                  <item>Turnip A8xx Hotfix (Snapdragon 8 Gen 3/4)</item>
-                  <item>Qualcomm Proprietary v0615.0 Driver (Vulkan Native)</item>
-                  <item>VirGL Universal 3D (MediaTek Dimensity / Helio)</item>
-                  <item>Panfrost Mesa (Mali-G52 / G57 / G68 / G77 / G78)</item>
+                  <item>Turnip v24.3.0 Aggressive (High FPS Performance)</item>
+                  <item>Turnip v24.2.0-rc4 (Balanced Stability)</item>
+                  <item>Turnip v24.1.0 Classic (Adreno 618/642L/650/660)</item>
+                  <item>Turnip v23.3.0-legacy (Adreno 5xx/6xx Old Chips)</item>
+                  <item>Turnip A8xx Hotfix (Snapdragon 8 Gen 3/4 Fix)</item>
+                  <item>Turnip DXVK-GPL Enabled Build (No Stutter)</item>
+                  <item>Turnip Kgsl / Sysfs Optimized Driver</item>
+                  <!-- Qualcomm Proprietary System Drivers -->
+                  <item>Qualcomm Proprietary v0615.0 (Vulkan 1.3 Native)</item>
+                  <item>Qualcomm Proprietary v0512.68 (Adreno 6xx Legacy)</item>
+                  <!-- MediaTek Dimensity, Mali & Exynos Drivers -->
+                  <item>VirGL Universal 3D (Dimensity 7000/8000/9000)</item>
+                  <item>VirGL Mali-G7x Compatibility Fix</item>
+                  <item>Panfrost Mesa Driver (Mali Midgard / Bifrost / Valhall)</item>
                   <item>Mali Immortalis G715/G720 Vulkan Compatibility</item>
-                  <item>Zink Engine (OpenGL over Vulkan Translation)</item>
-                  <item>LLVMpipe Universal (Unisoc / Software CPU Fallback)</item>
-                  <item>System Default Android Graphic Driver</item>
+                  <item>Zink Engine (Direct OpenGL via Vulkan Layer)</item>
+                  <!-- Unisoc & Low-End Fallbacks -->
+                  <item>LLVMpipe Universal (Software CPU Fallback)</item>
+                  <item>System Default Android Vulkan Driver</item>
               </string-array>
 
-              <!-- Screen Resolutions -->
+              <!-- ALL Available CPU Translator / Emulation Engines -->
+              <string-array name="box64_presets">
+                  <!-- Box64 64-bit Engines -->
+                  <item>Box64 v0.3.4 (Bleeding Edge - Latest Instructions)</item>
+                  <item>Box64 v0.3.2 Aggressive (Highest FPS Booster)</item>
+                  <item>Box64 v0.3.0 Balanced (Most Stable for AAA)</item>
+                  <item>Box64 v0.2.8 Legacy (Old 64-bit Game Fix)</item>
+                  <item>Box64 Safe Multi-threading (Big.LITTLE Fix)</item>
+                  <item>Box64 Dynarec Fastmath Mode (Speed Hack)</item>
+                  <!-- Box86 32-bit Classic Engines -->
+                  <item>Box86 v0.3.2 Aggressive (32-bit Classic Games)</item>
+                  <item>Box86 Performance Safe (GTA / NFS / Classic PC)</item>
+                  <item>Box86 Compatibility (Fix Old Visual C++ Errors)</item>
+                  <!-- FEX-Emu & WOW64 Layers -->
+                  <item>FEX-Emu v2402 (Fast ARM64 JIT Translator)</item>
+                  <item>FEX-Emu Multi-Core Vector Mode</item>
+                  <item>Hangover / WOW64 Native Engine (Direct Translation)</item>
+              </string-array>
+
+              <!-- Resolutions -->
               <string-array name="screen_resolutions">
                   <item>1280 x 720 (16:9 Standard HD - Recommended)</item>
                   <item>960 x 540 (qHD Fast Performance / Low-End)</item>
@@ -102,7 +131,7 @@ jobs:
                   <item>1024 x 768 (4:3 Standard)</item>
               </string-array>
 
-              <!-- Complete DXVK Direct3D Translators -->
+              <!-- DXVK Translators -->
               <string-array name="dxvk_versions">
                   <item>DXVK 2.4.1-async (Fastest Shader Pipeline)</item>
                   <item>DXVK 2.3.1-async (Balanced Stable)</item>
@@ -114,7 +143,7 @@ jobs:
                   <item>WineD3D (OpenGL Pure Translation)</item>
               </string-array>
 
-              <!-- Complete Proton / Wine Compatibility Layers -->
+              <!-- Proton / Wine Layers -->
               <string-array name="proton_layers">
                   <item>proton11.0-arm64x (Latest Best Game Compatibility)</item>
                   <item>proton10.0-arm64x-2 (AAA Games Stable)</item>
@@ -125,14 +154,6 @@ jobs:
                   <item>wine9.16-esync (Multi-Thread Performance)</item>
                   <item>wine8.18-stable (High Stability Fallback)</item>
                   <item>wine7.22-legacy (Old PC Games Specialist)</item>
-              </string-array>
-
-              <!-- Box64 / CPU Emulator Presets -->
-              <string-array name="box64_presets">
-                  <item>Box64 v0.3.2 Aggressive (Highest FPS)</item>
-                  <item>Box64 Performance Safe (Stable Gaming)</item>
-                  <item>Box64 Compatibility (Fix Unity / UE4 Game Crashes)</item>
-                  <item>FEX-Emu ARM64 Translator (Alternative Engine)</item>
               </string-array>
 
               <!-- RAM Limits -->
@@ -161,14 +182,14 @@ jobs:
           </resources>'''
           with open('app/src/main/res/values/strings.xml', 'w', encoding='utf-8') as f:
               f.write(strings_xml.strip())
-                        # 4. Multi-Category Modern UI Layout with Full Driver Lists
+                        # 4. Multi-Category Modern UI Layout with All Full Options
           layout_xml = '''<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
               android:layout_width="match_parent"
               android:layout_height="match_parent"
               android:background="#070A11"
               android:orientation="horizontal">
 
-              <!-- Left Sidebar: App Header & Category Tabs -->
+              <!-- Left Sidebar -->
               <LinearLayout
                   android:layout_width="230dp"
                   android:layout_height="match_parent"
@@ -242,7 +263,7 @@ jobs:
                       android:textStyle="bold" />
               </LinearLayout>
 
-              <!-- Right Content Area (Swappable Category Panels) -->
+              <!-- Right Content Panels -->
               <FrameLayout
                   android:layout_width="match_parent"
                   android:layout_height="match_parent"
@@ -279,7 +300,7 @@ jobs:
                               <TextView
                                   android:layout_width="160dp"
                                   android:layout_height="wrap_content"
-                                  android:text="GPU Driver:"
+                                  android:text="GPU Driver (All Phones):"
                                   android:textColor="#00E5FF"
                                   android:textSize="13sp"
                                   android:textStyle="bold" />
@@ -338,7 +359,7 @@ jobs:
                               android:textSize="16sp"
                               android:textStyle="bold" />
 
-                          <!-- Control Type -->
+                          <!-- Input Method -->
                           <LinearLayout
                               android:layout_width="match_parent"
                               android:layout_height="wrap_content"
@@ -403,7 +424,7 @@ jobs:
                           <TextView
                               android:layout_width="wrap_content"
                               android:layout_height="wrap_content"
-                              android:text="ADVANCED ENGINE, DXVK &amp; PROTON"
+                              android:text="ADVANCED ENGINE, DXVK, PROTON &amp; CPU"
                               android:textColor="#FFFFFF"
                               android:textSize="16sp"
                               android:textStyle="bold" />
@@ -456,7 +477,7 @@ jobs:
                                   android:entries="@array/proton_layers" />
                           </LinearLayout>
 
-                          <!-- Box64 Presets -->
+                          <!-- Box64 / Box86 / FEX-Emu Layer -->
                           <LinearLayout
                               android:layout_width="match_parent"
                               android:layout_height="wrap_content"
@@ -467,7 +488,7 @@ jobs:
                               <TextView
                                   android:layout_width="160dp"
                                   android:layout_height="wrap_content"
-                                  android:text="CPU Translator (Box64):"
+                                  android:text="CPU Translator (Box64/86):"
                                   android:textColor="#00E5FF"
                                   android:textSize="13sp"
                                   android:textStyle="bold" />
@@ -509,7 +530,7 @@ jobs:
           </LinearLayout>'''
           with open('app/src/main/res/layout/activity_main.xml', 'w', encoding='utf-8') as f:
               f.write(layout_xml.strip())
-                        # 5. MainActivity.java (Tab Switching & Launcher)
+                        # 5. MainActivity.java
           main_java = '''package com.vortexps3.emu;
 
           import android.app.Activity;
