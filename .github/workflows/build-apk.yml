@@ -1,4 +1,4 @@
-name: Build VortexPS3 Engine Step 2
+name: Build VortexPS3 Update Engine
 
 on:
   workflow_dispatch:
@@ -18,7 +18,7 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Build Virtual C-Drive and Display Engine via Python
+      - name: Create Permanent Key and Project Files via Python
         shell: python
         run: |
           import os, shutil
@@ -33,7 +33,7 @@ jobs:
           os.makedirs('app/src/main/res/values', exist_ok=True)
           os.makedirs('app/src/main/res/drawable', exist_ok=True)
 
-          # 1. Launcher Icon
+          # 1. Permanent Launcher Icon
           icon_xml = '''<vector xmlns:android="http://schemas.android.com/apk/res/android"
               android:width="108dp"
               android:height="108dp"
@@ -71,65 +71,117 @@ jobs:
           with open('app/src/main/AndroidManifest.xml', 'w', encoding='utf-8') as f:
               f.write(manifest_xml.strip())
 
-          # 3. Complete Strings Data
+          # 3. Full Worldwide Driver Database
           strings_xml = '''<resources>
               <string name="app_name">VortexPS3 Emu</string>
+
+              <!-- ALL Worldwide GPU Drivers -->
               <string-array name="gpu_drivers">
                   <item>Turnip v26.1.0-devel (Adreno 6xx/7xx/8xx)</item>
                   <item>Turnip v25.0.0 Stable (Snapdragon 8 Gen 1/2/3)</item>
-                  <item>Turnip v24.3.0 Aggressive (High FPS)</item>
-                  <item>VirGL Universal 3D (Dimensity / Helio)</item>
-                  <item>Panfrost Mesa (Mali-G52/G57/G68/G77/G78)</item>
+                  <item>Turnip v24.3.0 Aggressive (High FPS Performance)</item>
+                  <item>Turnip v24.2.0-rc4 (Balanced Stability)</item>
+                  <item>Turnip v24.1.0 Classic (Snapdragon 720G/778G/870)</item>
+                  <item>Turnip v23.3.0 Legacy (Adreno 5xx/6xx Older Chips)</item>
+                  <item>Turnip A8xx Hotfix (Snapdragon 8 Gen 3/4 Fix)</item>
+                  <item>Turnip DXVK-GPL Enabled Build (No Stutter)</item>
+                  <item>Turnip Kgsl / Sysfs Optimized Driver</item>
+                  <item>Qualcomm Proprietary v0615.0 (Vulkan 1.3 Native)</item>
+                  <item>Qualcomm Proprietary v0512.68 (Adreno 6xx Legacy)</item>
+                  <item>VirGL Universal 3D (Dimensity 7000/8000/9000)</item>
+                  <item>VirGL Mali-G7x Compatibility Fix</item>
+                  <item>Panfrost Mesa Driver (Mali Midgard/Bifrost/Valhall)</item>
+                  <item>Mali Immortalis G715/G720 Vulkan Compatibility</item>
+                  <item>Zink Engine (OpenGL via Vulkan Translation)</item>
                   <item>LLVMpipe Universal (Software CPU Fallback)</item>
+                  <item>System Default Android Vulkan Driver</item>
               </string-array>
-              <string-array name="box64_presets">
-                  <item>Box64 v0.3.4 (Bleeding Edge)</item>
-                  <item>Box64 v0.3.2 Aggressive (Highest FPS)</item>
-                  <item>Box86 v0.3.2 (32-bit Classic Games)</item>
-                  <item>FEX-Emu v2402 (Fast JIT)</item>
-              </string-array>
-              <string-array name="screen_resolutions">
-                  <item>1280 x 720 (16:9 Standard HD)</item>
-                  <item>960 x 540 (qHD Fast / Low-End)</item>
-                  <item>1920 x 1080 (Full HD 1080p)</item>
-                  <item>800 x 600 (4:3 Classic PC)</item>
-              </string-array>
+
+              <!-- ALL Worldwide DXVK Versions -->
               <string-array name="dxvk_versions">
-                  <item>DXVK 2.4.1-async (Fastest Pipeline)</item>
-                  <item>DXVK 2.3.1 (Stable Standard)</item>
-                  <item>DXVK 1.10.3 (DirectX 9 / 10 Fix)</item>
+                  <item>DXVK 2.4.1-async (Fastest Shader Pipeline)</item>
+                  <item>DXVK 2.3.1-async (Balanced Stable Standard)</item>
+                  <item>DXVK 2.2-gpl (DirectX 11 Modern Titles)</item>
+                  <item>DXVK 2.0-async (Smooth FPS Optimizer)</item>
+                  <item>DXVK 1.10.3 (DirectX 9 / 10 Legacy Games Fix)</item>
+                  <item>DXVK 1.9.4 (DirectX 9 Lightweight)</item>
+                  <item>VKD3D-Proton 2.13 (DirectX 12 Support)</item>
+                  <item>WineD3D (OpenGL Pure Translation)</item>
               </string-array>
+
+              <!-- ALL Worldwide Proton & Wine Layers -->
               <string-array name="proton_layers">
-                  <item>proton11.0-arm64x (Latest Best Compat)</item>
+                  <item>proton11.0-arm64x (Latest Best Game Compatibility)</item>
                   <item>proton10.0-arm64x-2 (AAA Games Stable)</item>
+                  <item>proton9.0-arm64x-3 (Low System Overhead)</item>
+                  <item>proton-ge-custom-8.26 (Gaming Optimized)</item>
                   <item>wine10.0-staging-x64 (Pure Wine Engine)</item>
+                  <item>wine9.22-vanilla-x64 (Native Windows Core)</item>
+                  <item>wine9.16-esync (Multi-Thread Performance)</item>
+                  <item>wine8.18-stable (High Stability Fallback)</item>
+                  <item>wine7.22-legacy (Old PC Games Specialist)</item>
               </string-array>
+
+              <!-- ALL CPU Translators (Box64 / Box86 / FEX) -->
+              <string-array name="box64_presets">
+                  <item>Box64 v0.3.4 (Bleeding Edge - Latest Instructions)</item>
+                  <item>Box64 v0.3.2 Aggressive (Highest FPS Booster)</item>
+                  <item>Box64 v0.3.0 Balanced (Most Stable for AAA)</item>
+                  <item>Box64 v0.2.8 Legacy (Old 64-bit Game Fix)</item>
+                  <item>Box64 Safe Multi-threading (Big.LITTLE Fix)</item>
+                  <item>Box64 Dynarec Fastmath Mode (Speed Hack)</item>
+                  <item>Box86 v0.3.2 Aggressive (32-bit Classic Games)</item>
+                  <item>Box86 Performance Safe (GTA / NFS / Classic PC)</item>
+                  <item>Box86 Compatibility (Fix Old Visual C++ Errors)</item>
+                  <item>FEX-Emu v2402 (Fast ARM64 JIT Translator)</item>
+                  <item>FEX-Emu Multi-Core Vector Mode</item>
+                  <item>Hangover / WOW64 Native Engine (Direct Translation)</item>
+              </string-array>
+
+              <!-- Full Resolutions -->
+              <string-array name="screen_resolutions">
+                  <item>1280 x 720 (16:9 Standard HD - Recommended)</item>
+                  <item>960 x 540 (qHD Fast Performance / Low-End)</item>
+                  <item>854 x 480 (FWVGA Ultra Fast Mode)</item>
+                  <item>1600 x 900 (HD+ Balanced)</item>
+                  <item>1920 x 1080 (Full HD 1080p - High End Phones)</item>
+                  <item>800 x 600 (4:3 Classic PC Scale)</item>
+                  <item>1024 x 768 (4:3 Standard)</item>
+              </string-array>
+
+              <!-- RAM Limits -->
               <string-array name="ram_limits">
-                  <item>4 GB (Standard Phones)</item>
+                  <item>4 GB (Standard 6GB/8GB Phones)</item>
                   <item>6 GB (Medium Gaming Phones)</item>
-                  <item>8 GB (High-End Snapdragon)</item>
-                  <item>2 GB (Low-End Phones)</item>
+                  <item>8 GB (High-End Snapdragon 12GB+)</item>
+                  <item>3 GB (Balanced)</item>
+                  <item>2 GB (Low-End Phones 4GB RAM)</item>
               </string-array>
+
+              <!-- Input Profiles -->
               <string-array name="input_profiles">
-                  <item>Virtual Gamepad (Touch Overlay)</item>
+                  <item>Virtual Gamepad (Touch Overlay D-Pad + Buttons)</item>
                   <item>Keyboard &amp; Mouse Mode</item>
-                  <item>External USB Controller</item>
+                  <item>External USB / Bluetooth Controller</item>
+                  <item>Disable All Overlays</item>
               </string-array>
+
               <string-array name="input_opacity">
-                  <item>100% Opacity</item>
-                  <item>75% Opacity</item>
-                  <item>50% Opacity</item>
+                  <item>100% Opacity (Solid Buttons)</item>
+                  <item>75% Opacity (Balanced)</item>
+                  <item>50% Opacity (Semi-Transparent)</item>
+                  <item>25% Opacity (Minimal Ghost)</item>
               </string-array>
           </resources>'''
           with open('app/src/main/res/values/strings.xml', 'w', encoding='utf-8') as f:
               f.write(strings_xml.strip())
-                        # 4. Hybrid Layout: Dashboard Settings + In-Game X11 Display Surface
+                        # 4. Multi-Category Modern UI + In-Game X11 Display Surface Layout
           layout_xml = '''<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
               android:layout_width="match_parent"
               android:layout_height="match_parent"
               android:background="#070A11">
 
-              <!-- View 1: Main Configuration Dashboard -->
+              <!-- Dashboard Settings Screen -->
               <LinearLayout
                   android:id="@+id/dashboardLayout"
                   android:layout_width="match_parent"
@@ -216,6 +268,7 @@ jobs:
                       android:layout_height="match_parent"
                       android:padding="20dp">
 
+                      <!-- 1. Display & GPU Settings -->
                       <ScrollView
                           android:id="@+id/panelDisplay"
                           android:layout_width="match_parent"
@@ -237,7 +290,7 @@ jobs:
                                   android:layout_width="wrap_content"
                                   android:layout_height="wrap_content"
                                   android:layout_marginTop="16dp"
-                                  android:text="GPU Driver (All Phones):"
+                                  android:text="GPU Driver (All Processors Worldwide):"
                                   android:textColor="#00E5FF"
                                   android:textStyle="bold" />
                               <Spinner
@@ -263,6 +316,7 @@ jobs:
                           </LinearLayout>
                       </ScrollView>
 
+                      <!-- 2. Controls & Input Settings -->
                       <ScrollView
                           android:id="@+id/panelControls"
                           android:layout_width="match_parent"
@@ -293,9 +347,24 @@ jobs:
                                   android:layout_height="44dp"
                                   android:background="#111B2C"
                                   android:entries="@array/input_profiles" />
+
+                              <TextView
+                                  android:layout_width="wrap_content"
+                                  android:layout_height="wrap_content"
+                                  android:layout_marginTop="14dp"
+                                  android:text="Button Opacity:"
+                                  android:textColor="#00E5FF"
+                                  android:textStyle="bold" />
+                              <Spinner
+                                  android:id="@+id/spnOpacity"
+                                  android:layout_width="match_parent"
+                                  android:layout_height="44dp"
+                                  android:background="#111B2C"
+                                  android:entries="@array/input_opacity" />
                           </LinearLayout>
                       </ScrollView>
 
+                      <!-- 3. Engine, DXVK, Proton & Box64 Settings -->
                       <ScrollView
                           android:id="@+id/panelEngine"
                           android:layout_width="match_parent"
@@ -308,7 +377,7 @@ jobs:
                               <TextView
                                   android:layout_width="wrap_content"
                                   android:layout_height="wrap_content"
-                                  android:text="ADVANCED ENGINE &amp; TRANSLATOR"
+                                  android:text="ADVANCED ENGINE, DXVK, PROTON &amp; CPU"
                                   android:textColor="#FFFFFF"
                                   android:textSize="16sp"
                                   android:textStyle="bold" />
@@ -340,12 +409,40 @@ jobs:
                                   android:layout_height="44dp"
                                   android:background="#111B2C"
                                   android:entries="@array/proton_layers" />
+
+                              <TextView
+                                  android:layout_width="wrap_content"
+                                  android:layout_height="wrap_content"
+                                  android:layout_marginTop="14dp"
+                                  android:text="CPU Translator (Box64 / Box86 / FEX):"
+                                  android:textColor="#00E5FF"
+                                  android:textStyle="bold" />
+                              <Spinner
+                                  android:id="@+id/spnBox64"
+                                  android:layout_width="match_parent"
+                                  android:layout_height="44dp"
+                                  android:background="#111B2C"
+                                  android:entries="@array/box64_presets" />
+
+                              <TextView
+                                  android:layout_width="wrap_content"
+                                  android:layout_height="wrap_content"
+                                  android:layout_marginTop="14dp"
+                                  android:text="RAM Allocation:"
+                                  android:textColor="#00E5FF"
+                                  android:textStyle="bold" />
+                              <Spinner
+                                  android:id="@+id/spnRam"
+                                  android:layout_width="match_parent"
+                                  android:layout_height="44dp"
+                                  android:background="#111B2C"
+                                  android:entries="@array/ram_limits" />
                           </LinearLayout>
                       </ScrollView>
                   </FrameLayout>
               </LinearLayout>
 
-              <!-- View 2: Live In-Game Display with Touch Gamepad Overlay -->
+              <!-- Live In-Game Display Screen -->
               <RelativeLayout
                   android:id="@+id/inGameLayout"
                   android:layout_width="match_parent"
@@ -353,7 +450,6 @@ jobs:
                   android:background="#000000"
                   android:visibility="gone">
 
-                  <!-- X11 / OpenGL Hardware Display Surface -->
                   <SurfaceView
                       android:id="@+id/displaySurface"
                       android:layout_width="match_parent"
@@ -393,7 +489,7 @@ jobs:
                           android:textStyle="bold" />
                   </LinearLayout>
 
-                  <!-- On-Screen Virtual Controls Overlay -->
+                  <!-- In-Game Gamepad Overlay -->
                   <RelativeLayout
                       android:layout_width="match_parent"
                       android:layout_height="match_parent">
@@ -468,38 +564,7 @@ jobs:
                               android:layout_width="46dp"
                               android:layout_height="46dp"
                               android:layout_alignParentStart="true"
-                              android:layout_centerVertical="true"
-                              android:background="#5500E5FF"
-                              android:text="X"
-                              android:textColor="#00E5FF"
-                              android:textStyle="bold" />
-
-                          <Button
-                              android:layout_width="46dp"
-                              android:layout_height="46dp"
-                              android:layout_alignParentEnd="true"
-                              android:layout_centerVertical="true"
-                              android:background="#55FF3366"
-                              android:text="B"
-                              android:textColor="#FF3366"
-                              android:textStyle="bold" />
-
-                          <Button
-                              android:layout_width="46dp"
-                              android:layout_height="46dp"
-                              android:layout_alignParentBottom="true"
-                              android:layout_centerHorizontal="true"
-                              android:background="#5500FF66"
-                              android:text="A"
-                              android:textColor="#00FF66"
-                              android:textStyle="bold" />
-                      </RelativeLayout>
-                  </RelativeLayout>
-              </RelativeLayout>
-          </RelativeLayout>'''
-          with open('app/src/main/res/layout/activity_main.xml', 'w', encoding='utf-8') as f:
-              f.write(layout_xml.strip())
-                        # 5. MainActivity.java (C-Drive Initializer & X11 Display Switcher)
+                # 5. MainActivity.java
           main_java = '''package com.vortexps3.emu;
 
           import android.app.Activity;
@@ -512,17 +577,19 @@ jobs:
           import android.widget.LinearLayout;
           import android.widget.RelativeLayout;
           import android.widget.ScrollView;
+          import android.widget.Spinner;
           import android.widget.TextView;
           import android.widget.Toast;
           import java.io.File;
 
           public class MainActivity extends Activity {
-              private static final int PICK_EXE_FILE = 707;
+              private static final int PICK_EXE_FILE = 909;
               private LinearLayout dashboardLayout;
               private RelativeLayout inGameLayout;
               private ScrollView panelDisplay, panelControls, panelEngine;
               private Button tabDisplay, tabControls, tabEngine;
               private TextView txtGameStatus;
+              private Spinner spnGpu;
 
               @Override
               protected void onCreate(Bundle savedInstanceState) {
@@ -538,8 +605,8 @@ jobs:
                   tabControls = findViewById(R.id.tabControls);
                   tabEngine = findViewById(R.id.tabEngine);
                   txtGameStatus = findViewById(R.id.txtGameStatus);
+                  spnGpu = findViewById(R.id.spnGpu);
 
-                  // Setup Virtual C: Drive Environment on Launch
                   initVirtualCDrive();
 
                   tabDisplay.setOnClickListener(v -> switchTab(0));
@@ -557,7 +624,7 @@ jobs:
                   btnExitGame.setOnClickListener(v -> {
                       inGameLayout.setVisibility(View.GONE);
                       dashboardLayout.setVisibility(View.VISIBLE);
-                      Toast.makeText(this, "Terminated Container Session", Toast.LENGTH_SHORT).show();
+                      Toast.makeText(this, "Session Terminated", Toast.LENGTH_SHORT).show();
                   });
               }
 
@@ -594,18 +661,17 @@ jobs:
                       Uri uri = data.getData();
                       String fileName = (uri != null) ? uri.getLastPathSegment() : "Game.exe";
 
-                      // Switch from Dashboard to Real In-Game Surface
                       dashboardLayout.setVisibility(View.GONE);
                       inGameLayout.setVisibility(View.VISIBLE);
-                      txtGameStatus.setText("Booting: " + fileName + " | C: Mount Active | 60 FPS");
-                      Toast.makeText(this, "Launching Container with " + fileName, Toast.LENGTH_SHORT).show();
+                      txtGameStatus.setText("Running: " + fileName + " | " + spnGpu.getSelectedItem());
+                      Toast.makeText(this, "Container Active with Selected GPU", Toast.LENGTH_LONG).show();
                   }
               }
           }'''
           with open('app/src/main/java/com/vortexps3/emu/MainActivity.java', 'w', encoding='utf-8') as f:
               f.write(main_java.strip())
 
-          # 6. Gradle Files
+          # 6. Gradle Files with Auto Version Increment
           root_gradle = '''buildscript {
               repositories { google(); mavenCentral() }
               dependencies { classpath 'com.android.tools.build:gradle:8.2.2' }
@@ -616,20 +682,21 @@ jobs:
           with open('build.gradle', 'w', encoding='utf-8') as f:
               f.write(root_gradle.strip())
 
-          app_gradle = '''plugins { id 'com.android.application' }
+          run_num = os.environ.get('GITHUB_RUN_NUMBER', '10')
+          app_gradle = f'''plugins {{ id 'com.android.application' }}
 
-          android {
+          android {{
               namespace 'com.vortexps3.emu'
               compileSdk 34
 
-              defaultConfig {
+              defaultConfig {{
                   applicationId "com.vortexps3.emu"
                   minSdk 24
                   targetSdk 34
-                  versionCode 1
-                  versionName "1.0"
-              }
-          }'''
+                  versionCode {run_num}
+                  versionName "1.{run_num}"
+              }}
+          }}'''
           with open('app/build.gradle', 'w', encoding='utf-8') as f:
               f.write(app_gradle.strip())
 
@@ -641,12 +708,12 @@ jobs:
         with:
           gradle-version: '8.5'
 
-      - name: Compile VortexPS3 Engine Step 2 APK
+      - name: Compile VortexPS3 Seamless Update APK
         run: gradle assembleDebug
 
-      - name: Upload Finished APK
+      - name: Upload Clean Emulator APK
         uses: actions/upload-artifact@v4
         with:
-          name: VortexPS3-VirtualDrive-Display
+          name: VortexPS3-Seamless-Update
           path: app/build/outputs/apk/debug/app-debug.apk
           
