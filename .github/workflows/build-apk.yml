@@ -1,41 +1,140 @@
-name: Build VortexPS3 Emu APK
+name: Build Fresh VortexPS3 Emu
 
 on:
-  push:
-    branches: [ "main", "master" ]
   workflow_dispatch:
+  push:
+    branches: [ main ]
 
 jobs:
-  build-vortex:
+  build:
     runs-on: ubuntu-latest
-
     steps:
-    - name: Checkout Repository
-      uses: actions/checkout@v4
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
-    - name: Set up Java 17
-      uses: actions/setup-java@v4
-      with:
-        distribution: 'temurin'
-        java-version: '17'
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
 
-    - name: Install Apktool & Dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y zipalign apksigner curl
-        curl -s https://api.github.com/repos/iBotPeaches/Apktool/releases/latest | grep "browser_download_url.*jar" | cut -d : -f 2,3 | tr -d \" | wget -qi - -O apktool.jar
-        curl -s -o apktool https://raw.githubusercontent.com/iBotPeaches/Apktool/master/scripts/linux/apktool
-        chmod +x apktool apktool.jar
-        sudo mv apktool apktool.jar /usr/local/bin/
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
 
-    - name: Run Patching Script
-      run: |
-        chmod +x patch.sh
-        ./patch.sh
+      - name: Create Brand New VortexPS3 App Project
+        run: |
+          rm -rf app build.gradle settings.gradle
+          mkdir -p app/src/main/java/com/vortexps3/emu
+          mkdir -p app/src/main/res/layout
+          mkdir -p app/src/main/res/values
 
-    - name: Upload Finished APK
-      uses: actions/upload-artifact@v4
-      with:
-        name: VortexPS3-Emu-Release
-        path: "VortexPS3-Ready.apk"
-        
+          # 1. AndroidManifest.xml
+          cat << 'EOF' > app/src/main/AndroidManifest.xml
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+              package="com.vortexps3.emu">
+              <application
+                  android:label="@string/app_name"
+                  android:theme="@android:style/Theme.NoTitleBar.Fullscreen">
+                  <activity android:name=".MainActivity"
+                      android:exported="true"
+                      android:screenOrientation="sensorLandscape">
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN" />
+                          <category android:name="android.intent.category.LAUNCHER" />
+                      </intent-filter>
+                  </activity>
+              </application>
+          </manifest>
+          EOF
+
+          # 2. strings.xml
+          cat << 'EOF' > app/src/main/res/values/strings.xml
+          <resources>
+              <string name="app_name">VortexPS3 Emu</string>
+              <string name="welcome_text">WELCOME</string>
+              <string name="sub_text">VortexPS3 Emulator</string>
+          </resources>
+          EOF
+
+          # 3. Welcome Screen Layout (Clean black background + WELCOME)
+          cat << 'EOF' > app/src/main/res/layout/activity_main.xml
+          <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent"
+              android:background="#000000"
+              android:gravity="center"
+              android:orientation="vertical">
+
+              <TextView
+                  android:layout_width="wrap_content"
+                  android:layout_height="wrap_content"
+                  android:text="@string/welcome_text"
+                  android:textColor="#FFFFFF"
+                  android:textSize="36sp"
+                  android:textStyle="bold" />
+
+              <TextView
+                  android:layout_width="wrap_content"
+                  android:layout_height="wrap_content"
+                  android:layout_marginTop="12dp"
+                  android:text="@string/sub_text"
+                  android:textColor="#888888"
+                  android:textSize="18sp" />
+          </LinearLayout>
+          EOF
+
+          # 4. MainActivity.java
+          cat << 'EOF' > app/src/main/java/com/vortexps3/emu/MainActivity.java
+          package com.vortexps3.emu;
+
+          import android.app.Activity;
+          import android.os.Bundle;
+
+          public class MainActivity extends Activity {
+              @Override
+              protected void onCreate(Bundle savedInstanceState) {
+                  super.onCreate(savedInstanceState);
+                  setContentView(R.layout.activity_main);
+              }
+          }
+          EOF
+
+          # 5. Gradle Config
+          cat << 'EOF' > build.gradle
+          buildscript {
+              repositories { google(); mavenCentral() }
+              dependencies { classpath 'com.android.tools.build:gradle:8.1.4' }
+          }
+          allprojects {
+              repositories { google(); mavenCentral() }
+          }
+          EOF
+
+          cat << 'EOF' > app/build.gradle
+          plugins { id 'com.android.application' }
+          android {
+              namespace 'com.vortexps3.emu'
+              compileSdk 34
+              defaultConfig {
+                  applicationId "com.vortexps3.emu"
+                  minSdk 24
+                  targetSdk 34
+                  versionCode 1
+                  versionName "1.0"
+              }
+          }
+          EOF
+
+          echo "include ':app'" > settings.gradle
+
+      - name: Build New APK with Gradle
+        run: |
+          gradle wrapper --gradle-version 8.4
+          ./gradlew assembleDebug
+
+      - name: Upload Finished VortexPS3 APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: VortexPS3-New-Emulator
+          path: app/build/outputs/apk/debug/app-debug.apk
+          
