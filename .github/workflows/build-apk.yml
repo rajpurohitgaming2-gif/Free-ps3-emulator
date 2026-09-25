@@ -18,688 +18,273 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Create Permanent Key and Project Files via Python
+      - name: Build All Files via Compact Script
         shell: python
         run: |
           import os, shutil
 
-          for path in ['app', 'build.gradle', 'settings.gradle']:
-              if os.path.exists(path):
-                  if os.path.isdir(path): shutil.rmtree(path)
-                  else: os.remove(path)
+          for p in ['app', 'build.gradle', 'settings.gradle']:
+              if os.path.exists(p):
+                  if os.path.isdir(p): shutil.rmtree(p)
+                  else: os.remove(p)
 
           os.makedirs('app/src/main/java/com/vortexps3/emu', exist_ok=True)
           os.makedirs('app/src/main/res/layout', exist_ok=True)
           os.makedirs('app/src/main/res/values', exist_ok=True)
           os.makedirs('app/src/main/res/drawable', exist_ok=True)
 
-          # 1. Permanent Launcher Icon
-          icon_xml = '''<vector xmlns:android="http://schemas.android.com/apk/res/android"
-              android:width="108dp"
-              android:height="108dp"
-              android:viewportWidth="108"
-              android:viewportHeight="108">
-              <path android:fillColor="#0A0E17" android:pathData="M0,0h108v108h-108z"/>
-              <path android:strokeColor="#00E5FF" android:strokeWidth="5" android:pathData="M54,24 A30,30 0 1,0 84,54" android:strokeLineCap="round"/>
-              <path android:strokeColor="#7928CA" android:strokeWidth="5" android:pathData="M54,84 A30,30 0 1,0 24,54" android:strokeLineCap="round"/>
-              <path android:fillColor="#FFFFFF" android:pathData="M48,42 L66,54 L48,66 Z"/>
-          </vector>'''
-          with open('app/src/main/res/drawable/ic_launcher.xml', 'w', encoding='utf-8') as f:
-              f.write(icon_xml.strip())
+          # 1. Launcher Icon
+          with open('app/src/main/res/drawable/ic_launcher.xml', 'w') as f:
+              f.write('''<vector xmlns:android="http://schemas.android.com/apk/res/android"
+                  android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
+                  <path android:fillColor="#0A0E17" android:pathData="M0,0h108v108h-108z"/>
+                  <path android:strokeColor="#00E5FF" android:strokeWidth="5" android:pathData="M54,24 A30,30 0 1,0 84,54" android:strokeLineCap="round"/>
+                  <path android:strokeColor="#7928CA" android:strokeWidth="5" android:pathData="M54,84 A30,30 0 1,0 24,54" android:strokeLineCap="round"/>
+                  <path android:fillColor="#FFFFFF" android:pathData="M48,42 L66,54 L48,66 Z"/>
+              </vector>''')
 
-          # 2. Android Manifest
-          manifest_xml = '''<manifest xmlns:android="http://schemas.android.com/apk/res/android">
-              <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
-              <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
-              <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
-              <application
-                  android:label="@string/app_name"
-                  android:icon="@drawable/ic_launcher"
-                  android:theme="@android:style/Theme.NoTitleBar.Fullscreen">
-                  <activity
-                      android:name="com.vortexps3.emu.MainActivity"
-                      android:exported="true"
-                      android:configChanges="orientation|screenSize"
-                      android:screenOrientation="sensorLandscape">
-                      <intent-filter>
-                          <action android:name="android.intent.action.MAIN" />
-                          <category android:name="android.intent.category.LAUNCHER" />
-                      </intent-filter>
-                  </activity>
-              </application>
-          </manifest>'''
-          with open('app/src/main/AndroidManifest.xml', 'w', encoding='utf-8') as f:
-              f.write(manifest_xml.strip())
+          # 2. Manifest
+          with open('app/src/main/AndroidManifest.xml', 'w') as f:
+              f.write('''<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+                  <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
+                  <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+                  <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"/>
+                  <application android:label="@string/app_name" android:icon="@drawable/ic_launcher" android:theme="@android:style/Theme.NoTitleBar.Fullscreen">
+                      <activity android:name="com.vortexps3.emu.MainActivity" android:exported="true" android:configChanges="orientation|screenSize" android:screenOrientation="sensorLandscape">
+                          <intent-filter>
+                              <action android:name="android.intent.action.MAIN"/>
+                              <category android:name="android.intent.category.LAUNCHER"/>
+                          </intent-filter>
+                      </activity>
+                  </application>
+              </manifest>''')
 
-          # 3. Full Mega Driver Database (Sabhi Processors Aur Sabhi Engines)
-          strings_xml = '''<resources>
-              <string name="app_name">VortexPS3 Emu</string>
+          # 3. All Hardware Database
+          gpus = [
+              "Turnip v26.1.0-devel (Adreno 6xx/7xx/8xx)", "Turnip v25.0.0 Stable (Snapdragon 8 Gen 1/2/3)",
+              "Turnip v24.3.0 Aggressive (High FPS)", "Turnip v24.2.0-rc4 (Balanced Stability)",
+              "Turnip v24.1.0 Classic (Snapdragon 720G/778G/870)", "Turnip v23.3.0 Legacy (Adreno 5xx/6xx Old)",
+              "Turnip A8xx Hotfix (Snapdragon 8 Gen 3/4 Fix)", "Turnip DXVK-GPL Enabled Build (No Stutter)",
+              "Turnip Kgsl / Sysfs Optimized Driver", "Qualcomm Proprietary v0615.0 (Vulkan 1.3 Native)",
+              "Qualcomm Proprietary v0512.68 (Adreno 6xx)", "VirGL Universal 3D (Dimensity 7000/8000/9000)",
+              "VirGL Mali-G7x Compatibility Fix", "Panfrost Mesa Driver (Mali Midgard/Bifrost/Valhall)",
+              "Mali Immortalis G715/G720 Vulkan Compatibility", "Zink Engine (OpenGL via Vulkan Translation)",
+              "LLVMpipe Universal (Software CPU Fallback)", "System Default Android Vulkan Driver"
+          ]
+          dxvks = [
+              "DXVK 2.4.1-async (Fastest Pipeline)", "DXVK 2.3.1-async (Balanced Stable)",
+              "DXVK 2.2-gpl (DirectX 11 Modern Titles)", "DXVK 2.0-async (Smooth FPS Optimizer)",
+              "DXVK 1.10.3 (DirectX 9 / 10 Legacy Games Fix)", "DXVK 1.9.4 (DirectX 9 Lightweight)",
+              "VKD3D-Proton 2.13 (DirectX 12 Support)", "WineD3D (OpenGL Pure Translation)"
+          ]
+          protons = [
+              "proton11.0-arm64x (Latest Best Game Compatibility)", "proton10.0-arm64x-2 (AAA Games Stable)",
+              "proton9.0-arm64x-3 (Low System Overhead)", "proton-ge-custom-8.26 (Gaming Optimized)",
+              "wine10.0-staging-x64 (Pure Wine Engine)", "wine9.22-vanilla-x64 (Native Windows Core)",
+              "wine9.16-esync (Multi-Thread Performance)", "wine8.18-stable (High Stability Fallback)",
+              "wine7.22-legacy (Old PC Games Specialist)"
+          ]
+          box64s = [
+              "Box64 v0.3.4 (Bleeding Edge - Latest Instructions)", "Box64 v0.3.2 Aggressive (Highest FPS Booster)",
+              "Box64 v0.3.0 Balanced (Most Stable for AAA)", "Box64 v0.2.8 Legacy (Old 64-bit Game Fix)",
+              "Box64 Safe Multi-threading (Big.LITTLE Fix)", "Box64 Dynarec Fastmath Mode (Speed Hack)",
+              "Box86 v0.3.2 Aggressive (32-bit Classic Games)", "Box86 Performance Safe (GTA / NFS / Classic PC)",
+              "Box86 Compatibility (Fix Old Visual C++ Errors)", "FEX-Emu v2402 (Fast ARM64 JIT Translator)",
+              "FEX-Emu Multi-Core Vector Mode", "Hangover / WOW64 Native Engine (Direct Translation)"
+          ]
+          resolutions = [
+              "1280 x 720 (16:9 Standard HD - Recommended)", "960 x 540 (qHD Fast Performance / Low-End)",
+              "854 x 480 (FWVGA Ultra Fast Mode)", "1600 x 900 (HD+ Balanced)",
+              "1920 x 1080 (Full HD 1080p - High End Phones)", "800 x 600 (4:3 Classic PC Scale)",
+              "1024 x 768 (4:3 Standard)"
+          ]
+          rams = ["4 GB (Standard Phones)", "6 GB (Medium Gaming)", "8 GB (High-End Snapdragon)", "3 GB (Balanced)", "2 GB (Low-End Phones)"]
+          inputs = ["Virtual Gamepad (Touch Overlay)", "Keyboard & Mouse Mode", "External Controller", "Disable Overlays"]
+          opacities = ["100% Opacity (Solid)", "75% Opacity (Balanced)", "50% Opacity (Semi-Transparent)", "25% Opacity (Minimal)"]
 
-              <!-- ALL Worldwide GPU Drivers -->
-              <string-array name="gpu_drivers">
-                  <item>Turnip v26.1.0-devel (Adreno 6xx/7xx/8xx)</item>
-                  <item>Turnip v25.0.0 Stable (Snapdragon 8 Gen 1/2/3)</item>
-                  <item>Turnip v24.3.0 Aggressive (High FPS Performance)</item>
-                  <item>Turnip v24.2.0-rc4 (Balanced Stability)</item>
-                  <item>Turnip v24.1.0 Classic (Snapdragon 720G/778G/870)</item>
-                  <item>Turnip v23.3.0 Legacy (Adreno 5xx/6xx Older Chips)</item>
-                  <item>Turnip A8xx Hotfix (Snapdragon 8 Gen 3/4 Fix)</item>
-                  <item>Turnip DXVK-GPL Enabled Build (No Stutter)</item>
-                  <item>Turnip Kgsl / Sysfs Optimized Driver</item>
-                  <item>Qualcomm Proprietary v0615.0 (Vulkan 1.3 Native)</item>
-                  <item>Qualcomm Proprietary v0512.68 (Adreno 6xx Legacy)</item>
-                  <item>VirGL Universal 3D (Dimensity 7000/8000/9000)</item>
-                  <item>VirGL Mali-G7x Compatibility Fix</item>
-                  <item>Panfrost Mesa Driver (Mali Midgard/Bifrost/Valhall)</item>
-                  <item>Mali Immortalis G715/G720 Vulkan Compatibility</item>
-                  <item>Zink Engine (OpenGL via Vulkan Translation)</item>
-                  <item>LLVMpipe Universal (Software CPU Fallback)</item>
-                  <item>System Default Android Vulkan Driver</item>
-              </string-array>
+          def xml_arr(name, lst):
+              items = "".join([f"<item>{x}</item>" for x in lst])
+              return f'<string-array name="{name}">{items}</string-array>'
 
-              <!-- ALL Worldwide DXVK Versions -->
-              <string-array name="dxvk_versions">
-                  <item>DXVK 2.4.1-async (Fastest Shader Pipeline)</item>
-                  <item>DXVK 2.3.1-async (Balanced Stable Standard)</item>
-                  <item>DXVK 2.2-gpl (DirectX 11 Modern Titles)</item>
-                  <item>DXVK 2.0-async (Smooth FPS Optimizer)</item>
-                  <item>DXVK 1.10.3 (DirectX 9 / 10 Legacy Games Fix)</item>
-                  <item>DXVK 1.9.4 (DirectX 9 Lightweight)</item>
-                  <item>VKD3D-Proton 2.13 (DirectX 12 Support)</item>
-                  <item>WineD3D (OpenGL Pure Translation)</item>
-              </string-array>
-
-              <!-- ALL Worldwide Proton & Wine Layers -->
-              <string-array name="proton_layers">
-                  <item>proton11.0-arm64x (Latest Best Game Compatibility)</item>
-                  <item>proton10.0-arm64x-2 (AAA Games Stable)</item>
-                  <item>proton9.0-arm64x-3 (Low System Overhead)</item>
-                  <item>proton-ge-custom-8.26 (Gaming Optimized)</item>
-                  <item>wine10.0-staging-x64 (Pure Wine Engine)</item>
-                  <item>wine9.22-vanilla-x64 (Native Windows Core)</item>
-                  <item>wine9.16-esync (Multi-Thread Performance)</item>
-                  <item>wine8.18-stable (High Stability Fallback)</item>
-                  <item>wine7.22-legacy (Old PC Games Specialist)</item>
-              </string-array>
-
-              <!-- ALL CPU Translators (Box64 / Box86 / FEX) -->
-              <string-array name="box64_presets">
-                  <item>Box64 v0.3.4 (Bleeding Edge - Latest Instructions)</item>
-                  <item>Box64 v0.3.2 Aggressive (Highest FPS Booster)</item>
-                  <item>Box64 v0.3.0 Balanced (Most Stable for AAA)</item>
-                  <item>Box64 v0.2.8 Legacy (Old 64-bit Game Fix)</item>
-                  <item>Box64 Safe Multi-threading (Big.LITTLE Fix)</item>
-                  <item>Box64 Dynarec Fastmath Mode (Speed Hack)</item>
-                  <item>Box86 v0.3.2 Aggressive (32-bit Classic Games)</item>
-                  <item>Box86 Performance Safe (GTA / NFS / Classic PC)</item>
-                  <item>Box86 Compatibility (Fix Old Visual C++ Errors)</item>
-                  <item>FEX-Emu v2402 (Fast ARM64 JIT Translator)</item>
-                  <item>FEX-Emu Multi-Core Vector Mode</item>
-                  <item>Hangover / WOW64 Native Engine (Direct Translation)</item>
-              </string-array>
-
-              <!-- Full Resolutions -->
-              <string-array name="screen_resolutions">
-                  <item>1280 x 720 (16:9 Standard HD - Recommended)</item>
-                  <item>960 x 540 (qHD Fast Performance / Low-End)</item>
-                  <item>854 x 480 (FWVGA Ultra Fast Mode)</item>
-                  <item>1600 x 900 (HD+ Balanced)</item>
-                  <item>1920 x 1080 (Full HD 1080p - High End Phones)</item>
-                  <item>800 x 600 (4:3 Classic PC Scale)</item>
-                  <item>1024 x 768 (4:3 Standard)</item>
-              </string-array>
-
-              <!-- RAM Limits -->
-              <string-array name="ram_limits">
-                  <item>4 GB (Standard 6GB/8GB Phones)</item>
-                  <item>6 GB (Medium Gaming Phones)</item>
-                  <item>8 GB (High-End Snapdragon 12GB+)</item>
-                  <item>3 GB (Balanced)</item>
-                  <item>2 GB (Low-End Phones 4GB RAM)</item>
-              </string-array>
-
-              <!-- Input Profiles -->
-              <string-array name="input_profiles">
-                  <item>Virtual Gamepad (Touch Overlay D-Pad + Buttons)</item>
-                  <item>Keyboard &amp; Mouse Mode</item>
-                  <item>External USB / Bluetooth Controller</item>
-                  <item>Disable All Overlays</item>
-              </string-array>
-
-              <string-array name="input_opacity">
-                  <item>100% Opacity (Solid Buttons)</item>
-                  <item>75% Opacity (Balanced)</item>
-                  <item>50% Opacity (Semi-Transparent)</item>
-                  <item>25% Opacity (Minimal Ghost)</item>
-              </string-array>
-          </resources>'''
-          with open('app/src/main/res/values/strings.xml', 'w', encoding='utf-8') as f:
-              f.write(strings_xml.strip())
-                        # 4. Multi-Category Modern UI + In-Game X11 Display Surface Layout
-          layout_xml = '''<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-              android:layout_width="match_parent"
-              android:layout_height="match_parent"
-              android:background="#070A11">
-
-              <!-- Dashboard Settings Screen -->
-              <LinearLayout
-                  android:id="@+id/dashboardLayout"
-                  android:layout_width="match_parent"
-                  android:layout_height="match_parent"
-                  android:orientation="horizontal"
-                  android:visibility="visible">
-
-                  <!-- Left Sidebar -->
-                  <LinearLayout
-                      android:layout_width="230dp"
-                      android:layout_height="match_parent"
-                      android:background="#0D1322"
-                      android:orientation="vertical"
-                      android:padding="16dp">
-
-                      <TextView
-                          android:layout_width="wrap_content"
-                          android:layout_height="wrap_content"
-                          android:text="🌀 VORTEX-PS3"
-                          android:textColor="#00E5FF"
-                          android:textSize="20sp"
-                          android:textStyle="bold" />
-
-                      <TextView
-                          android:layout_width="wrap_content"
-                          android:layout_height="wrap_content"
-                          android:layout_marginTop="2dp"
-                          android:text="ENGINE BY Yash (AI VIDEO HUB)"
-                          android:textColor="#52647E"
-                          android:textSize="10sp" />
-
-                      <View
-                          android:layout_width="match_parent"
-                          android:layout_height="1dp"
-                          android:layout_marginTop="14dp"
-                          android:layout_marginBottom="14dp"
-                          android:background="#1B283E" />
-
-                      <Button
-                          android:id="@+id/tabDisplay"
-                          android:layout_width="match_parent"
-                          android:layout_height="40dp"
-                          android:background="#00E5FF"
-                          android:text="🖥 GPU &amp; Display"
-                          android:textColor="#000000"
-                          android:textStyle="bold" />
-
-                      <Button
-                          android:id="@+id/tabControls"
-                          android:layout_width="match_parent"
-                          android:layout_height="40dp"
-                          android:layout_marginTop="8dp"
-                          android:background="#141E30"
-                          android:text="🎮 Input &amp; Controls"
-                          android:textColor="#FFFFFF" />
-
-                      <Button
-                          android:id="@+id/tabEngine"
-                          android:layout_width="match_parent"
-                          android:layout_height="40dp"
-                          android:layout_marginTop="8dp"
-                          android:background="#141E30"
-                          android:text="⚙ Engine &amp; DXVK"
-                          android:textColor="#FFFFFF" />
-
-                      <View
-                          android:layout_width="match_parent"
-                          android:layout_height="0dp"
-                          android:layout_weight="1" />
-
-                      <Button
-                          android:id="@+id/btnSelectExe"
-                          android:layout_width="match_parent"
-                          android:layout_height="46dp"
-                          android:background="#00E5FF"
-                          android:text="▶ Start Game (.EXE)"
-                          android:textColor="#000000"
-                          android:textStyle="bold" />
-                  </LinearLayout>
-
-                  <!-- Right Settings Panels -->
-                  <FrameLayout
-                      android:layout_width="match_parent"
-                      android:layout_height="match_parent"
-                      android:padding="20dp">
-
-                      <!-- 1. Display & GPU Settings -->
-                      <ScrollView
-                          android:id="@+id/panelDisplay"
-                          android:layout_width="match_parent"
-                          android:layout_height="match_parent"
-                          android:visibility="visible">
-                          <LinearLayout
-                              android:layout_width="match_parent"
-                              android:layout_height="wrap_content"
-                              android:orientation="vertical">
-                              <TextView
-                                  android:layout_width="wrap_content"
-                                  android:layout_height="wrap_content"
-                                  android:text="GRAPHICS &amp; DISPLAY CONFIGURATION"
-                                  android:textColor="#FFFFFF"
-                                  android:textSize="16sp"
-                                  android:textStyle="bold" />
-
-                              <TextView
-                                  android:layout_width="wrap_content"
-                                  android:layout_height="wrap_content"
-                                  android:layout_marginTop="16dp"
-                                  android:text="GPU Driver (All Processors Worldwide):"
-                                  android:textColor="#00E5FF"
-                                  android:textStyle="bold" />
-                              <Spinner
-                                  android:id="@+id/spnGpu"
-                                  android:layout_width="match_parent"
-                                  android:layout_height="44dp"
-                                  android:background="#111B2C"
-                                  android:entries="@array/gpu_drivers" />
-
-                              <TextView
-                                  android:layout_width="wrap_content"
-                                  android:layout_height="wrap_content"
-                                  android:layout_marginTop="14dp"
-                                  android:text="Screen Resolution:"
-                                  android:textColor="#00E5FF"
-                                  android:textStyle="bold" />
-                              <Spinner
-                                  android:id="@+id/spnResolution"
-                                  android:layout_width="match_parent"
-                                  android:layout_height="44dp"
-                                  android:background="#111B2C"
-                                  android:entries="@array/screen_resolutions" />
-                          </LinearLayout>
-                      </ScrollView>
-
-                      <!-- 2. Controls & Input Settings -->
-                      <ScrollView
-                          android:id="@+id/panelControls"
-                          android:layout_width="match_parent"
-                          android:layout_height="match_parent"
-                          android:visibility="gone">
-                          <LinearLayout
-                              android:layout_width="match_parent"
-                              android:layout_height="wrap_content"
-                              android:orientation="vertical">
-                              <TextView
-                                  android:layout_width="wrap_content"
-                                  android:layout_height="wrap_content"
-                                  android:text="INPUT &amp; CONTROLLER CONFIGURATION"
-                                  android:textColor="#FFFFFF"
-                                  android:textSize="16sp"
-                                  android:textStyle="bold" />
-
-                              <TextView
-                                  android:layout_width="wrap_content"
-                                  android:layout_height="wrap_content"
-                                  android:layout_marginTop="16dp"
-                                  android:text="Input Method:"
-                                  android:textColor="#00E5FF"
-                                  android:textStyle="bold" />
-                              <Spinner
-                                  android:id="@+id/spnInput"
-                                  android:layout_width="match_parent"
-                                  android:layout_height="44dp"
-                                  android:background="#111B2C"
-                                  android:entries="@array/input_profiles" />
-
-                              <TextView
-                                  android:layout_width="wrap_content"
-                                  android:layout_height="wrap_content"
-                                  android:layout_marginTop="14dp"
-                                  android:text="Button Opacity:"
-                                  android:textColor="#00E5FF"
-                                  android:textStyle="bold" />
-                              <Spinner
-                                  android:id="@+id/spnOpacity"
-                                  android:layout_width="match_parent"
-                                  android:layout_height="44dp"
-                                  android:background="#111B2C"
-                                  android:entries="@array/input_opacity" />
-                          </LinearLayout>
-                      </ScrollView>
-
-                      <!-- 3. Engine, DXVK, Proton & Box64 Settings -->
-                      <ScrollView
-                          android:id="@+id/panelEngine"
-                          android:layout_width="match_parent"
-                          android:layout_height="match_parent"
-                          android:visibility="gone">
-                          <LinearLayout
-                              android:layout_width="match_parent"
-                              android:layout_height="wrap_content"
-                              android:orientation="vertical">
-                              <TextView
-                                  android:layout_width="wrap_content"
-                                  android:layout_height="wrap_content"
-                                  android:text="ADVANCED ENGINE, DXVK, PROTON &amp; CPU"
-                                  android:textColor="#FFFFFF"
-                                  android:textSize="16sp"
-                                  android:textStyle="bold" />
-
-                              <TextView
-                                  android:layout_width="wrap_content"
-                                  android:layout_height="wrap_content"
-                                  android:layout_marginTop="16dp"
-                                  android:text="DXVK Engine:"
-                                  android:textColor="#00E5FF"
-                                  android:textStyle="bold" />
-                              <Spinner
-                                  android:id="@+id/spnDxvk"
-                                  android:layout_width="match_parent"
-                                  android:layout_height="44dp"
-                                  android:background="#111B2C"
-                                  android:entries="@array/dxvk_versions" />
-
-                              <TextView
-                                  android:layout_width="wrap_content"
-                                  android:layout_height="wrap_content"
-                                  android:layout_marginTop="14dp"
-                                  android:text="Proton / Wine Layer:"
-                                  android:textColor="#00E5FF"
-                                  android:textStyle="bold" />
-                              <Spinner
-                                  android:id="@+id/spnProton"
-                                  android:layout_width="match_parent"
-                                  android:layout_height="44dp"
-                                  android:background="#111B2C"
-                                  android:entries="@array/proton_layers" />
-
-                              <TextView
-                                  android:layout_width="wrap_content"
-                                  android:layout_height="wrap_content"
-                                  android:layout_marginTop="14dp"
-                                  android:text="CPU Translator (Box64 / Box86 / FEX):"
-                                  android:textColor="#00E5FF"
-                                  android:textStyle="bold" />
-                              <Spinner
-                                  android:id="@+id/spnBox64"
-                                  android:layout_width="match_parent"
-                                  android:layout_height="44dp"
-                                  android:background="#111B2C"
-                                  android:entries="@array/box64_presets" />
-
-                              <TextView
-                                  android:layout_width="wrap_content"
-                                  android:layout_height="wrap_content"
-                                  android:layout_marginTop="14dp"
-                                  android:text="RAM Allocation:"
-                                  android:textColor="#00E5FF"
-                                  android:textStyle="bold" />
-                              <Spinner
-                                  android:id="@+id/spnRam"
-                                  android:layout_width="match_parent"
-                                  android:layout_height="44dp"
-                                  android:background="#111B2C"
-                                  android:entries="@array/ram_limits" />
-                          </LinearLayout>
-                      </ScrollView>
-                  </FrameLayout>
-              </LinearLayout>
-
-              <!-- Live In-Game Display Screen -->
-              <RelativeLayout
-                  android:id="@+id/inGameLayout"
-                  android:layout_width="match_parent"
-                  android:layout_height="match_parent"
-                  android:background="#000000"
-                  android:visibility="gone">
-
-                  <SurfaceView
-                      android:id="@+id/displaySurface"
-                      android:layout_width="match_parent"
-                      android:layout_height="match_parent" />
-
-                  <!-- Top HUD Stats -->
-                  <LinearLayout
-                      android:layout_width="match_parent"
-                      android:layout_height="32dp"
-                      android:background="#88000000"
-                      android:gravity="center_vertical"
-                      android:paddingStart="16dp"
-                      android:paddingEnd="16dp">
-
-                      <TextView
-                          android:id="@+id/txtGameStatus"
-                          android:layout_width="wrap_content"
-                          android:layout_height="wrap_content"
-                          android:text="VortexPS3 Engine | FPS: 60.0 | C: Drive Active"
-                          android:textColor="#00FF66"
-                          android:textSize="12sp"
-                          android:textStyle="bold" />
-
-                      <View
-                          android:layout_width="0dp"
-                          android:layout_height="1dp"
-                          android:layout_weight="1" />
-
-                      <Button
-                          android:id="@+id/btnExitGame"
-                          android:layout_width="70dp"
-                          android:layout_height="28dp"
-                          android:background="#CCFF3366"
-                          android:text="EXIT"
-                          android:textColor="#FFFFFF"
-                          android:textSize="10sp"
-                          android:textStyle="bold" />
-                  </LinearLayout>
-
-                  <!-- In-Game Gamepad Overlay -->
-                  <RelativeLayout
-                      android:layout_width="match_parent"
-                      android:layout_height="match_parent">
-
-                      <!-- Left D-Pad -->
-                      <LinearLayout
-                          android:layout_width="140dp"
-                          android:layout_height="140dp"
-                          android:layout_alignParentStart="true"
-                          android:layout_alignParentBottom="true"
-                          android:layout_marginStart="24dp"
-                          android:layout_marginBottom="24dp"
-                          android:gravity="center"
-                          android:orientation="vertical">
-
-                          <Button
-                              android:layout_width="44dp"
-                              android:layout_height="44dp"
-                              android:background="#44FFFFFF"
-                              android:text="▲"
-                              android:textColor="#FFFFFF" />
-
-                          <LinearLayout
-                              android:layout_width="wrap_content"
-                              android:layout_height="wrap_content"
-                              android:orientation="horizontal">
-                              <Button
-                                  android:layout_width="44dp"
-                                  android:layout_height="44dp"
-                                  android:background="#44FFFFFF"
-                                  android:text="◀"
-                                  android:textColor="#FFFFFF" />
-                              <View
-                                  android:layout_width="36dp"
-                                  android:layout_height="44dp" />
-                              <Button
-                                  android:layout_width="44dp"
-                                  android:layout_height="44dp"
-                                  android:background="#44FFFFFF"
-                                  android:text="▶"
-                                  android:textColor="#FFFFFF" />
-                          </LinearLayout>
-
-                          <Button
-                              android:layout_width="44dp"
-                              android:layout_height="44dp"
-                              android:background="#44FFFFFF"
-                              android:text="▼"
-                              android:textColor="#FFFFFF" />
+          with open('app/src/main/res/values/strings.xml', 'w') as f:
+              f.write(f'''<resources>
+                  <string name="app_name">VortexPS3 Emu</string>
+                  {xml_arr("gpu_drivers", gpus)}
+                  {xml_arr("dxvk_versions", dxvks)}
+                  {xml_arr("proton_layers", protons)}
+                  {xml_arr("box64_presets", box64s)}
+                  {xml_arr("screen_resolutions", resolutions)}
+                  {xml_arr("ram_limits", rams)}
+                  {xml_arr("input_profiles", inputs)}
+                  {xml_arr("input_opacity", opacities)}
+              </resources>''')
+                        # 4. Multi-Category Modern UI
+          with open('app/src/main/res/layout/activity_main.xml', 'w') as f:
+              f.write('''<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+                  android:layout_width="match_parent" android:layout_height="match_parent" android:background="#070A11">
+                  <LinearLayout android:id="@+id/dashboardLayout" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="horizontal">
+                      <LinearLayout android:layout_width="230dp" android:layout_height="match_parent" android:background="#0D1322" android:orientation="vertical" android:padding="16dp">
+                          <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="🌀 VORTEX-PS3" android:textColor="#00E5FF" android:textSize="20sp" android:textStyle="bold"/>
+                          <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="ENGINE BY Yash (AI VIDEO HUB)" android:textColor="#52647E" android:textSize="10sp"/>
+                          <View android:layout_width="match_parent" android:layout_height="1dp" android:layout_marginTop="14dp" android:layout_marginBottom="14dp" android:background="#1B283E"/>
+                          <Button android:id="@+id/tabDisplay" android:layout_width="match_parent" android:layout_height="40dp" android:background="#00E5FF" android:text="🖥 GPU &amp; Display" android:textColor="#000000" android:textStyle="bold"/>
+                          <Button android:id="@+id/tabControls" android:layout_width="match_parent" android:layout_height="40dp" android:layout_marginTop="8dp" android:background="#141E30" android:text="🎮 Input &amp; Controls" android:textColor="#FFFFFF"/>
+                          <Button android:id="@+id/tabEngine" android:layout_width="match_parent" android:layout_height="40dp" android:layout_marginTop="8dp" android:background="#141E30" android:text="⚙ Engine &amp; DXVK" android:textColor="#FFFFFF"/>
+                          <View android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1"/>
+                          <Button android:id="@+id/btnSelectExe" android:layout_width="match_parent" android:layout_height="46dp" android:background="#00E5FF" android:text="▶ Start Game (.EXE)" android:textColor="#000000" android:textStyle="bold"/>
                       </LinearLayout>
+                      <FrameLayout android:layout_width="match_parent" android:layout_height="match_parent" android:padding="20dp">
+                          <ScrollView android:id="@+id/panelDisplay" android:layout_width="match_parent" android:layout_height="match_parent" android:visibility="visible">
+                              <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
+                                  <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="GRAPHICS &amp; DISPLAY CONFIGURATION" android:textColor="#FFFFFF" android:textSize="16sp" android:textStyle="bold"/>
+                                  <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="16dp" android:text="GPU Driver (All Phones Worldwide):" android:textColor="#00E5FF" android:textStyle="bold"/>
+                                  <Spinner android:id="@+id/spnGpu" android:layout_width="match_parent" android:layout_height="44dp" android:background="#111B2C" android:entries="@array/gpu_drivers"/>
+                                  <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="14dp" android:text="Screen Resolution:" android:textColor="#00E5FF" android:textStyle="bold"/>
+                                  <Spinner android:id="@+id/spnResolution" android:layout_width="match_parent" android:layout_height="44dp" android:background="#111B2C" android:entries="@array/screen_resolutions"/>
+                              </LinearLayout>
+                          </ScrollView>
+                          <ScrollView android:id="@+id/panelControls" android:layout_width="match_parent" android:layout_height="match_parent" android:visibility="gone">
+                              <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
+                                  <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="INPUT &amp; CONTROLLER CONFIGURATION" android:textColor="#FFFFFF" android:textSize="16sp" android:textStyle="bold"/>
+                                  <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="16dp" android:text="Input Method:" android:textColor="#00E5FF" android:textStyle="bold"/>
+                                  <Spinner android:id="@+id/spnInput" android:layout_width="match_parent" android:layout_height="44dp" android:background="#111B2C" android:entries="@array/input_profiles"/>
+                                  <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="14dp" android:text="Button Opacity:" android:textColor="#00E5FF" android:textStyle="bold"/>
+                                  <Spinner android:id="@+id/spnOpacity" android:layout_width="match_parent" android:layout_height="44dp" android:background="#111B2C" android:entries="@array/input_opacity"/>
+                              </LinearLayout>
+                          </ScrollView>
+                          <ScrollView android:id="@+id/panelEngine" android:layout_width="match_parent" android:layout_height="match_parent" android:visibility="gone">
+                              <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
+                                  <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="ADVANCED ENGINE, DXVK, PROTON &amp; CPU" android:textColor="#FFFFFF" android:textSize="16sp" android:textStyle="bold"/>
+                                  <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="16dp" android:text="DXVK Engine:" android:textColor="#00E5FF" android:textStyle="bold"/>
+                                  <Spinner android:id="@+id/spnDxvk" android:layout_width="match_parent" android:layout_height="44dp" android:background="#111B2C" android:entries="@array/dxvk_versions"/>
+                                  <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="14dp" android:text="Proton / Wine Layer:" android:textColor="#00E5FF" android:textStyle="bold"/>
+                                  <Spinner android:id="@+id/spnProton" android:layout_width="match_parent" android:layout_height="44dp" android:background="#111B2C" android:entries="@array/proton_layers"/>
+                                  <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="14dp" android:text="CPU Translator (Box64/86/FEX):" android:textColor="#00E5FF" android:textStyle="bold"/>
+                                  <Spinner android:id="@+id/spnBox64" android:layout_width="match_parent" android:layout_height="44dp" android:background="#111B2C" android:entries="@array/box64_presets"/>
+                                  <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="14dp" android:text="RAM Allocation:" android:textColor="#00E5FF" android:textStyle="bold"/>
+                                  <Spinner android:id="@+id/spnRam" android:layout_width="match_parent" android:layout_height="44dp" android:background="#111B2C" android:entries="@array/ram_limits"/>
+                              </LinearLayout>
+                          </ScrollView>
+                      </FrameLayout>
+                  </LinearLayout>
+                  <RelativeLayout android:id="@+id/inGameLayout" android:layout_width="match_parent" android:layout_height="match_parent" android:background="#000000" android:visibility="gone">
+                      <SurfaceView android:id="@+id/displaySurface" android:layout_width="match_parent" android:layout_height="match_parent"/>
+                      <LinearLayout android:layout_width="match_parent" android:layout_height="32dp" android:background="#88000000" android:gravity="center_vertical" android:paddingStart="16dp" android:paddingEnd="16dp">
+                          <TextView android:id="@+id/txtGameStatus" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="VortexPS3 Engine | FPS: 60.0 | C: Drive Active" android:textColor="#00FF66" android:textSize="12sp" android:textStyle="bold"/>
+                          <View android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="1"/>
+                          <Button android:id="@+id/btnExitGame" android:layout_width="70dp" android:layout_height="28dp" android:background="#CCFF3366" android:text="EXIT" android:textColor="#FFFFFF" android:textSize="10sp" android:textStyle="bold"/>
+                      </LinearLayout>
+                      <RelativeLayout android:layout_width="match_parent" android:layout_height="match_parent">
+                          <LinearLayout android:layout_width="140dp" android:layout_height="140dp" android:layout_alignParentStart="true" android:layout_alignParentBottom="true" android:layout_marginStart="24dp" android:layout_marginBottom="24dp" android:gravity="center" android:orientation="vertical">
+                              <Button android:layout_width="44dp" android:layout_height="44dp" android:background="#44FFFFFF" android:text="▲" android:textColor="#FFFFFF"/>
+                              <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="horizontal">
+                                  <Button android:layout_width="44dp" android:layout_height="44dp" android:background="#44FFFFFF" android:text="◀" android:textColor="#FFFFFF"/>
+                                  <View android:layout_width="36dp" android:layout_height="44dp"/>
+                                  <Button android:layout_width="44dp" android:layout_height="44dp" android:background="#44FFFFFF" android:text="▶" android:textColor="#FFFFFF"/>
+                              </LinearLayout>
+                              <Button android:layout_width="44dp" android:layout_height="44dp" android:background="#44FFFFFF" android:text="▼" android:textColor="#FFFFFF"/>
+                          </LinearLayout>
+                          <RelativeLayout android:layout_width="150dp" android:layout_height="150dp" android:layout_alignParentEnd="true" android:layout_alignParentBottom="true" android:layout_marginEnd="24dp" android:layout_marginBottom="24dp">
+                              <Button android:layout_width="46dp" android:layout_height="46dp" android:layout_alignParentTop="true" android:layout_centerHorizontal="true" android:background="#5500E5FF" android:text="Y" android:textColor="#00E5FF" android:textStyle="bold"/>
+                              <Button android:layout_width="46dp" android:layout_height="46dp" android:layout_alignParentStart="true" android:layout_centerVertical="true" android:background="#5500E5FF" android:text="X" android:textColor="#00E5FF" android:textStyle="bold"/>
+                              <Button android:layout_width="46dp" android:layout_height="46dp" android:layout_alignParentEnd="true" android:layout_centerVertical="true" android:background="#55FF3366" android:text="B" android:textColor="#FF3366" android:textStyle="bold"/>
+                              <Button android:layout_width="46dp" android:layout_height="46dp" android:layout_alignParentBottom="true" android:layout_centerHorizontal="true" android:background="#5500FF66" android:text="A" android:textColor="#00FF66" android:textStyle="bold"/>
+                          </RelativeLayout>
+                      </RelativeLayout>
+                  </RelativeLayout>
+              </RelativeLayout>''')
 
-                      <!-- Right Buttons (A, B, X, Y) -->
-                      <RelativeLayout
-                          android:layout_width="150dp"
-                          android:layout_height="150dp"
-                          android:layout_alignParentEnd="true"
-                          android:layout_alignParentBottom="true"
-                          android:layout_marginEnd="24dp"
-                          android:layout_marginBottom="24dp">
+          # 5. MainActivity.java
+          with open('app/src/main/java/com/vortexps3/emu/MainActivity.java', 'w') as f:
+              f.write('''package com.vortexps3.emu;
+              import android.app.Activity;
+              import android.content.Intent;
+              import android.graphics.Color;
+              import android.net.Uri;
+              import android.os.Bundle;
+              import android.view.View;
+              import android.widget.*;
+              import java.io.File;
 
-                          <Button
-                              android:layout_width="46dp"
-                              android:layout_height="46dp"
-                              android:layout_alignParentTop="true"
-                              android:layout_centerHorizontal="true"
-                              android:background="#5500E5FF"
-                              android:text="Y"
-                              android:textColor="#00E5FF"
-                              android:textStyle="bold" />
+              public class MainActivity extends Activity {
+                  private static final int PICK_EXE_FILE = 909;
+                  private LinearLayout dashboardLayout;
+                  private RelativeLayout inGameLayout;
+                  private ScrollView panelDisplay, panelControls, panelEngine;
+                  private Button tabDisplay, tabControls, tabEngine;
+                  private TextView txtGameStatus;
+                  private Spinner spnGpu;
 
-                          <Button
-                              android:layout_width="46dp"
-                              android:layout_height="46dp"
-                              android:layout_alignParentStart="true"
-                # 5. MainActivity.java
-          main_java = '''package com.vortexps3.emu;
+                  @Override
+                  protected void onCreate(Bundle savedInstanceState) {
+                      super.onCreate(savedInstanceState);
+                      setContentView(R.layout.activity_main);
+                      dashboardLayout = findViewById(R.id.dashboardLayout);
+                      inGameLayout = findViewById(R.id.inGameLayout);
+                      panelDisplay = findViewById(R.id.panelDisplay);
+                      panelControls = findViewById(R.id.panelControls);
+                      panelEngine = findViewById(R.id.panelEngine);
+                      tabDisplay = findViewById(R.id.tabDisplay);
+                      tabControls = findViewById(R.id.tabControls);
+                      tabEngine = findViewById(R.id.tabEngine);
+                      txtGameStatus = findViewById(R.id.txtGameStatus);
+                      spnGpu = findViewById(R.id.spnGpu);
 
-          import android.app.Activity;
-          import android.content.Intent;
-          import android.graphics.Color;
-          import android.net.Uri;
-          import android.os.Bundle;
-          import android.view.View;
-          import android.widget.Button;
-          import android.widget.LinearLayout;
-          import android.widget.RelativeLayout;
-          import android.widget.ScrollView;
-          import android.widget.Spinner;
-          import android.widget.TextView;
-          import android.widget.Toast;
-          import java.io.File;
+                      try {
+                          new File(getExternalFilesDir(null), "VortexDrive/drive_c/windows/system32").mkdirs();
+                          new File(getExternalFilesDir(null), "VortexDrive/drive_c/Program Files").mkdirs();
+                      } catch (Exception ignored) {}
 
-          public class MainActivity extends Activity {
-              private static final int PICK_EXE_FILE = 909;
-              private LinearLayout dashboardLayout;
-              private RelativeLayout inGameLayout;
-              private ScrollView panelDisplay, panelControls, panelEngine;
-              private Button tabDisplay, tabControls, tabEngine;
-              private TextView txtGameStatus;
-              private Spinner spnGpu;
+                      tabDisplay.setOnClickListener(v -> switchTab(0));
+                      tabControls.setOnClickListener(v -> switchTab(1));
+                      tabEngine.setOnClickListener(v -> switchTab(2));
 
-              @Override
-              protected void onCreate(Bundle savedInstanceState) {
-                  super.onCreate(savedInstanceState);
-                  setContentView(R.layout.activity_main);
+                      findViewById(R.id.btnSelectExe).setOnClickListener(v -> {
+                          Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+                          intent.setType("*/*");
+                          startActivityForResult(Intent.createChooser(intent, "Select Windows .EXE File"), PICK_EXE_FILE);
+                      });
 
-                  dashboardLayout = findViewById(R.id.dashboardLayout);
-                  inGameLayout = findViewById(R.id.inGameLayout);
-                  panelDisplay = findViewById(R.id.panelDisplay);
-                  panelControls = findViewById(R.id.panelControls);
-                  panelEngine = findViewById(R.id.panelEngine);
-                  tabDisplay = findViewById(R.id.tabDisplay);
-                  tabControls = findViewById(R.id.tabControls);
-                  tabEngine = findViewById(R.id.tabEngine);
-                  txtGameStatus = findViewById(R.id.txtGameStatus);
-                  spnGpu = findViewById(R.id.spnGpu);
-
-                  initVirtualCDrive();
-
-                  tabDisplay.setOnClickListener(v -> switchTab(0));
-                  tabControls.setOnClickListener(v -> switchTab(1));
-                  tabEngine.setOnClickListener(v -> switchTab(2));
-
-                  Button btnSelectExe = findViewById(R.id.btnSelectExe);
-                  btnSelectExe.setOnClickListener(v -> {
-                      Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
-                      intent.setType("*/*");
-                      startActivityForResult(Intent.createChooser(intent, "Select Windows .EXE File"), PICK_EXE_FILE);
-                  });
-
-                  Button btnExitGame = findViewById(R.id.btnExitGame);
-                  btnExitGame.setOnClickListener(v -> {
-                      inGameLayout.setVisibility(View.GONE);
-                      dashboardLayout.setVisibility(View.VISIBLE);
-                      Toast.makeText(this, "Session Terminated", Toast.LENGTH_SHORT).show();
-                  });
-              }
-
-              private void initVirtualCDrive() {
-                  try {
-                      File driveC = new File(getExternalFilesDir(null), "VortexDrive/drive_c/windows/system32");
-                      if (!driveC.exists()) {
-                          driveC.mkdirs();
-                      }
-                      File progFiles = new File(getExternalFilesDir(null), "VortexDrive/drive_c/Program Files");
-                      if (!progFiles.exists()) {
-                          progFiles.mkdirs();
-                      }
-                  } catch (Exception ignored) {}
-              }
-
-              private void switchTab(int index) {
-                  panelDisplay.setVisibility(index == 0 ? View.VISIBLE : View.GONE);
-                  panelControls.setVisibility(index == 1 ? View.VISIBLE : View.GONE);
-                  panelEngine.setVisibility(index == 2 ? View.VISIBLE : View.GONE);
-
-                  tabDisplay.setBackgroundColor(index == 0 ? Color.parseColor("#00E5FF") : Color.parseColor("#141E30"));
-                  tabDisplay.setTextColor(index == 0 ? Color.BLACK : Color.WHITE);
-                  tabControls.setBackgroundColor(index == 1 ? Color.parseColor("#00E5FF") : Color.parseColor("#141E30"));
-                  tabControls.setTextColor(index == 1 ? Color.BLACK : Color.WHITE);
-                  tabEngine.setBackgroundColor(index == 2 ? Color.parseColor("#00E5FF") : Color.parseColor("#141E30"));
-                  tabEngine.setTextColor(index == 2 ? Color.BLACK : Color.WHITE);
-              }
-
-              @Override
-              protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-                  super.onActivityResult(requestCode, resultCode, data);
-                  if (requestCode == PICK_EXE_FILE && resultCode == RESULT_OK && data != null) {
-                      Uri uri = data.getData();
-                      String fileName = (uri != null) ? uri.getLastPathSegment() : "Game.exe";
-
-                      dashboardLayout.setVisibility(View.GONE);
-                      inGameLayout.setVisibility(View.VISIBLE);
-                      txtGameStatus.setText("Running: " + fileName + " | " + spnGpu.getSelectedItem());
-                      Toast.makeText(this, "Container Active with Selected GPU", Toast.LENGTH_LONG).show();
+                      findViewById(R.id.btnExitGame).setOnClickListener(v -> {
+                          inGameLayout.setVisibility(View.GONE);
+                          dashboardLayout.setVisibility(View.VISIBLE);
+                          Toast.makeText(this, "Session Terminated", Toast.LENGTH_SHORT).show();
+                      });
                   }
-              }
-          }'''
-          with open('app/src/main/java/com/vortexps3/emu/MainActivity.java', 'w', encoding='utf-8') as f:
-              f.write(main_java.strip())
 
-          # 6. Gradle Files (Safe string format to prevent any build failures)
-          root_gradle = '''buildscript {
-              repositories { google(); mavenCentral() }
-              dependencies { classpath 'com.android.tools.build:gradle:8.2.2' }
-          }
-          allprojects {
-              repositories { google(); mavenCentral() }
-          }'''
-          with open('build.gradle', 'w', encoding='utf-8') as f:
-              f.write(root_gradle.strip())
+                  private void switchTab(int index) {
+                      panelDisplay.setVisibility(index == 0 ? View.VISIBLE : View.GONE);
+                      panelControls.setVisibility(index == 1 ? View.VISIBLE : View.GONE);
+                      panelEngine.setVisibility(index == 2 ? View.VISIBLE : View.GONE);
+                      tabDisplay.setBackgroundColor(index == 0 ? Color.parseColor("#00E5FF") : Color.parseColor("#141E30"));
+                      tabDisplay.setTextColor(index == 0 ? Color.BLACK : Color.WHITE);
+                      tabControls.setBackgroundColor(index == 1 ? Color.parseColor("#00E5FF") : Color.parseColor("#141E30"));
+                      tabControls.setTextColor(index == 1 ? Color.BLACK : Color.WHITE);
+                      tabEngine.setBackgroundColor(index == 2 ? Color.parseColor("#00E5FF") : Color.parseColor("#141E30"));
+                      tabEngine.setTextColor(index == 2 ? Color.BLACK : Color.WHITE);
+                  }
 
-          app_gradle = '''plugins { id 'com.android.application' }
+                  @Override
+                  protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+                      super.onActivityResult(requestCode, resultCode, data);
+                      if (requestCode == PICK_EXE_FILE && resultCode == RESULT_OK && data != null) {
+                          Uri uri = data.getData();
+                          String fn = (uri != null) ? uri.getLastPathSegment() : "Game.exe";
+                          dashboardLayout.setVisibility(View.GONE);
+                          inGameLayout.setVisibility(View.VISIBLE);
+                          txtGameStatus.setText("Running: " + fn + " | " + spnGpu.getSelectedItem());
+                      }
+                  }
+              }''')
 
-          android {
-              namespace 'com.vortexps3.emu'
-              compileSdk 34
+          # 6. Gradle Files
+          with open('build.gradle', 'w') as f:
+              f.write("buildscript { repositories { google(); mavenCentral() }; dependencies { classpath 'com.android.tools.build:gradle:8.2.2' } }\nallprojects { repositories { google(); mavenCentral() } }")
 
-              defaultConfig {
-                  applicationId "com.vortexps3.emu"
-                  minSdk 24
-                  targetSdk 34
-                  versionCode 99
-                  versionName "2.0"
-              }
-          }'''
-          with open('app/build.gradle', 'w', encoding='utf-8') as f:
-              f.write(app_gradle.strip())
+          with open('app/build.gradle', 'w') as f:
+              f.write("plugins { id 'com.android.application' }\nandroid { namespace 'com.vortexps3.emu'; compileSdk 34; defaultConfig { applicationId 'com.vortexps3.emu'; minSdk 24; targetSdk 34; versionCode 120; versionName '3.1' } }")
 
-          with open('settings.gradle', 'w', encoding='utf-8') as f:
+          with open('settings.gradle', 'w') as f:
               f.write("include ':app'\n")
 
       - name: Setup Gradle
