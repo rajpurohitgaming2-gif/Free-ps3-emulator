@@ -71,7 +71,7 @@ jobs:
           with open('app/src/main/AndroidManifest.xml', 'w', encoding='utf-8') as f:
               f.write(manifest_xml.strip())
 
-          # 3. Full Worldwide Driver Database
+          # 3. Full Mega Driver Database (Sabhi Processors Aur Sabhi Engines)
           strings_xml = '''<resources>
               <string name="app_name">VortexPS3 Emu</string>
 
@@ -671,7 +671,7 @@ jobs:
           with open('app/src/main/java/com/vortexps3/emu/MainActivity.java', 'w', encoding='utf-8') as f:
               f.write(main_java.strip())
 
-          # 6. Gradle Files with Auto Version Increment
+          # 6. Gradle Files (Safe string format to prevent any build failures)
           root_gradle = '''buildscript {
               repositories { google(); mavenCentral() }
               dependencies { classpath 'com.android.tools.build:gradle:8.2.2' }
@@ -682,21 +682,20 @@ jobs:
           with open('build.gradle', 'w', encoding='utf-8') as f:
               f.write(root_gradle.strip())
 
-          run_num = os.environ.get('GITHUB_RUN_NUMBER', '10')
-          app_gradle = f'''plugins {{ id 'com.android.application' }}
+          app_gradle = '''plugins { id 'com.android.application' }
 
-          android {{
+          android {
               namespace 'com.vortexps3.emu'
               compileSdk 34
 
-              defaultConfig {{
+              defaultConfig {
                   applicationId "com.vortexps3.emu"
                   minSdk 24
                   targetSdk 34
-                  versionCode {run_num}
-                  versionName "1.{run_num}"
-              }}
-          }}'''
+                  versionCode 99
+                  versionName "2.0"
+              }
+          }'''
           with open('app/build.gradle', 'w', encoding='utf-8') as f:
               f.write(app_gradle.strip())
 
@@ -714,6 +713,6 @@ jobs:
       - name: Upload Clean Emulator APK
         uses: actions/upload-artifact@v4
         with:
-          name: VortexPS3-Seamless-Update
+          name: VortexPS3-All-Drivers-Update
           path: app/build/outputs/apk/debug/app-debug.apk
           
