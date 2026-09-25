@@ -18,26 +18,41 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Install Graphic Tools
-        run: sudo apt-get update && sudo apt-get install -y imagemagick
-
       - name: Build Complete Console UI with Hardware Selectors
         run: |
           rm -rf app build.gradle settings.gradle
           mkdir -p app/src/main/java/com/vortexps3/emu
           mkdir -p app/src/main/res/layout
           mkdir -p app/src/main/res/values
-          mkdir -p app/src/main/res/mipmap-xxxhdpi
+          mkdir -p app/src/main/res/drawable
 
-          # 1. Custom Icon
-          convert -size 512x512 xc:#0A0E17 \
-            -fill none -stroke "#00E5FF" -strokewidth 18 -draw "circle 256,256 256,70" \
-            -fill none -stroke "#7928CA" -strokewidth 14 -draw "circle 256,256 256,130" \
-            -fill white -stroke none -pointsize 130 -gravity center -annotate +0-10 "V3" \
-            -fill "#00E5FF" -pointsize 32 -gravity south -annotate +0+60 "EMULATOR" \
-            app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+          # 1. Pure Vector Icon
+          cat << 'EOF' > app/src/main/res/drawable/ic_launcher.xml
+          <vector xmlns:android="http://schemas.android.com/apk/res/android"
+              android:width="108dp"
+              android:height="108dp"
+              android:viewportWidth="108"
+              android:viewportHeight="108">
+              <path
+                  android:fillColor="#0A0E17"
+                  android:pathData="M0,0h108v108h-108z"/>
+              <path
+                  android:strokeColor="#00E5FF"
+                  android:strokeWidth="5"
+                  android:pathData="M54,24 A30,30 0 1,0 84,54"
+                  android:strokeLineCap="round"/>
+              <path
+                  android:strokeColor="#7928CA"
+                  android:strokeWidth="5"
+                  android:pathData="M54,84 A30,30 0 1,0 24,54"
+                  android:strokeLineCap="round"/>
+              <path
+                  android:fillColor="#FFFFFF"
+                  android:pathData="M48,42 L66,54 L48,66 Z"/>
+          </vector>
+          EOF
 
-          # 2. Manifest
+          # 2. Manifest with Storage Permissions
           cat << 'EOF' > app/src/main/AndroidManifest.xml
           <manifest xmlns:android="http://schemas.android.com/apk/res/android">
               <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
@@ -46,7 +61,7 @@ jobs:
 
               <application
                   android:label="@string/app_name"
-                  android:icon="@mipmap/ic_launcher"
+                  android:icon="@drawable/ic_launcher"
                   android:theme="@android:style/Theme.NoTitleBar.Fullscreen">
                   <activity
                       android:name="com.vortexps3.emu.MainActivity"
@@ -62,7 +77,7 @@ jobs:
           </manifest>
           EOF
 
-          # 3. Hardware Selectors Data (GPU, RAM, Resolution, DXVK, Proton)
+          # 3. Hardware Selectors Data
           cat << 'EOF' > app/src/main/res/values/strings.xml
           <resources>
               <string name="app_name">VortexPS3 Emu</string>
@@ -96,7 +111,7 @@ jobs:
               <!-- DXVK Engine -->
               <string-array name="dxvk_versions">
                   <item>DXVK 2.4.1-async (Best Smooth FPS)</item>
-                  <item>DXVK 2.3.1 (Stable & Balanced)</item>
+                  <item>DXVK 2.3.1 (Stable &amp; Balanced)</item>
                   <item>DXVK 1.10.3 (DirectX 9 / Old Games Fix)</item>
                   <item>wined3d (Software Fallback)</item>
               </string-array>
@@ -184,7 +199,7 @@ jobs:
                       <TextView
                           android:layout_width="wrap_content"
                           android:layout_height="wrap_content"
-                          android:text="Device Hardware & Performance Setup"
+                          android:text="Device Hardware &amp; Performance Setup"
                           android:textColor="#FFFFFF"
                           android:textSize="20sp"
                           android:textStyle="bold" />
@@ -193,7 +208,7 @@ jobs:
                           android:layout_width="wrap_content"
                           android:layout_height="wrap_content"
                           android:layout_marginTop="4dp"
-                          android:text="Tune GPU, Resolution, RAM, DXVK & Proton layer according to your smartphone"
+                          android:text="Tune GPU, Resolution, RAM, DXVK &amp; Proton layer according to your smartphone"
                           android:textColor="#70849E"
                           android:textSize="13sp" />
 
@@ -307,8 +322,7 @@ jobs:
               </ScrollView>
           </LinearLayout>
           EOF
-
-          # 5. MainActivity Code
+                    # 5. MainActivity Code
           cat << 'EOF' > app/src/main/java/com/vortexps3/emu/MainActivity.java
           package com.vortexps3.emu;
 
@@ -375,7 +389,7 @@ jobs:
           }
           EOF
 
-          # 6. Gradle
+          # 6. Gradle Build Setup
           cat << 'EOF' > build.gradle
           buildscript {
               repositories { google(); mavenCentral() }
