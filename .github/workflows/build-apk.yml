@@ -1,4 +1,4 @@
-name: Build Pure VortexPS3 Custom Emulator
+name: Build VortexPS3 Pro Emulator
 
 on:
   workflow_dispatch:
@@ -21,16 +21,15 @@ jobs:
       - name: Install Graphic Tools
         run: sudo apt-get update && sudo apt-get install -y imagemagick
 
-      - name: Scaffold Complete VortexPS3 Emulator Project
+      - name: Build Complete Console UI with Hardware Selectors
         run: |
           rm -rf app build.gradle settings.gradle
           mkdir -p app/src/main/java/com/vortexps3/emu
           mkdir -p app/src/main/res/layout
           mkdir -p app/src/main/res/values
-          mkdir -p app/src/main/res/drawable
           mkdir -p app/src/main/res/mipmap-xxxhdpi
 
-          # 1. Custom Futuristic App Icon
+          # 1. Custom Icon
           convert -size 512x512 xc:#0A0E17 \
             -fill none -stroke "#00E5FF" -strokewidth 18 -draw "circle 256,256 256,70" \
             -fill none -stroke "#7928CA" -strokewidth 14 -draw "circle 256,256 256,130" \
@@ -38,7 +37,7 @@ jobs:
             -fill "#00E5FF" -pointsize 32 -gravity south -annotate +0+60 "EMULATOR" \
             app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
 
-          # 2. Android Manifest with Storage & High Performance
+          # 2. Manifest
           cat << 'EOF' > app/src/main/AndroidManifest.xml
           <manifest xmlns:android="http://schemas.android.com/apk/res/android">
               <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
@@ -63,45 +62,76 @@ jobs:
           </manifest>
           EOF
 
-          # 3. Strings & Driver Options
+          # 3. Hardware Selectors Data (GPU, RAM, Resolution, DXVK, Proton)
           cat << 'EOF' > app/src/main/res/values/strings.xml
           <resources>
               <string name="app_name">VortexPS3 Emu</string>
+
+              <!-- GPU Drivers -->
               <string-array name="gpu_drivers">
-                  <item>Turnip v26.1.0 (Snapdragon Adreno 6xx/7xx)</item>
-                  <item>Turnip v24.3.0 Aggressive (Snapdragon Fast)</item>
+                  <item>Mesa Turnip v26.1.0 (Snapdragon Adreno 6xx/7xx)</item>
+                  <item>Turnip v24.3.0 Aggressive (Snapdragon High FPS)</item>
                   <item>Turnip A8xx Hotfix (Snapdragon 8 Gen 3/4)</item>
                   <item>VirGL Universal (Mali / MediaTek / Dimensity)</item>
-                  <item>System Default Driver</item>
+                  <item>System Default Mali Driver</item>
               </string-array>
+
+              <!-- Resolution -->
+              <string-array name="screen_resolutions">
+                  <item>1280 x 720 (16:9 Standard - Recommended)</item>
+                  <item>1920 x 1080 (1080p FHD - High End)</item>
+                  <item>960 x 540 (qHD - Best Performance for Low-end)</item>
+                  <item>1600 x 900 (HD+ Balanced)</item>
+                  <item>800 x 600 (4:3 Classic)</item>
+              </string-array>
+
+              <!-- RAM Allocation -->
+              <string-array name="ram_limits">
+                  <item>4 GB (Recommended for 6GB/8GB Phones)</item>
+                  <item>6 GB (For Heavy AAA PC Titles)</item>
+                  <item>8 GB (High End 12GB+ RAM Phones)</item>
+                  <item>2 GB (For 4GB RAM Low-end Phones)</item>
+              </string-array>
+
+              <!-- DXVK Engine -->
               <string-array name="dxvk_versions">
-                  <item>DXVK 2.4.1-async (Best FPS)</item>
-                  <item>DXVK 2.3.1 (Stable)</item>
-                  <item>DXVK 1.10.3 (Old Games Fix)</item>
+                  <item>DXVK 2.4.1-async (Best Smooth FPS)</item>
+                  <item>DXVK 2.3.1 (Stable & Balanced)</item>
+                  <item>DXVK 1.10.3 (DirectX 9 / Old Games Fix)</item>
+                  <item>wined3d (Software Fallback)</item>
+              </string-array>
+
+              <!-- Proton / Compatibility Layer -->
+              <string-array name="proton_layers">
+                  <item>proton11.0-arm64x (Latest Best Compat)</item>
+                  <item>proton10.0-arm64x-2 (AAA Games Stable)</item>
+                  <item>proton9.0-arm64x-3 (Low Overheads)</item>
+                  <item>wine10.0-x64-2 (Pure Wine Engine)</item>
+                  <item>wine9.16-x64-2 (Classic Fallback)</item>
               </string-array>
           </resources>
           EOF
 
-          # 4. Premium Console UI with GPU Selector and EXE Launcher
+          # 4. Modern Dashboard Layout
           cat << 'EOF' > app/src/main/res/layout/activity_main.xml
           <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
               android:layout_width="match_parent"
               android:layout_height="match_parent"
-              android:background="#070B14"
+              android:background="#060911"
               android:orientation="horizontal">
 
               <!-- Left Sidebar -->
               <LinearLayout
                   android:layout_width="230dp"
                   android:layout_height="match_parent"
-                  android:background="#0E1626"
+                  android:background="#0C1322"
                   android:orientation="vertical"
                   android:padding="20dp">
 
                   <TextView
                       android:layout_width="wrap_content"
                       android:layout_height="wrap_content"
-                      android:text="⚡ VORTEX-PS3"
+                      android:text="🌀 VORTEX-PS3"
                       android:textColor="#00E5FF"
                       android:textSize="22sp"
                       android:textStyle="bold" />
@@ -109,9 +139,9 @@ jobs:
                   <TextView
                       android:layout_width="wrap_content"
                       android:layout_height="wrap_content"
-                      android:layout_marginTop="4dp"
+                      android:layout_marginTop="2dp"
                       android:text="BY Yash (AI VIDEO HUB)"
-                      android:textColor="#5A6E85"
+                      android:textColor="#5A6F87"
                       android:textSize="11sp" />
 
                   <View
@@ -119,7 +149,7 @@ jobs:
                       android:layout_height="1dp"
                       android:layout_marginTop="16dp"
                       android:layout_marginBottom="20dp"
-                      android:background="#1B2B48" />
+                      android:background="#1B2942" />
 
                   <Button
                       android:id="@+id/btnSelectExe"
@@ -131,16 +161,16 @@ jobs:
                       android:textStyle="bold" />
 
                   <Button
-                      android:id="@+id/btnRefresh"
+                      android:id="@+id/btnReset"
                       android:layout_width="match_parent"
                       android:layout_height="wrap_content"
                       android:layout_marginTop="12dp"
                       android:background="#16233B"
-                      android:text="🔄 Refresh Library"
+                      android:text="⚙ Reset Defaults"
                       android:textColor="#FFFFFF" />
               </LinearLayout>
 
-              <!-- Main Settings & Hardware Tuning -->
+              <!-- Tuning Panel -->
               <ScrollView
                   android:layout_width="match_parent"
                   android:layout_height="match_parent"
@@ -154,7 +184,7 @@ jobs:
                       <TextView
                           android:layout_width="wrap_content"
                           android:layout_height="wrap_content"
-                          android:text="Hardware & Graphics Engine Setup"
+                          android:text="Device Hardware & Performance Setup"
                           android:textColor="#FFFFFF"
                           android:textSize="20sp"
                           android:textStyle="bold" />
@@ -163,65 +193,122 @@ jobs:
                           android:layout_width="wrap_content"
                           android:layout_height="wrap_content"
                           android:layout_marginTop="4dp"
-                          android:text="Select the best GPU driver & DXVK setup tailored to your phone"
-                          android:textColor="#72849A"
+                          android:text="Tune GPU, Resolution, RAM, DXVK & Proton layer according to your smartphone"
+                          android:textColor="#70849E"
                           android:textSize="13sp" />
 
-                      <!-- GPU Selector -->
+                      <!-- 1. GPU Driver -->
                       <TextView
                           android:layout_width="wrap_content"
                           android:layout_height="wrap_content"
-                          android:layout_marginTop="22dp"
-                          android:text="GPU DRIVER (Custom Turnip / Mali)"
+                          android:layout_marginTop="20dp"
+                          android:text="1. GPU DRIVER (Snapdragon / MediaTek / Mali)"
                           android:textColor="#00E5FF"
-                          android:textSize="14sp"
+                          android:textSize="13sp"
                           android:textStyle="bold" />
 
                       <Spinner
                           android:id="@+id/spnGpu"
                           android:layout_width="match_parent"
-                          android:layout_height="50dp"
-                          android:layout_marginTop="8dp"
-                          android:background="#16233B"
+                          android:layout_height="48dp"
+                          android:layout_marginTop="6dp"
+                          android:background="#131D31"
                           android:entries="@array/gpu_drivers"
                           android:padding="10dp" />
 
-                      <!-- DXVK Version -->
+                      <!-- 2. Resolution -->
                       <TextView
                           android:layout_width="wrap_content"
                           android:layout_height="wrap_content"
-                          android:layout_marginTop="18dp"
-                          android:text="DIRECTX TRANSLATOR (DXVK)"
+                          android:layout_marginTop="16dp"
+                          android:text="2. SCREEN RESOLUTION (Display Scale)"
                           android:textColor="#00E5FF"
-                          android:textSize="14sp"
+                          android:textSize="13sp"
+                          android:textStyle="bold" />
+
+                      <Spinner
+                          android:id="@+id/spnResolution"
+                          android:layout_width="match_parent"
+                          android:layout_height="48dp"
+                          android:layout_marginTop="6dp"
+                          android:background="#131D31"
+                          android:entries="@array/screen_resolutions"
+                          android:padding="10dp" />
+
+                      <!-- 3. RAM Limit -->
+                      <TextView
+                          android:layout_width="wrap_content"
+                          android:layout_height="wrap_content"
+                          android:layout_marginTop="16dp"
+                          android:text="3. RAM ALLOCATION (Container Memory)"
+                          android:textColor="#00E5FF"
+                          android:textSize="13sp"
+                          android:textStyle="bold" />
+
+                      <Spinner
+                          android:id="@+id/spnRam"
+                          android:layout_width="match_parent"
+                          android:layout_height="48dp"
+                          android:layout_marginTop="6dp"
+                          android:background="#131D31"
+                          android:entries="@array/ram_limits"
+                          android:padding="10dp" />
+
+                      <!-- 4. DXVK Engine -->
+                      <TextView
+                          android:layout_width="wrap_content"
+                          android:layout_height="wrap_content"
+                          android:layout_marginTop="16dp"
+                          android:text="4. DIRECTX GRAPHICS ENGINE (DXVK)"
+                          android:textColor="#00E5FF"
+                          android:textSize="13sp"
                           android:textStyle="bold" />
 
                       <Spinner
                           android:id="@+id/spnDxvk"
                           android:layout_width="match_parent"
-                          android:layout_height="50dp"
-                          android:layout_marginTop="8dp"
-                          android:background="#16233B"
+                          android:layout_height="48dp"
+                          android:layout_marginTop="6dp"
+                          android:background="#131D31"
                           android:entries="@array/dxvk_versions"
                           android:padding="10dp" />
 
-                      <!-- Container Status -->
+                      <!-- 5. Proton Layer -->
+                      <TextView
+                          android:layout_width="wrap_content"
+                          android:layout_height="wrap_content"
+                          android:layout_marginTop="16dp"
+                          android:text="5. COMPATIBILITY LAYER (Proton / Wine)"
+                          android:textColor="#00E5FF"
+                          android:textSize="13sp"
+                          android:textStyle="bold" />
+
+                      <Spinner
+                          android:id="@+id/spnProton"
+                          android:layout_width="match_parent"
+                          android:layout_height="48dp"
+                          android:layout_marginTop="6dp"
+                          android:background="#131D31"
+                          android:entries="@array/proton_layers"
+                          android:padding="10dp" />
+
+                      <!-- Config Summary Box -->
                       <TextView
                           android:id="@+id/txtStatus"
                           android:layout_width="match_parent"
                           android:layout_height="wrap_content"
-                          android:layout_marginTop="26dp"
-                          android:background="#10192C"
+                          android:layout_marginTop="24dp"
+                          android:background="#0D1627"
                           android:padding="14dp"
-                          android:text="Ready: Select GPU driver according to your processor and load your PC .exe game."
-                          android:textColor="#8EA4C1"
+                          android:text="Profile: Tap 'Launch .EXE Game' to select and run your game file with this custom configuration."
+                          android:textColor="#8AA0BE"
                           android:textSize="13sp" />
                   </LinearLayout>
               </ScrollView>
           </LinearLayout>
           EOF
 
-          # 5. MainActivity.java
+          # 5. MainActivity Code
           cat << 'EOF' > app/src/main/java/com/vortexps3/emu/MainActivity.java
           package com.vortexps3.emu;
 
@@ -235,10 +322,9 @@ jobs:
           import android.widget.Toast;
 
           public class MainActivity extends Activity {
-              private static final int PICK_EXE_FILE = 101;
+              private static final int PICK_EXE_FILE = 202;
               private TextView txtStatus;
-              private Spinner spnGpu;
-              private Spinner spnDxvk;
+              private Spinner spnGpu, spnResolution, spnRam, spnDxvk, spnProton;
 
               @Override
               protected void onCreate(Bundle savedInstanceState) {
@@ -247,13 +333,26 @@ jobs:
 
                   txtStatus = findViewById(R.id.txtStatus);
                   spnGpu = findViewById(R.id.spnGpu);
+                  spnResolution = findViewById(R.id.spnResolution);
+                  spnRam = findViewById(R.id.spnRam);
                   spnDxvk = findViewById(R.id.spnDxvk);
-                  Button btnSelectExe = findViewById(R.id.btnSelectExe);
+                  spnProton = findViewById(R.id.spnProton);
 
+                  Button btnSelectExe = findViewById(R.id.btnSelectExe);
                   btnSelectExe.setOnClickListener(v -> {
                       Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
                       intent.setType("*/*");
-                      startActivityForResult(Intent.createChooser(intent, "Select .exe Game File"), PICK_EXE_FILE);
+                      startActivityForResult(Intent.createChooser(intent, "Choose .exe Game File"), PICK_EXE_FILE);
+                  });
+
+                  Button btnReset = findViewById(R.id.btnReset);
+                  btnReset.setOnClickListener(v -> {
+                      spnGpu.setSelection(0);
+                      spnResolution.setSelection(0);
+                      spnRam.setSelection(0);
+                      spnDxvk.setSelection(0);
+                      spnProton.setSelection(0);
+                      Toast.makeText(this, "Reset to Recommended Settings", Toast.LENGTH_SHORT).show();
                   });
               }
 
@@ -262,16 +361,21 @@ jobs:
                   super.onActivityResult(requestCode, resultCode, data);
                   if (requestCode == PICK_EXE_FILE && resultCode == RESULT_OK && data != null) {
                       Uri uri = data.getData();
-                      String gpu = spnGpu.getSelectedItem().toString();
-                      String dxvk = spnDxvk.getSelectedItem().toString();
-                      txtStatus.setText("Selected Game: " + uri.getLastPathSegment() + "\nGPU Config: " + gpu + "\nDXVK Engine: " + dxvk);
-                      Toast.makeText(this, "Game loaded with selected GPU driver!", Toast.LENGTH_SHORT).show();
+                      String fileName = (uri != null) ? uri.getLastPathSegment() : "Game.exe";
+                      String details = "Loaded: " + fileName + "\n"
+                              + "• GPU: " + spnGpu.getSelectedItem() + "\n"
+                              + "• Res: " + spnResolution.getSelectedItem() + "\n"
+                              + "• RAM: " + spnRam.getSelectedItem() + "\n"
+                              + "• DXVK: " + spnDxvk.getSelectedItem() + "\n"
+                              + "• Layer: " + spnProton.getSelectedItem();
+                      txtStatus.setText(details);
+                      Toast.makeText(this, "Launching with custom profile...", Toast.LENGTH_LONG).show();
                   }
               }
           }
           EOF
 
-          # 6. Build Gradle Setup
+          # 6. Gradle
           cat << 'EOF' > build.gradle
           buildscript {
               repositories { google(); mavenCentral() }
@@ -306,12 +410,12 @@ jobs:
         with:
           gradle-version: '8.5'
 
-      - name: Build Pure VortexPS3 APK
+      - name: Build VortexPS3 APK
         run: gradle assembleDebug
 
-      - name: Upload Clean Custom Emulator
+      - name: Upload VortexPS3 Emulator
         uses: actions/upload-artifact@v4
         with:
-          name: VortexPS3-Custom-Emulator
+          name: VortexPS3-Tuning-Emulator
           path: app/build/outputs/apk/debug/app-debug.apk
           
