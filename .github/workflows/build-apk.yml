@@ -18,34 +18,20 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Build Pure VortexPS3 APK (Using AAPT2)
+      - name: Accept Android Licenses
         run: |
-          # 1. Build Tools और Platform पाथ सेट करना
-          BUILD_TOOLS_DIR=$(ls -d $ANDROID_HOME/build-tools/* | sort -V | tail -n 1)
-          PLATFORM_DIR=$(ls -d $ANDROID_HOME/platforms/android-* | sort -V | tail -n 1)
-          export PATH=$BUILD_TOOLS_DIR:$PATH
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
 
-          echo "Using Build-Tools: $BUILD_TOOLS_DIR"
-          echo "Using Platform: $PLATFORM_DIR"
-
-          # 2. प्रोजेक्ट स्ट्रक्चर बनाना
-          rm -rf project build unsigned.apk aligned.apk VortexPS3-New-Emulator.apk
-          mkdir -p project/res/layout
-          mkdir -p project/res/values
-          mkdir -p project/src/com/vortexps3/emu
-          mkdir -p build/obj
-          mkdir -p build/compiled_res
+      - name: Generate Clean Project Files
+        run: |
+          rm -rf app gradle gradlew gradlew.bat build.gradle settings.gradle
+          mkdir -p app/src/main/java/com/vortexps3/emu
+          mkdir -p app/src/main/res/layout
+          mkdir -p app/src/main/res/values
 
           # AndroidManifest.xml
-          cat << 'EOF' > project/AndroidManifest.xml
-          <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-              package="com.vortexps3.emu"
-              android:versionCode="1"
-              android:versionName="1.0">
-              <uses-sdk android:minSdkVersion="24" android:targetSdkVersion="34" />
+          cat << 'EOF' > app/src/main/AndroidManifest.xml
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
               <application
                   android:label="@string/app_name"
                   android:theme="@android:style/Theme.NoTitleBar.Fullscreen">
@@ -62,8 +48,8 @@ jobs:
           </manifest>
           EOF
 
-          # Strings.xml
-          cat << 'EOF' > project/res/values/strings.xml
+          # strings.xml
+          cat << 'EOF' > app/src/main/res/values/strings.xml
           <resources>
               <string name="app_name">VortexPS3 Emu</string>
               <string name="welcome_title">WELCOME</string>
@@ -72,8 +58,8 @@ jobs:
           </resources>
           EOF
 
-          # Welcome Screen Layout
-          cat << 'EOF' > project/res/layout/activity_main.xml
+          # Layout
+          cat << 'EOF' > app/src/main/res/layout/activity_main.xml
           <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
               android:layout_width="match_parent"
               android:layout_height="match_parent"
@@ -109,7 +95,7 @@ jobs:
           EOF
 
           # MainActivity.java
-          cat << 'EOF' > project/src/com/vortexps3/emu/MainActivity.java
+          cat << 'EOF' > app/src/main/java/com/vortexps3/emu/MainActivity.java
           package com.vortexps3.emu;
 
           import android.app.Activity;
@@ -124,44 +110,58 @@ jobs:
           }
           EOF
 
-          # 3. रिसोर्सेज को compile करना (aapt2 compile)
-          aapt2 compile --dir project/res -o build/compiled_res/
+          # Root build.gradle
+          cat << 'EOF' > build.gradle
+          buildscript {
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+              dependencies {
+                  classpath 'com.android.tools.build:gradle:8.2.2'
+              }
+          }
+          allprojects {
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+          }
+          EOF
 
-          # 4. रिसोर्सेज को लिंक करना और R.java + base apk बनाना (aapt2 link)
-          aapt2 link -I $PLATFORM_DIR/android.jar \
-            --manifest project/AndroidManifest.xml \
-            --java project/src \
-            -o build/base.apk \
-            --auto-add-overlay \
-            $(find build/compiled_res -name "*.flat")
+          # App build.gradle
+          cat << 'EOF' > app/build.gradle
+          plugins {
+              id 'com.android.application'
+          }
 
-          # 5. Java कोड को क्लास फाइल्स में कंपाइल करना
-          javac -d build/obj \
-            -cp $PLATFORM_DIR/android.jar \
-            $(find project/src -name "*.java")
+          android {
+              namespace 'com.vortexps3.emu'
+              compileSdk 34
 
-          # 6. D8 से classes.dex बनाना
-          d8 --output build \
-            --lib $PLATFORM_DIR/android.jar \
-            $(find build/obj -name "*.class")
+              defaultConfig {
+                  applicationId "com.vortexps3.emu"
+                  minSdk 24
+                  targetSdk 34
+                  versionCode 1
+                  versionName "1.0"
+              }
+          }
+          EOF
 
-          # 7. classes.dex को APK में जोड़ना
-          cd build
-          zip -u base.apk classes.dex
-          cd ..
+          echo "include ':app'" > settings.gradle
 
-          # 8. Aligned और Sign करना
-          zipalign -p -f 4 build/base.apk aligned.apk
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: '8.5'
 
-          keytool -genkey -v -keystore test.keystore -storepass android -alias androidkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Yash, OU=AI VIDEO HUB, O=VortexPS3 Studios, L=City, S=State, C=IN"
+      - name: Build APK with Gradle
+        run: gradle assembleDebug
 
-          apksigner sign --ks test.keystore --ks-pass pass:android --out VortexPS3-New-Emulator.apk aligned.apk
-
-          echo "=== Success: VortexPS3-New-Emulator.apk Created! ==="
-
-      - name: Upload Finished VortexPS3 APK
+      - name: Upload VortexPS3 APK
         uses: actions/upload-artifact@v4
         with:
           name: VortexPS3-New-Emulator
-          path: VortexPS3-New-Emulator.apk
+          path: app/build/outputs/apk/debug/app-debug.apk
           
