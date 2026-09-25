@@ -21,23 +21,23 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Build Pure VortexPS3 APK (Zero Gradle, Ultra Fast)
+      - name: Build Pure VortexPS3 APK (Using AAPT2)
         run: |
-          # 1. जरूरी टूल्स के पाथ सेट करना
-          BUILD_TOOLS_DIR=$(ls -d $ANDROID_HOME/build-tools/* | tail -n 1)
-          PLATFORM_DIR=$(ls -d $ANDROID_HOME/platforms/android-* | tail -n 1)
+          # 1. Build Tools और Platform पाथ सेट करना
+          BUILD_TOOLS_DIR=$(ls -d $ANDROID_HOME/build-tools/* | sort -V | tail -n 1)
+          PLATFORM_DIR=$(ls -d $ANDROID_HOME/platforms/android-* | sort -V | tail -n 1)
           export PATH=$BUILD_TOOLS_DIR:$PATH
 
           echo "Using Build-Tools: $BUILD_TOOLS_DIR"
           echo "Using Platform: $PLATFORM_DIR"
 
-          # 2. क्लीन प्रोजेक्ट स्ट्रक्चर तैयार करना
+          # 2. प्रोजेक्ट स्ट्रक्चर बनाना
           rm -rf project build unsigned.apk aligned.apk VortexPS3-New-Emulator.apk
           mkdir -p project/res/layout
           mkdir -p project/res/values
           mkdir -p project/src/com/vortexps3/emu
           mkdir -p build/obj
-          mkdir -p build/apk
+          mkdir -p build/compiled_res
 
           # AndroidManifest.xml
           cat << 'EOF' > project/AndroidManifest.xml
@@ -62,7 +62,7 @@ jobs:
           </manifest>
           EOF
 
-          # Strings.xml (Clean Welcome & Branding)
+          # Strings.xml
           cat << 'EOF' > project/res/values/strings.xml
           <resources>
               <string name="app_name">VortexPS3 Emu</string>
@@ -72,7 +72,7 @@ jobs:
           </resources>
           EOF
 
-          # Welcome Screen Layout (Black theme with bold text)
+          # Welcome Screen Layout
           cat << 'EOF' > project/res/layout/activity_main.xml
           <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
               android:layout_width="match_parent"
@@ -124,43 +124,40 @@ jobs:
           }
           EOF
 
-          # 3. रिसोर्स कंपाइल करना और R.java बनाना
-          aapt package -f -m \
-            -J project/src \
-            -M project/AndroidManifest.xml \
-            -S project/res \
-            -I $PLATFORM_DIR/android.jar
+          # 3. रिसोर्सेज को compile करना (aapt2 compile)
+          aapt2 compile --dir project/res -o build/compiled_res/
 
-          # 4. Java कोड को क्लास फाइल्स में कंपाइल करना
+          # 4. रिसोर्सेज को लिंक करना और R.java + base apk बनाना (aapt2 link)
+          aapt2 link -I $PLATFORM_DIR/android.jar \
+            --manifest project/AndroidManifest.xml \
+            --java project/src \
+            -o build/base.apk \
+            --auto-add-overlay \
+            $(find build/compiled_res -name "*.flat")
+
+          # 5. Java कोड को क्लास फाइल्स में कंपाइल करना
           javac -d build/obj \
             -cp $PLATFORM_DIR/android.jar \
             $(find project/src -name "*.java")
 
-          # 5. Dex (classes.dex) तैयार करना
-          d8 --output build/apk \
+          # 6. D8 से classes.dex बनाना
+          d8 --output build \
             --lib $PLATFORM_DIR/android.jar \
             $(find build/obj -name "*.class")
 
-          # 6. बेस पैकेज बनाना
-          aapt package -f \
-            -M project/AndroidManifest.xml \
-            -S project/res \
-            -I $PLATFORM_DIR/android.jar \
-            -F build/unsigned_unaligned.apk
-
-          # 7. classes.dex को APK के अंदर जोड़ना
-          cd build/apk
-          zip -u ../unsigned_unaligned.apk classes.dex
-          cd ../..
+          # 7. classes.dex को APK में जोड़ना
+          cd build
+          zip -u base.apk classes.dex
+          cd ..
 
           # 8. Aligned और Sign करना
-          zipalign -p -f 4 build/unsigned_unaligned.apk aligned.apk
+          zipalign -p -f 4 build/base.apk aligned.apk
 
           keytool -genkey -v -keystore test.keystore -storepass android -alias androidkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Yash, OU=AI VIDEO HUB, O=VortexPS3 Studios, L=City, S=State, C=IN"
 
           apksigner sign --ks test.keystore --ks-pass pass:android --out VortexPS3-New-Emulator.apk aligned.apk
 
-          echo "=== Success: Fresh VortexPS3-New-Emulator.apk Created! ==="
+          echo "=== Success: VortexPS3-New-Emulator.apk Created! ==="
 
       - name: Upload Finished VortexPS3 APK
         uses: actions/upload-artifact@v4
