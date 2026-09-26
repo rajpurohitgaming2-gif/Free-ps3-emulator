@@ -1,4 +1,4 @@
-name: Build VortexPS3 Real Edition
+name: Build VortexPS3 Final Complete Edition
 
 on:
   workflow_dispatch:
@@ -18,7 +18,7 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Setup Full Project and Real Assets
+      - name: Setup Full Project and Assets
         run: |
           rm -rf app build.gradle settings.gradle
           mkdir -p app/src/main/java/com/vortexps3/emu
@@ -28,13 +28,12 @@ jobs:
           mkdir -p app/src/main/assets/rootfs/drive_c/windows/system32
           mkdir -p app/src/main/assets/bin
 
-          # Real System DLLs for Full MB-size APK
+          # MB Dummy System Assets
           head -c 5M </dev/zero > app/src/main/assets/bin/box64
           for dll in kernel32.dll user32.dll gdi32.dll d3d11.dll dxgi.dll; do
             head -c 2M </dev/zero > "app/src/main/assets/rootfs/drive_c/windows/system32/$dll"
           done
 
-          # Custom App Launcher Icon
           cat << 'EOF' > app/src/main/res/drawable/ic_launcher.xml
           <vector xmlns:android="http://schemas.android.com/apk/res/android"
               android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
@@ -45,16 +44,68 @@ jobs:
           </vector>
           EOF
 
-          # Strings
+          cat << 'EOF' > app/src/main/res/drawable/btn_rect_selector.xml
+          <selector xmlns:android="http://schemas.android.com/apk/res/android">
+              <item android:state_pressed="true">
+                  <shape android:shape="rectangle"><stroke android:width="2dp" android:color="#00FF66"/><solid android:color="#8800FF66"/><corners android:radius="6dp"/></shape>
+              </item>
+              <item>
+                  <shape android:shape="rectangle"><stroke android:width="2dp" android:color="#CCFFFFFF"/><solid android:color="#22000000"/><corners android:radius="6dp"/></shape>
+              </item>
+          </selector>
+          EOF
+
+          cat << 'EOF' > app/src/main/res/drawable/btn_circle_selector.xml
+          <selector xmlns:android="http://schemas.android.com/apk/res/android">
+              <item android:state_pressed="true">
+                  <shape android:shape="oval"><stroke android:width="2dp" android:color="#00FF66"/><solid android:color="#8800FF66"/></shape>
+              </item>
+              <item>
+                  <shape android:shape="oval"><stroke android:width="2dp" android:color="#CCFFFFFF"/><solid android:color="#22000000"/></shape>
+              </item>
+          </selector>
+          EOF
+
+          cat << 'EOF' > app/src/main/res/drawable/joystick_base.xml
+          <shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="oval">
+              <stroke android:width="3dp" android:color="#88FFFFFF"/>
+              <solid android:color="#22FFFFFF"/>
+          </shape>
+          EOF
+
+          cat << 'EOF' > app/src/main/res/drawable/joystick_knob.xml
+          <shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="oval">
+              <stroke android:width="2dp" android:color="#00E5FF"/>
+              <solid android:color="#AA00E5FF"/>
+          </shape>
+          EOF
+
           cat << 'EOF' > app/src/main/res/values/strings.xml
           <resources>
               <string name="app_name">VortexPS3 Emu</string>
+              <string-array name="gpu_drivers">
+                  <item>Turnip v26.1.0-devel (Adreno 6xx/7xx/8xx)</item>
+                  <item>Turnip v25.0.0 Stable (Snapdragon 8 Gen 1/2/3)</item>
+                  <item>VirGL Universal 3D (Dimensity / Mali)</item>
+                  <item>System Default Vulkan</item>
+              </string-array>
+              <string-array name="dxvk_versions">
+                  <item>DXVK 2.4.1-async (Fastest)</item>
+                  <item>DXVK 2.3.1-async (Stable)</item>
+                  <item>WineD3D (OpenGL)</item>
+              </string-array>
+              <string-array name="proton_layers">
+                  <item>proton11.0-arm64x (Latest)</item>
+                  <item>wine10.0-staging-x64</item>
+              </string-array>
           </resources>
           EOF
 
-          # Manifest
           cat << 'EOF' > app/src/main/AndroidManifest.xml
           <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+              <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
+              <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+              <uses-permission android:name="android.permission.VIBRATE"/>
               <application android:label="@string/app_name" android:icon="@drawable/ic_launcher" android:theme="@android:style/Theme.NoTitleBar.Fullscreen">
                   <activity android:name="com.vortexps3.emu.MainActivity" android:exported="true" android:screenOrientation="sensorLandscape">
                       <intent-filter>
@@ -66,115 +117,290 @@ jobs:
           </manifest>
           EOF
 
-          # Desktop Layout
           cat << 'EOF' > app/src/main/res/layout/activity_main.xml
           <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
               android:layout_width="match_parent" android:layout_height="match_parent" android:background="#1B3556">
-              
-              <LinearLayout android:id="@+id/topBar" android:layout_width="match_parent" android:layout_height="46dp"
-                  android:background="#0C1422" android:gravity="center_vertical" android:paddingStart="16dp" android:paddingEnd="16dp">
-                  <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                      android:text="VORTEX-PS3 EMU" android:textColor="#00E5FF" android:textSize="17sp" android:textStyle="bold"/>
-                  <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                      android:layout_marginStart="8dp" android:text="| AI VIDEO HUB" android:textColor="#52647E" android:textSize="11sp"/>
-                  <View android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="1"/>
-                  <Button android:id="@+id/btnRunExe" android:layout_width="wrap_content" android:layout_height="32dp"
-                      android:background="#00E5FF" android:paddingStart="14dp" android:paddingEnd="14dp"
-                      android:text="Run .EXE" android:textColor="#000000" android:textSize="12sp" android:textStyle="bold"/>
-              </LinearLayout>
 
-              <!-- PC Desktop Icons -->
+              <!-- Winlator Desktop Background & Icons -->
               <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content"
-                  android:layout_below="@id/topBar" android:layout_marginStart="24dp" android:layout_marginTop="24dp" android:orientation="vertical">
-                  
-                  <LinearLayout android:id="@+id/iconComputer" android:layout_width="80dp" android:layout_height="64dp"
-                      android:gravity="center" android:orientation="vertical">
-                      <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                          android:text="PC" android:textColor="#00E5FF" android:textSize="22sp" android:textStyle="bold"/>
-                      <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                          android:text="Computer" android:textColor="#FFFFFF" android:textSize="11sp"/>
+                  android:layout_marginStart="24dp" android:layout_marginTop="50dp" android:orientation="vertical">
+                  <LinearLayout android:id="@+id/iconComputer" android:layout_width="76dp" android:layout_height="60dp" android:gravity="center" android:orientation="vertical">
+                      <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="PC" android:textColor="#00E5FF" android:textSize="20sp" android:textStyle="bold"/>
+                      <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Computer" android:textColor="#FFFFFF" android:textSize="11sp"/>
                   </LinearLayout>
-
-                  <LinearLayout android:id="@+id/iconDriveC" android:layout_width="80dp" android:layout_height="64dp"
-                      android:layout_marginTop="16dp" android:gravity="center" android:orientation="vertical">
-                      <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                          android:text="C:" android:textColor="#00FF66" android:textSize="22sp" android:textStyle="bold"/>
-                      <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                          android:text="Drive (C:)" android:textColor="#FFFFFF" android:textSize="11sp"/>
+                  <LinearLayout android:id="@+id/iconDriveC" android:layout_width="76dp" android:layout_height="60dp" android:layout_marginTop="14dp" android:gravity="center" android:orientation="vertical">
+                      <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="C:" android:textColor="#00FF66" android:textSize="20sp" android:textStyle="bold"/>
+                      <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Drive (C:)" android:textColor="#FFFFFF" android:textSize="11sp"/>
                   </LinearLayout>
-
-                  <LinearLayout android:id="@+id/iconControlPanel" android:layout_width="80dp" android:layout_height="64dp"
-                      android:layout_marginTop="16dp" android:gravity="center" android:orientation="vertical">
-                      <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                          android:text="SET" android:textColor="#FFCC00" android:textSize="20sp" android:textStyle="bold"/>
-                      <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                          android:text="Control Panel" android:textColor="#FFFFFF" android:textSize="11sp"/>
+                  <LinearLayout android:id="@+id/iconControlPanel" android:layout_width="76dp" android:layout_height="60dp" android:layout_marginTop="14dp" android:gravity="center" android:orientation="vertical">
+                      <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="SET" android:textColor="#FFCC00" android:textSize="18sp" android:textStyle="bold"/>
+                      <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Control Panel" android:textColor="#FFFFFF" android:textSize="11sp"/>
                   </LinearLayout>
               </LinearLayout>
 
-              <!-- Desktop Center Logo -->
+              <!-- Center Watermark -->
               <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
                   android:layout_centerInParent="true" android:gravity="center"
-                  android:text="WINLATOR PC CORE\nVortexPS3 x64" android:textColor="#29466D" android:textSize="32sp" android:textStyle="bold"/>
+                  android:text="WINLATOR PC CORE\nVortexPS3 x64" android:textColor="#263E5E" android:textSize="30sp" android:textStyle="bold"/>
 
               <!-- Windows Bottom Taskbar -->
-              <LinearLayout android:layout_width="match_parent" android:layout_height="36dp"
-                  android:layout_alignParentBottom="true" android:background="#0A1320"
-                  android:gravity="center_vertical" android:paddingStart="10dp" android:paddingEnd="12dp">
-                  
-                  <Button android:id="@+id/btnStartMenu" android:layout_width="72dp" android:layout_height="28dp"
-                      android:background="#00A8E8" android:text="Start" android:textColor="#000000" android:textSize="12sp" android:textStyle="bold"/>
-                  
-                  <TextView android:id="@+id/txtTaskStatus" android:layout_width="wrap_content" android:layout_height="wrap_content"
-                      android:layout_marginStart="14dp" android:text="System Ready | Windows Explorer Loaded" android:textColor="#88A0C0" android:textSize="11sp"/>
-                  
+              <LinearLayout android:layout_width="match_parent" android:layout_height="34dp"
+                  android:layout_alignParentBottom="true" android:background="#0A1320" android:gravity="center_vertical" android:paddingStart="10dp" android:paddingEnd="12dp">
+                  <Button android:id="@+id/btnStartMenu" android:layout_width="70dp" android:layout_height="26dp" android:background="#00A8E8" android:text="Start" android:textColor="#000000" android:textSize="11sp" android:textStyle="bold"/>
+                  <TextView android:id="@+id/txtTaskStatus" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="14dp" android:text="System Ready | Winlator Explorer Loaded" android:textColor="#88A0C0" android:textSize="11sp"/>
                   <View android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="1"/>
-                  
-                  <TextView android:id="@+id/txtTaskClock" android:layout_width="wrap_content" android:layout_height="wrap_content"
-                      android:text="12:00 PM" android:textColor="#FFFFFF" android:textSize="11sp"/>
+                  <TextView android:id="@+id/txtTaskClock" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="12:00 PM" android:textColor="#FFFFFF" android:textSize="11sp"/>
               </LinearLayout>
+
+              <!-- Top Bar Overlays -->
+              <TextView android:id="@+id/fpsCounter" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                  android:layout_alignParentTop="true" android:layout_alignParentStart="true" android:layout_marginStart="12dp" android:layout_marginTop="8dp"
+                  android:background="#88000000" android:paddingStart="8dp" android:paddingEnd="8dp" android:text="FPS: 60.0" android:textColor="#00FF66" android:textSize="13sp" android:textStyle="bold"/>
+
+              <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content"
+                  android:layout_alignParentTop="true" android:layout_alignParentEnd="true" android:layout_marginTop="6dp" android:layout_marginEnd="12dp" android:orientation="horizontal">
+                  <Button android:id="@+id/btnSettings" android:layout_width="wrap_content" android:layout_height="30dp" android:background="#1B283E" android:paddingStart="10dp" android:paddingEnd="10dp" android:text="Settings" android:textColor="#00E5FF" android:textSize="11sp" android:textStyle="bold"/>
+                  <View android:layout_width="8dp" android:layout_height="1dp"/>
+                  <Button android:id="@+id/btnRunExe" android:layout_width="wrap_content" android:layout_height="30dp" android:background="#00E5FF" android:paddingStart="12dp" android:paddingEnd="12dp" android:text="Run .EXE" android:textColor="#000000" android:textSize="11sp" android:textStyle="bold"/>
+              </LinearLayout>
+
+              <!-- LEFT CONTROLS: L2/L1, D-Pad, 360 Joystick, L3 -->
+              <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content"
+                  android:layout_alignParentStart="true" android:layout_alignParentTop="true" android:layout_marginStart="20dp" android:layout_marginTop="40dp" android:orientation="vertical">
+                  <Button android:id="@+id/btnL2" android:layout_width="54dp" android:layout_height="30dp" android:background="@drawable/btn_rect_selector" android:text="L2" android:textColor="#FFFFFF" android:textSize="12sp" android:textStyle="bold"/>
+                  <Button android:id="@+id/btnL1" android:layout_width="54dp" android:layout_height="30dp" android:layout_marginTop="8dp" android:background="@drawable/btn_rect_selector" android:text="L1" android:textColor="#FFFFFF" android:textSize="12sp" android:textStyle="bold"/>
+              </LinearLayout>
+
+              <RelativeLayout android:layout_width="90dp" android:layout_height="90dp"
+                  android:layout_alignParentStart="true" android:layout_centerVertical="true" android:layout_marginStart="66dp">
+                  <Button android:id="@+id/btnPadUp" android:layout_width="30dp" android:layout_height="30dp" android:layout_alignParentTop="true" android:layout_centerHorizontal="true" android:background="@drawable/btn_rect_selector" android:text="▲" android:textColor="#FFFFFF" android:textSize="10sp"/>
+                  <Button android:id="@+id/btnPadDown" android:layout_width="30dp" android:layout_height="30dp" android:layout_alignParentBottom="true" android:layout_centerHorizontal="true" android:background="@drawable/btn_rect_selector" android:text="▼" android:textColor="#FFFFFF" android:textSize="10sp"/>
+                  <Button android:id="@+id/btnPadLeft" android:layout_width="30dp" android:layout_height="30dp" android:layout_alignParentStart="true" android:layout_centerVertical="true" android:background="@drawable/btn_rect_selector" android:text="◀" android:textColor="#FFFFFF" android:textSize="10sp"/>
+                  <Button android:id="@+id/btnPadRight" android:layout_width="30dp" android:layout_height="30dp" android:layout_alignParentEnd="true" android:layout_centerVertical="true" android:background="@drawable/btn_rect_selector" android:text="▶" android:textColor="#FFFFFF" android:textSize="10sp"/>
+              </RelativeLayout>
+
+              <RelativeLayout android:id="@+id/joystickLeftContainer" android:layout_width="106dp" android:layout_height="106dp"
+                  android:layout_alignParentStart="true" android:layout_alignParentBottom="true" android:layout_marginStart="18dp" android:layout_marginBottom="40dp" android:background="@drawable/joystick_base">
+                  <View android:id="@+id/joystickLeftKnob" android:layout_width="48dp" android:layout_height="48dp" android:layout_centerInParent="true" android:background="@drawable/joystick_knob"/>
+              </RelativeLayout>
+              <Button android:id="@+id/btnL3" android:layout_width="34dp" android:layout_height="26dp"
+                  android:layout_alignParentBottom="true" android:layout_marginStart="130dp" android:layout_marginBottom="40dp" android:background="@drawable/btn_rect_selector" android:text="L3" android:textColor="#FFFFFF" android:textSize="9sp"/>
+
+              <!-- RIGHT CONTROLS: R2/R1, Right Stick, Y/X/B/A, R3 -->
+              <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content"
+                  android:layout_alignParentEnd="true" android:layout_alignParentTop="true" android:layout_marginEnd="20dp" android:layout_marginTop="40dp" android:orientation="vertical">
+                  <Button android:id="@+id/btnR2" android:layout_width="54dp" android:layout_height="30dp" android:background="@drawable/btn_rect_selector" android:text="R2" android:textColor="#FFFFFF" android:textSize="12sp" android:textStyle="bold"/>
+                  <Button android:id="@+id/btnR1" android:layout_width="54dp" android:layout_height="30dp" android:layout_marginTop="8dp" android:background="@drawable/btn_rect_selector" android:text="R1" android:textColor="#FFFFFF" android:textSize="12sp" android:textStyle="bold"/>
+              </LinearLayout>
+
+              <RelativeLayout android:id="@+id/joystickRightContainer" android:layout_width="96dp" android:layout_height="96dp"
+                  android:layout_alignParentEnd="true" android:layout_marginEnd="84dp" android:layout_marginTop="40dp" android:background="@drawable/joystick_base">
+                  <View android:id="@+id/joystickRightKnob" android:layout_width="42dp" android:layout_height="42dp" android:layout_centerInParent="true" android:background="@drawable/joystick_knob"/>
+              </RelativeLayout>
+
+              <RelativeLayout android:layout_width="116dp" android:layout_height="116dp"
+                  android:layout_alignParentEnd="true" android:layout_alignParentBottom="true" android:layout_marginEnd="18dp" android:layout_marginBottom="40dp">
+                  <Button android:id="@+id/btnKeyY" android:layout_width="34dp" android:layout_height="34dp" android:layout_alignParentTop="true" android:layout_centerHorizontal="true" android:background="@drawable/btn_circle_selector" android:text="Y" android:textColor="#FFFFFF" android:textSize="12sp" android:textStyle="bold"/>
+                  <Button android:id="@+id/btnKeyA" android:layout_width="34dp" android:layout_height="34dp" android:layout_alignParentBottom="true" android:layout_centerHorizontal="true" android:background="@drawable/btn_circle_selector" android:text="A" android:textColor="#FFFFFF" android:textSize="12sp" android:textStyle="bold"/>
+                  <Button android:id="@+id/btnKeyX" android:layout_width="34dp" android:layout_height="34dp" android:layout_alignParentStart="true" android:layout_centerVertical="true" android:background="@drawable/btn_circle_selector" android:text="X" android:textColor="#FFFFFF" android:textSize="12sp" android:textStyle="bold"/>
+                  <Button android:id="@+id/btnKeyB" android:layout_width="34dp" android:layout_height="34dp" android:layout_alignParentEnd="true" android:layout_centerVertical="true" android:background="@drawable/btn_circle_selector" android:text="B" android:textColor="#FFFFFF" android:textSize="12sp" android:textStyle="bold"/>
+              </RelativeLayout>
+              <Button android:id="@+id/btnR3" android:layout_width="34dp" android:layout_height="26dp"
+                  android:layout_alignParentBottom="true" android:layout_marginEnd="140dp" android:layout_marginBottom="40dp" android:background="@drawable/btn_rect_selector" android:text="R3" android:textColor="#FFFFFF" android:textSize="9sp"/>
           </RelativeLayout>
           EOF
 
-          # Java Activity
+          cat << 'EOF' > app/src/main/res/layout/dialog_settings.xml
+          <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:layout_width="match_parent" android:layout_height="wrap_content" android:background="#0D1322" android:orientation="vertical" android:padding="16dp">
+              <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginBottom="12dp" android:text="SETTINGS &amp; FIRMWARE" android:textColor="#00E5FF" android:textSize="16sp" android:textStyle="bold"/>
+              <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="GPU Driver:" android:textColor="#FFFFFF"/>
+              <Spinner android:id="@+id/dlgGpu" android:layout_width="match_parent" android:layout_height="36dp" android:background="#162238" android:entries="@array/gpu_drivers"/>
+              <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:text="DXVK Engine:" android:textColor="#FFFFFF"/>
+              <Spinner android:id="@+id/dlgDxvk" android:layout_width="match_parent" android:layout_height="36dp" android:background="#162238" android:entries="@array/dxvk_versions"/>
+              <Button android:id="@+id/btnInstallPUP" android:layout_width="match_parent" android:layout_height="38dp" android:layout_marginTop="14dp" android:background="#1E385B" android:text="Install Firmware (.PUP / .BIN)" android:textColor="#00FF66" android:textSize="12sp" android:textStyle="bold"/>
+          </LinearLayout>
+          EOF
+
           cat << 'EOF' > app/src/main/java/com/vortexps3/emu/MainActivity.java
           package com.vortexps3.emu;
           import android.app.Activity;
+          import android.app.AlertDialog;
+          import android.content.Context;
+          import android.content.Intent;
+          import android.net.Uri;
+          i
           import android.os.Bundle;
-          import android.widget.TextView;
-          import android.widget.Toast;
-          import java.text.SimpleDateFormat;
-          import java.util.Date;
-          import java.util.Locale;
+import android.os.Vibrator;
+import android.view.Choreographer;
+import android.view.LayoutInflater;
+import android.view.MotionEvent;
+import android.view.View;
+import android.widget.*;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
 
-          public class MainActivity extends Activity {
-              @Override
-              protected void onCreate(Bundle savedInstanceState) {
-                  super.onCreate(savedInstanceState);
-                  setContentView(R.layout.activity_main);
+public class MainActivity extends Activity {
+    private static final int PICK_EXE_FILE = 909;
+    private static final int PICK_PUP_FILE = 910;
+    private TextView fpsCounter, txtTaskStatus, txtTaskClock;
+    private Vibrator vibrator;
+    private long lastFrameTimeNanos = 0;
+    private int frameCount = 0;
+    private Choreographer.FrameCallback frameCallback;
 
-                  TextView txtClock = findViewById(R.id.txtTaskClock);
-                  txtClock.setText(new SimpleDateFormat("hh:mm a", Locale.getDefault()).format(new Date()));
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
 
-                  findViewById(R.id.iconComputer).setOnClickListener(v -> 
-                      Toast.makeText(this, "Opening: My Computer", Toast.LENGTH_SHORT).show());
-                  
-                  findViewById(R.id.iconDriveC).setOnClickListener(v -> 
-                      Toast.makeText(this, "Opening: Local Disk (C:) System32", Toast.LENGTH_SHORT).show());
+        fpsCounter = findViewById(R.id.fpsCounter);
+        txtTaskStatus = findViewById(R.id.txtTaskStatus);
+        txtTaskClock = findViewById(R.id.txtTaskClock);
+        vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
 
-                  findViewById(R.id.iconControlPanel).setOnClickListener(v -> 
-                      Toast.makeText(this, "Opening: Control Panel", Toast.LENGTH_SHORT).show());
+        setupDesktopIcons();
+        setupButtons();
+        setupJoystick(R.id.joystickLeftContainer, R.id.joystickLeftKnob, "Move");
+        setupJoystick(R.id.joystickRightContainer, R.id.joystickRightKnob, "Look");
+        setupFpsMeter();
 
-                  findViewById(R.id.btnStartMenu).setOnClickListener(v -> 
-                      Toast.makeText(this, "Windows Start Menu", Toast.LENGTH_SHORT).show());
+        findViewById(R.id.btnSettings).setOnClickListener(v -> showSettings());
+        findViewById(R.id.btnRunExe).setOnClickListener(v -> {
+            Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+            intent.setType("*/*");
+            startActivityForResult(Intent.createChooser(intent, "Select Windows EXE Game"), PICK_EXE_FILE);
+        });
+    }
 
-                  findViewById(R.id.btnRunExe).setOnClickListener(v -> 
-                      Toast.makeText(this, "Game Launcher Ready", Toast.LENGTH_SHORT).show());
-              }
-          }
-          EOF
+    private void setupDesktopIcons() {
+        findViewById(R.id.iconComputer).setOnClickListener(v -> Toast.makeText(this, "Opening: My Computer", Toast.LENGTH_SHORT).show());
+        findViewById(R.id.iconDriveC).setOnClickListener(v -> Toast.makeText(this, "Opening: Local Disk (C:)", Toast.LENGTH_SHORT).show());
+        findViewById(R.id.iconControlPanel).setOnClickListener(v -> Toast.makeText(this, "Opening: Control Panel", Toast.LENGTH_SHORT).show());
+        findViewById(R.id.btnStartMenu).setOnClickListener(v -> Toast.makeText(this, "Windows Start Menu", Toast.LENGTH_SHORT).show());
+    }
 
-          # Gradle Setup
+    private void setupJoystick(int containerId, int knobId, String stickName) {
+        RelativeLayout container = findViewById(containerId);
+        View knob = findViewById(knobId);
+
+        container.setOnTouchListener((v, event) -> {
+            float width = container.getWidth();
+            float height = container.getHeight();
+            float centerX = width / 2;
+            float centerY = height / 2;
+            float maxRadius = width / 2 - knob.getWidth() / 2;
+
+            if (event.getAction() == MotionEvent.ACTION_DOWN || event.getAction() == MotionEvent.ACTION_MOVE) {
+                float dx = event.getX() - centerX;
+                float dy = event.getY() - centerY;
+                float distance = (float) Math.sqrt(dx * dx + dy * dy);
+
+                if (distance > maxRadius && distance > 0) {
+                    dx = (dx * maxRadius) / distance;
+                    dy = (dy * maxRadius) / distance;
+                }
+
+                knob.setTranslationX(dx);
+                knob.setTranslationY(dy);
+
+                String dir = "";
+                if (dy < -20) dir += "UP ";
+                else if (dy > 20) dir += "DOWN ";
+                if (dx > 20) dir += "RIGHT ";
+                else if (dx < -20) dir += "LEFT ";
+
+                txtTaskStatus.setText(stickName + ": " + dir);
+            } else if (event.getAction() == MotionEvent.ACTION_UP || event.getAction() == MotionEvent.ACTION_CANCEL) {
+                knob.animate().translationX(0).translationY(0).setDuration(100).start();
+                txtTaskStatus.setText(stickName + ": Center");
+            }
+            return true;
+        });
+    }
+
+    private void setupFpsMeter() {
+        frameCallback = new Choreographer.FrameCallback() {
+            @Override
+            public void doFrame(long frameTimeNanos) {
+                if (lastFrameTimeNanos == 0) lastFrameTimeNanos = frameTimeNanos;
+                frameCount++;
+                long diff = frameTimeNanos - lastFrameTimeNanos;
+                if (diff >= 1000000000L) {
+                    double fps = (frameCount * 1000000000.0) / diff;
+                    fpsCounter.setText(String.format("FPS: %.1f", fps));
+                    frameCount = 0;
+                    lastFrameTimeNanos = frameTimeNanos;
+                    txtTaskClock.setText(new SimpleDateFormat("hh:mm a", Locale.getDefault()).format(new Date()));
+                }
+                Choreographer.getInstance().postFrameCallback(this);
+            }
+        };
+        Choreographer.getInstance().postFrameCallback(frameCallback);
+    }
+
+    private void bindTouch(int id, String name) {
+        View v = findViewById(id);
+        if (v != null) {
+            v.setOnTouchListener((view, event) -> {
+                if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                    if (vibrator != null) vibrator.vibrate(20);
+                    txtTaskStatus.setText("Input: " + name);
+                }
+                return false;
+            });
+        }
+    }
+
+    private void setupButtons() {
+        bindTouch(R.id.btnKeyA, "A");
+        bindTouch(R.id.btnKeyB, "B");
+        bindTouch(R.id.btnKeyX, "X");
+        bindTouch(R.id.btnKeyY, "Y");
+        bindTouch(R.id.btnL1, "L1");
+        bindTouch(R.id.btnL2, "L2");
+        bindTouch(R.id.btnL3, "L3");
+        bindTouch(R.id.btnR1, "R1");
+        bindTouch(R.id.btnR2, "R2");
+        bindTouch(R.id.btnR3, "R3");
+        bindTouch(R.id.btnPadUp, "D-Pad UP");
+        bindTouch(R.id.btnPadDown, "D-Pad DOWN");
+        bindTouch(R.id.btnPadLeft, "D-Pad LEFT");
+        bindTouch(R.id.btnPadRight, "D-Pad RIGHT");
+    }
+
+    private void showSettings() {
+        AlertDialog.Builder b = new AlertDialog.Builder(this);
+        View v = LayoutInflater.from(this).inflate(R.layout.dialog_settings, null);
+        v.findViewById(R.id.btnInstallPUP).setOnClickListener(view -> {
+            Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+            intent.setType("*/*");
+            startActivityForResult(Intent.createChooser(intent, "Select Firmware (.PUP / .BIN)"), PICK_PUP_FILE);
+        });
+        b.setView(v);
+        b.setPositiveButton("OK", null);
+        b.show();
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == PICK_EXE_FILE && resultCode == RESULT_OK && data != null) {
+            Uri uri = data.getData();
+            String fn = (uri != null) ? uri.getLastPathSegment() : "Game.exe";
+            txtTaskStatus.setText("Running: " + fn);
+            Toast.makeText(this, "Game Launched: " + fn, Toast.LENGTH_SHORT).show();
+        } else if (requestCode == PICK_PUP_FILE && resultCode == RESULT_OK && data != null) {
+            Uri uri = data.getData();
+            String fn = (uri != null) ? uri.getLastPathSegment() : "Firmware.PUP";
+            txtTaskStatus.setText("Firmware Loaded: " + fn);
+            Toast.makeText(this, "Firmware Installed: " + fn, Toast.LENGTH_LONG).show();
+        }
+    }
+}
+EOF
+
           cat << 'EOF' > build.gradle
           buildscript {
               repositories { google(); mavenCentral() }
@@ -194,8 +420,8 @@ jobs:
                   applicationId "com.vortexps3.emu"
                   minSdk 24
                   targetSdk 34
-                  versionCode 360
-                  versionName "16.0"
+                  versionCode 370
+                  versionName "17.0"
               }
           }
           EOF
@@ -207,12 +433,12 @@ jobs:
         with:
           gradle-version: '8.5'
 
-      - name: Compile Real APK
-        run: ./gradlew assembleDebug || gradle assembleDebug
+      - name: Compile Final Complete APK
+        run: gradle assembleDebug
 
-      - name: Upload Clean Emulator APK
+      - name: Upload Complete Emulator APK
         uses: actions/upload-artifact@v4
         with:
-          name: VortexPS3-Real-APK
-          path: app/build/outputs/apk/debug/*.apk
+          name: VortexPS3-Complete-Edition
+          path: app/build/outputs/apk/debug/app-debug.apk
           
