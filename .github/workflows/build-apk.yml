@@ -271,8 +271,7 @@ jobs:
                       <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="SYSTEM FIRMWARE AND PACKAGES" android:textColor="#00FF66" android:textSize="13sp" android:textStyle="bold"/>
                       
                       <Button android:id="@+id/btnInstallPUP" android:layout_width="match_parent" android:layout_height="42dp" android:layout_marginTop="8dp" android:background="#1E385B" android:text="Install Firmware (.PUP / .BIN)" android:textColor="#FFFFFF" android:textSize="12sp" android:textStyle="bold"/>
-                      <TextView android:id="@+id/txtFirmwareStatus" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marg 
-                                # 6. MainActivity.java
+                      <TextView android:id="@+id/txtFirmwareStatus" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marg          # 6. MainActivity.java with Clean Float Syntax
           with open('app/src/main/java/com/vortexps3/emu/MainActivity.java', 'w') as f:
               f.write('''package com.vortexps3.emu;
               import android.app.Activity;
@@ -361,9 +360,9 @@ jobs:
                       container.setOnTouchListener((v, event) -> {
                           float width = container.getWidth();
                           float height = container.getHeight();
-                          float centerX = width / 2.0f;
-                          float centerY = height / 2.0f;
-                          float maxRadius = width / 2.0f - knob.getWidth() / 2.0f;
+                          float centerX = (float) (width / 2.0);
+                          float centerY = (float) (height / 2.0);
+                          float maxRadius = (float) (width / 2.0 - knob.getWidth() / 2.0);
 
                           if (event.getAction() == MotionEvent.ACTION_DOWN || event.getAction() == MotionEvent.ACTION_MOVE) {
                               float dx = event.getX() - centerX;
@@ -382,10 +381,10 @@ jobs:
                               float normY = -dy / maxRadius;
 
                               String dir = "";
-                              if (normY > 0.4f) dir += "UP ";
-                              else if (normY < -0.4f) dir += "DOWN ";
-                              if (normX > 0.4f) dir += "RIGHT ";
-                              else if (normX < -0.4f) dir += "LEFT ";
+                              if (normY > 0.4) dir += "UP ";
+                              else if (normY < -0.4) dir += "DOWN ";
+                              if (normX > 0.4) dir += "RIGHT ";
+                              else if (normX < -0.4) dir += "LEFT ";
 
                               txtTaskbarStatus.setText(stickName + ": " + dir + String.format("(X:%.2f, Y:%.2f)", normX, normY));
                           } else if (event.getAction() == MotionEvent.ACTION_UP || event.getAction() == MotionEvent.ACTION_CANCEL) {
@@ -403,8 +402,8 @@ jobs:
                               if (lastFrameTimeNanos == 0) lastFrameTimeNanos = frameTimeNanos;
                               frameCount++;
                               long diff = frameTimeNanos - lastFrameTimeNanos;
-                              if (diff >= 1_000_000_000L) {
-                                  double fps = (frameCount * 1_000_000_000.0) / diff;
+                              if (diff >= 1000000000L) {
+                                  double fps = (frameCount * 1000000000.0) / diff;
                                   if (showFps) {
                                       fpsCounter.setText(String.format("FPS: %.1f", fps));
                                       fpsCounter.setVisibility(View.VISIBLE);
@@ -549,8 +548,8 @@ jobs:
                       applicationId "com.vortexps3.emu"
                       minSdk 24
                       targetSdk 34
-                      versionCode 270
-                      versionName "8.0"
+                      versionCode 280
+                      versionName "8.5"
                   }
               }''')
 
