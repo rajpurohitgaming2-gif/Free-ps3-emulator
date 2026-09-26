@@ -102,8 +102,6 @@ jobs:
               "1024 x 768 (4:3 Standard)"
           ]
           rams = ["4 GB (Standard Phones)", "6 GB (Medium Gaming)", "8 GB (High-End Snapdragon)", "3 GB (Balanced)", "2 GB (Low-End Phones)"]
-          inputs = ["Virtual Gamepad (Touch Overlay)", "Keyboard and Mouse Mode", "External Controller", "Disable Overlays"]
-          opacities = ["100% Opacity (Solid)", "75% Opacity (Balanced)", "50% Opacity (Semi-Transparent)", "25% Opacity (Minimal)"]
 
           def xml_arr(name, lst):
               items = "".join([f"<item>{x.replace('&', '&amp;')}</item>" for x in lst])
@@ -118,41 +116,36 @@ jobs:
                   {xml_arr("box64_presets", box64s)}
                   {xml_arr("screen_resolutions", resolutions)}
                   {xml_arr("ram_limits", rams)}
-                  {xml_arr("input_profiles", inputs)}
-                  {xml_arr("input_opacity", opacities)}
               </resources>''')
                         # 5. Clean Home UI Layout
           with open('app/src/main/res/layout/activity_main.xml', 'w') as f:
               f.write('''<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
                   android:layout_width="match_parent" android:layout_height="match_parent" android:background="#090D16">
                   
-                  <!-- Clean Top Bar -->
                   <LinearLayout android:id="@+id/topBar" android:layout_width="match_parent" android:layout_height="52dp" android:background="#0F1726" android:gravity="center_vertical" android:paddingStart="20dp" android:paddingEnd="20dp">
-                      <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="🌀 VORTEX-PS3 EMU" android:textColor="#00E5FF" android:textSize="18sp" android:textStyle="bold"/>
+                      <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="VORTEX-PS3 EMU" android:textColor="#00E5FF" android:textSize="18sp" android:textStyle="bold"/>
                       <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="10dp" android:text="| AI VIDEO HUB" android:textColor="#52647E" android:textSize="12sp"/>
                       <View android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="1"/>
-                      <Button android:id="@+id/btnOpenSettings" android:layout_width="wrap_content" android:layout_height="38dp" android:background="#1B283E" android:paddingStart="16dp" android:paddingEnd="16dp" android:text="⚙ Settings" android:textColor="#00E5FF" android:textStyle="bold"/>
+                      <Button android:id="@+id/btnOpenSettings" android:layout_width="wrap_content" android:layout_height="38dp" android:background="#1B283E" android:paddingStart="16dp" android:paddingEnd="16dp" android:text="Settings" android:textColor="#00E5FF" android:textStyle="bold"/>
                   </LinearLayout>
 
-                  <!-- Main Game Launcher Area -->
                   <LinearLayout android:id="@+id/homeContent" android:layout_width="match_parent" android:layout_height="match_parent" android:layout_below="@id/topBar" android:gravity="center" android:orientation="vertical" android:padding="24dp">
                       <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="GAMES &amp; RUNTIME LAUNCHER" android:textColor="#FFFFFF" android:textSize="20sp" android:textStyle="bold"/>
-                      <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:text="Select a Windows executable (.exe) or explore virtual Drive C:" android:textColor="#7A8CA5" android:textSize="13sp"/>
+                      <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:text="Select a Windows executable (.exe) or start Drive C desktop" android:textColor="#7A8CA5" android:textSize="13sp"/>
                       
                       <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="32dp" android:orientation="horizontal">
-                          <Button android:id="@+id/btnSelectExe" android:layout_width="220dp" android:layout_height="56dp" android:background="#00E5FF" android:text="▶ Run .EXE Game" android:textColor="#000000" android:textSize="15sp" android:textStyle="bold"/>
+                          <Button android:id="@+id/btnSelectExe" android:layout_width="220dp" android:layout_height="56dp" android:background="#00E5FF" android:text="Run .EXE Game" android:textColor="#000000" android:textSize="15sp" android:textStyle="bold"/>
                           <View android:layout_width="24dp" android:layout_height="1dp"/>
-                          <Button android:id="@+id/btnLaunchDesktop" android:layout_width="220dp" android:layout_height="56dp" android:background="#152238" android:text="🖥 Start Desktop (C:)" android:textColor="#00FF66" android:textSize="15sp" android:textStyle="bold"/>
+                          <Button android:id="@+id/btnLaunchDesktop" android:layout_width="220dp" android:layout_height="56dp" android:background="#152238" android:text="Start Desktop (Drive C)" android:textColor="#00FF66" android:textSize="15sp" android:textStyle="bold"/>
                       </LinearLayout>
                       
-                      <TextView android:id="@+id/txtCurrentGpuBadge" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="28dp" android:background="#10192A" android:padding="10dp" android:text="Active GPU: Turnip v26.1.0-devel | DXVK: 2.4.1-async" android:textColor="#00E5FF" android:textSize="12sp"/>
+                      <TextView android:id="@+id/txtCurrentGpuBadge" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="28dp" android:background="#10192A" android:padding="10dp" android:text="Status: Core Ready" android:textColor="#00E5FF" android:textSize="12sp"/>
                   </LinearLayout>
 
-                  <!-- In-Game & Virtual C:\ Explorer Screen -->
                   <RelativeLayout android:id="@+id/inGameLayout" android:layout_width="match_parent" android:layout_height="match_parent" android:background="#1A2234" android:visibility="gone">
                       <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical">
                           <LinearLayout android:layout_width="match_parent" android:layout_height="34dp" android:background="#0A0E17" android:gravity="center_vertical" android:paddingStart="12dp" android:paddingEnd="12dp">
-                              <TextView android:id="@+id/txtGameStatus" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="VortexPS3 | Drive C: Active" android:textColor="#00FF66" android:textSize="12sp" android:textStyle="bold"/>
+                              <TextView android:id="@+id/txtGameStatus" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="VortexPS3 | Drive C Active" android:textColor="#00FF66" android:textSize="12sp" android:textStyle="bold"/>
                               <View android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="1"/>
                               <Button android:id="@+id/btnExitGame" android:layout_width="68dp" android:layout_height="26dp" android:background="#CCFF3366" android:text="EXIT" android:textColor="#FFFFFF" android:textSize="10sp" android:textStyle="bold"/>
                           </LinearLayout>
@@ -192,7 +185,7 @@ jobs:
               f.write('''<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
                   android:layout_width="match_parent" android:layout_height="wrap_content" android:background="#0D1322" android:padding="20dp">
                   <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
-                      <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="⚙ GLOBAL EMULATOR SETTINGS" android:textColor="#00E5FF" android:textSize="16sp" android:textStyle="bold"/>
+                      <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="GLOBAL EMULATOR SETTINGS" android:textColor="#00E5FF" android:textSize="16sp" android:textStyle="bold"/>
                       
                       <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="16dp" android:text="GPU Driver (All Phones):" android:textColor="#FFFFFF" android:textStyle="bold"/>
                       <Spinner android:id="@+id/dlgGpu" android:layout_width="match_parent" android:layout_height="44dp" android:background="#162238" android:entries="@array/gpu_drivers"/>
@@ -213,7 +206,7 @@ jobs:
                       <Spinner android:id="@+id/dlgRam" android:layout_width="match_parent" android:layout_height="44dp" android:background="#162238" android:entries="@array/ram_limits"/>
                   </LinearLayout>
               </ScrollView>''')
-                        # 6. MainActivity.java with Clean Home & Separate Settings Modal
+                        # 6. MainActivity.java
           with open('app/src/main/java/com/vortexps3/emu/MainActivity.java', 'w') as f:
               f.write('''package com.vortexps3.emu;
               import android.app.Activity;
@@ -235,7 +228,8 @@ jobs:
                   private RelativeLayout inGameLayout;
                   private TextView txtGameStatus, txtCurrentGpuBadge;
                   private ListView driveFileList;
-                  private int selGpu = 0, selDxvk = 0;
+                  private int selGpu = 0;
+                  private int selDxvk = 0;
 
                   @Override
                   protected void onCreate(Bundle savedInstanceState) {
@@ -258,7 +252,7 @@ jobs:
                       findViewById(R.id.btnSelectExe).setOnClickListener(v -> {
                           Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
                           intent.setType("*/*");
-                          startActivityForResult(Intent.createChooser(intent, "Select Windows .EXE Game"), PICK_EXE_FILE);
+                          startActivityForResult(Intent.createChooser(intent, "Select Windows EXE Game"), PICK_EXE_FILE);
                       });
 
                       findViewById(R.id.btnExitGame).setOnClickListener(v -> {
@@ -281,7 +275,8 @@ jobs:
                       builder.setPositiveButton("Save Settings", (dialog, which) -> {
                           selGpu = dlgGpu.getSelectedItemPosition();
                           selDxvk = dlgDxvk.getSelectedItemPosition();
-                          txtCurrentGpuBadge.setText("Active: " + dlgGpu.getSelectedItem().toString().split(" \\(")[0] + " | " + dlgDxvk.getSelectedItem().toString().split(" \\(")[0]);
+                          String gName = dlgGpu.getSelectedItem().toString();
+                          txtCurrentGpuBadge.setText("Active GPU: " + gName);
                           Toast.makeText(this, "Configuration Saved!", Toast.LENGTH_SHORT).show();
                       });
                       builder.setNegativeButton("Cancel", null);
@@ -318,7 +313,7 @@ jobs:
                       topBar.setVisibility(View.GONE);
                       homeContent.setVisibility(View.GONE);
                       inGameLayout.setVisibility(View.VISIBLE);
-                      txtGameStatus.setText("Desktop Mode | C: Drive Active");
+                      txtGameStatus.setText("Desktop Mode | Drive C Active");
 
                       File sys32 = new File(getExternalFilesDir(null), "VortexDrive/drive_c/windows/system32");
                       ArrayList<String> list = new ArrayList<>();
@@ -370,8 +365,8 @@ jobs:
                       applicationId "com.vortexps3.emu"
                       minSdk 24
                       targetSdk 34
-                      versionCode 200
-                      versionName "5.0"
+                      versionCode 210
+                      versionName "5.1"
                   }
               }''')
 
