@@ -38,12 +38,10 @@ jobs:
           os.makedirs('app/src/main/res/drawable', exist_ok=True)
           os.makedirs('app/src/main/assets/rootfs/windows/system32', exist_ok=True)
 
-          # 1. Dummy Core Windows DLLs to initialize Rootfs Asset size
           for dll in ['kernel32.dll', 'user32.dll', 'gdi32.dll', 'd3d11.dll', 'dxgi.dll', 'vulkan-1.dll']:
               with open(f'app/src/main/assets/rootfs/windows/system32/{dll}', 'wb') as f:
                   f.write(b'\x00' * 1024 * 1024)
 
-          # 2. Launcher Icon
           with open('app/src/main/res/drawable/ic_launcher.xml', 'w') as f:
               f.write('''<vector xmlns:android="http://schemas.android.com/apk/res/android"
                   android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
@@ -53,7 +51,6 @@ jobs:
                   <path android:fillColor="#FFFFFF" android:pathData="M48,42 L66,54 L48,66 Z"/>
               </vector>''')
 
-          # 3. Manifest
           with open('app/src/main/AndroidManifest.xml', 'w') as f:
               f.write('''<manifest xmlns:android="http://schemas.android.com/apk/res/android">
                   <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
@@ -69,7 +66,6 @@ jobs:
                   </application>
               </manifest>''')
 
-          # 4. Hardware Databases
           gpus = [
               "Turnip v26.1.0-devel (Adreno 6xx/7xx/8xx)", "Turnip v25.0.0 Stable (Snapdragon 8 Gen 1/2/3)",
               "Turnip v24.3.0 Aggressive (High FPS)", "Turnip v24.2.0-rc4 (Balanced Stability)",
@@ -128,7 +124,7 @@ jobs:
                   {xml_arr("input_profiles", inputs)}
                   {xml_arr("input_opacity", opacities)}
               </resources>''')
-                        # 5. Dashboard and Live Display Layout
+                        # 5. Layout Setup
           with open('app/src/main/res/layout/activity_main.xml', 'w') as f:
               f.write('''<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
                   android:layout_width="match_parent" android:layout_height="match_parent" android:background="#070A11">
@@ -203,7 +199,7 @@ jobs:
                       </RelativeLayout>
                   </RelativeLayout>
               </RelativeLayout>''')
-                        # 6. MainActivity.java (Rootfs Auto-Extractor)
+                        # 6. MainActivity.java
           with open('app/src/main/java/com/vortexps3/emu/MainActivity.java', 'w') as f:
               f.write('''package com.vortexps3.emu;
               import android.app.Activity;
@@ -321,7 +317,7 @@ jobs:
                   }
               }''')
 
-          # 7. Gradle with Permanent Signing Config
+          # 7. Gradle Configuration (Fixed Keystore Root Path)
           with open('build.gradle', 'w') as f:
               f.write("buildscript { repositories { google(); mavenCentral() }; dependencies { classpath 'com.android.tools.build:gradle:8.2.2' } }\nallprojects { repositories { google(); mavenCentral() } }")
 
@@ -334,7 +330,7 @@ jobs:
 
                   signingConfigs {
                       release {
-                          storeFile file('../../release.keystore')
+                          storeFile rootProject.file('release.keystore')
                           storePassword 'vortex123'
                           keyAlias 'vortexkey'
                           keyPassword 'vortex123'
@@ -345,8 +341,8 @@ jobs:
                       applicationId "com.vortexps3.emu"
                       minSdk 24
                       targetSdk 34
-                      versionCode 150
-                      versionName "3.6"
+                      versionCode 160
+                      versionName "3.7"
                       signingConfig signingConfigs.release
                   }
 
