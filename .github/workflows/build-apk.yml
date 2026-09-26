@@ -121,7 +121,7 @@ jobs:
                   {xml_arr("input_profiles", inputs)}
                   {xml_arr("input_opacity", opacities)}
               </resources>''')
-                        # 5. Dashboard, Desktop Mode & Virtual C:\ UI Layout
+                        # 5. UI Layout
           with open('app/src/main/res/layout/activity_main.xml', 'w') as f:
               f.write('''<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
                   android:layout_width="match_parent" android:layout_height="match_parent" android:background="#070A11">
@@ -134,7 +134,7 @@ jobs:
                           <Button android:id="@+id/tabControls" android:layout_width="match_parent" android:layout_height="40dp" android:layout_marginTop="8dp" android:background="#141E30" android:text="🎮 Input &amp; Controls" android:textColor="#FFFFFF"/>
                           <Button android:id="@+id/tabEngine" android:layout_width="match_parent" android:layout_height="40dp" android:layout_marginTop="8dp" android:background="#141E30" android:text="⚙ Engine &amp; DXVK" android:textColor="#FFFFFF"/>
                           <View android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1"/>
-                          <Button android:id="@+id/btnLaunchDesktop" android:layout_width="match_parent" android:layout_height="44dp" android:background="#00FF66" android:text="🖥 Start Desktop (C:\)" android:textColor="#000000" android:textStyle="bold"/>
+                          <Button android:id="@+id/btnLaunchDesktop" android:layout_width="match_parent" android:layout_height="44dp" android:background="#00FF66" android:text="🖥 Start Desktop (C:)" android:textColor="#000000" android:textStyle="bold"/>
                           <Button android:id="@+id/btnSelectExe" android:layout_width="match_parent" android:layout_height="44dp" android:layout_marginTop="8dp" android:background="#00E5FF" android:text="▶ Run .EXE File" android:textColor="#000000" android:textStyle="bold"/>
                       </LinearLayout>
                       <FrameLayout android:layout_width="match_parent" android:layout_height="match_parent" android:padding="20dp">
@@ -174,18 +174,17 @@ jobs:
                   <RelativeLayout android:id="@+id/inGameLayout" android:layout_width="match_parent" android:layout_height="match_parent" android:background="#1A2234" android:visibility="gone">
                       <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical">
                           <LinearLayout android:layout_width="match_parent" android:layout_height="34dp" android:background="#0A0E17" android:gravity="center_vertical" android:paddingStart="12dp" android:paddingEnd="12dp">
-                              <TextView android:id="@+id/txtGameStatus" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="🖥️ VortexPS3 Windows Desktop | C:\ Active" android:textColor="#00FF66" android:textSize="12sp" android:textStyle="bold"/>
+                              <TextView android:id="@+id/txtGameStatus" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="VortexPS3 Desktop | C: Drive Active" android:textColor="#00FF66" android:textSize="12sp" android:textStyle="bold"/>
                               <View android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="1"/>
                               <Button android:id="@+id/btnExitGame" android:layout_width="68dp" android:layout_height="26dp" android:background="#CCFF3366" android:text="EXIT" android:textColor="#FFFFFF" android:textSize="10sp" android:textStyle="bold"/>
                           </LinearLayout>
                           <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="horizontal" android:padding="16dp">
                               <LinearLayout android:layout_width="220dp" android:layout_height="match_parent" android:background="#111B2C" android:orientation="vertical" android:padding="12dp">
-                                  <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="📂 Computer / Drives" android:textColor="#00E5FF" android:textSize="14sp" android:textStyle="bold"/>
+                                  <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Computer Drives" android:textColor="#00E5FF" android:textSize="14sp" android:textStyle="bold"/>
                                   <View android:layout_width="match_parent" android:layout_height="1dp" android:layout_marginTop="8dp" android:layout_marginBottom="8dp" android:background="#1F2E47"/>
-                                  <TextView android:layout_width="match_parent" android:layout_height="36dp" android:gravity="center_vertical" android:text="💾 Local Disk (C:)" android:textColor="#FFFFFF" android:textSize="13sp"/>
-                                  <TextView android:layout_width="match_parent" android:layout_height="36dp" android:gravity="center_vertical" android:text="📁 Program Files" android:textColor="#A0B0C0" android:textSize="12sp"/>
-                                  <TextView android:layout_width="match_parent" android:layout_height="36dp" android:gravity="center_vertical" android:text="📁 windows/system32" android:textColor="#A0B0C0" android:textSize="12sp"/>
-                                  <TextView android:layout_width="match_parent" android:layout_height="36dp" android:gravity="center_vertical" android:text="📁 users/default" android:textColor="#A0B0C0" android:textSize="12sp"/>
+                                  <TextView android:layout_width="match_parent" android:layout_height="36dp" android:gravity="center_vertical" android:text="Local Disk (C:)" android:textColor="#FFFFFF" android:textSize="13sp"/>
+                                  <TextView android:layout_width="match_parent" android:layout_height="36dp" android:gravity="center_vertical" android:text="Program Files" android:textColor="#A0B0C0" android:textSize="12sp"/>
+                                  <TextView android:layout_width="match_parent" android:layout_height="36dp" android:gravity="center_vertical" android:text="windows/system32" android:textColor="#A0B0C0" android:textSize="12sp"/>
                               </LinearLayout>
                               <ListView android:id="@+id/driveFileList" android:layout_width="match_parent" android:layout_height="match_parent" android:layout_marginStart="14dp" android:background="#162238" android:padding="8dp"/>
                           </LinearLayout>
@@ -209,7 +208,7 @@ jobs:
                       </RelativeLayout>
                   </RelativeLayout>
               </RelativeLayout>''')
-                        # 6. MainActivity.java (Desktop Mode & Live C:\ Browser)
+                        # 6. MainActivity.java
           with open('app/src/main/java/com/vortexps3/emu/MainActivity.java', 'w') as f:
               f.write('''package com.vortexps3.emu;
               import android.app.Activity;
@@ -268,7 +267,7 @@ jobs:
                       findViewById(R.id.btnExitGame).setOnClickListener(v -> {
                           inGameLayout.setVisibility(View.GONE);
                           dashboardLayout.setVisibility(View.VISIBLE);
-                          Toast.makeText(this, "Desktop Terminated", Toast.LENGTH_SHORT).show();
+                          Toast.makeText(this, "Desktop Closed", Toast.LENGTH_SHORT).show();
                       });
                   }
 
@@ -301,20 +300,19 @@ jobs:
                   private void openWindowsDesktop() {
                       dashboardLayout.setVisibility(View.GONE);
                       inGameLayout.setVisibility(View.VISIBLE);
-                      txtGameStatus.setText("🖥️ Desktop Mode | " + spnGpu.getSelectedItem() + " | C:\ Active");
+                      txtGameStatus.setText("Desktop Mode | " + spnGpu.getSelectedItem() + " | C: Drive");
 
                       File sys32 = new File(getExternalFilesDir(null), "VortexDrive/drive_c/windows/system32");
                       ArrayList<String> list = new ArrayList<>();
-                      list.add("📁 .. [Back to Drive C:\\]");
-                      list.add("📄 explorer.exe (Wine Desktop)");
-                      list.add("📄 taskmgr.exe (Task Manager)");
-                      list.add("📄 regedit.exe (Registry Editor)");
+                      list.add("explorer.exe (Wine Desktop)");
+                      list.add("taskmgr.exe (Task Manager)");
+                      list.add("regedit.exe (Registry Editor)");
                       if (sys32.exists() && sys32.listFiles() != null) {
-                          for (File f : sys32.listFiles()) list.add("⚙️ " + f.getName());
+                          for (File f : sys32.listFiles()) list.add("DLL: " + f.getName());
                       }
                       ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, list);
                       driveFileList.setAdapter(adapter);
-                      driveFileList.setOnItemClickListener((p, v, pos, id) -> Toast.makeText(this, "Clicked: " + list.get(pos), Toast.LENGTH_SHORT).show());
+                      driveFileList.setOnItemClickListener((p, v, pos, id) -> Toast.makeText(this, "Opening: " + list.get(pos), Toast.LENGTH_SHORT).show());
                   }
 
                   private void setupControllerButtons() {
@@ -366,8 +364,8 @@ jobs:
                       applicationId "com.vortexps3.emu"
                       minSdk 24
                       targetSdk 34
-                      versionCode 180
-                      versionName "4.5"
+                      versionCode 190
+                      versionName "4.6"
                   }
               }''')
 
