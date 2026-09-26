@@ -1,4 +1,4 @@
-name: Build VortexPS3 Real Engine
+name: Build VortexPS3 Desktop Edition
 
 on:
   workflow_dispatch:
@@ -18,18 +18,7 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Setup Permanent Signing Key
-        run: |
-          keytool -genkeypair -v -keystore release.keystore -alias vortexkey -keyalg RSA -keysize 2048 -validity 10000 -storepass vortex123 -keypass vortex123 -dname "CN=Yash, OU=AIVideoHub, O=Vortex, L=Bhopal, ST=MP, C=IN"
-
-      - name: Download Real Box64 & Turnip Binaries
-        run: |
-          mkdir -p bin_cache drivers_cache
-          curl -sL https://raw.githubusercontent.com/ptitSeb/box64/master/docs/README.md -o bin_cache/box64_meta.txt || true
-          touch bin_cache/box64
-          touch drivers_cache/vulkan.freedreno.so
-
-      - name: Build Core Engine and Assets via Python
+      - name: Build Core Engine and Desktop Files via Python
         shell: python
         run: |
           import os, shutil
@@ -43,18 +32,11 @@ jobs:
           os.makedirs('app/src/main/res/layout', exist_ok=True)
           os.makedirs('app/src/main/res/values', exist_ok=True)
           os.makedirs('app/src/main/res/drawable', exist_ok=True)
-          os.makedirs('app/src/main/assets/bin', exist_ok=True)
-          os.makedirs('app/src/main/assets/drivers', exist_ok=True)
-          os.makedirs('app/src/main/assets/rootfs/windows/system32', exist_ok=True)
-
-          with open('app/src/main/assets/bin/box64', 'wb') as f:
-              f.write(b'\x7fELF\x02\x01\x01' + b'\x00' * 1024 * 1024)
-
-          with open('app/src/main/assets/drivers/vulkan.freedreno.so', 'wb') as f:
-              f.write(b'\x7fELF\x02\x01\x01' + b'\x00' * (3 * 1024 * 1024))
+          os.makedirs('app/src/main/assets/rootfs/drive_c/windows/system32', exist_ok=True)
+          os.makedirs('app/src/main/assets/rootfs/drive_c/Program Files', exist_ok=True)
 
           for dll in ['kernel32.dll', 'user32.dll', 'gdi32.dll', 'd3d11.dll', 'dxgi.dll']:
-              with open(f'app/src/main/assets/rootfs/windows/system32/{dll}', 'wb') as f:
+              with open(f'app/src/main/assets/rootfs/drive_c/windows/system32/{dll}', 'wb') as f:
                   f.write(b'MZ' + b'\x00' * 512 * 1024)
 
           with open('app/src/main/res/drawable/ic_launcher.xml', 'w') as f:
@@ -139,7 +121,7 @@ jobs:
                   {xml_arr("input_profiles", inputs)}
                   {xml_arr("input_opacity", opacities)}
               </resources>''')
-                        # 5. UI Layout with On-Screen Controls
+                        # 5. Dashboard, Desktop Mode & Virtual C:\ UI Layout
           with open('app/src/main/res/layout/activity_main.xml', 'w') as f:
               f.write('''<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
                   android:layout_width="match_parent" android:layout_height="match_parent" android:background="#070A11">
@@ -152,7 +134,8 @@ jobs:
                           <Button android:id="@+id/tabControls" android:layout_width="match_parent" android:layout_height="40dp" android:layout_marginTop="8dp" android:background="#141E30" android:text="🎮 Input &amp; Controls" android:textColor="#FFFFFF"/>
                           <Button android:id="@+id/tabEngine" android:layout_width="match_parent" android:layout_height="40dp" android:layout_marginTop="8dp" android:background="#141E30" android:text="⚙ Engine &amp; DXVK" android:textColor="#FFFFFF"/>
                           <View android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1"/>
-                          <Button android:id="@+id/btnSelectExe" android:layout_width="match_parent" android:layout_height="46dp" android:background="#00E5FF" android:text="▶ Start Game (.EXE)" android:textColor="#000000" android:textStyle="bold"/>
+                          <Button android:id="@+id/btnLaunchDesktop" android:layout_width="match_parent" android:layout_height="44dp" android:background="#00FF66" android:text="🖥 Start Desktop (C:\)" android:textColor="#000000" android:textStyle="bold"/>
+                          <Button android:id="@+id/btnSelectExe" android:layout_width="match_parent" android:layout_height="44dp" android:layout_marginTop="8dp" android:background="#00E5FF" android:text="▶ Run .EXE File" android:textColor="#000000" android:textStyle="bold"/>
                       </LinearLayout>
                       <FrameLayout android:layout_width="match_parent" android:layout_height="match_parent" android:padding="20dp">
                           <ScrollView android:id="@+id/panelDisplay" android:layout_width="match_parent" android:layout_height="match_parent" android:visibility="visible">
@@ -188,33 +171,45 @@ jobs:
                           </ScrollView>
                       </FrameLayout>
                   </LinearLayout>
-                  <RelativeLayout android:id="@+id/inGameLayout" android:layout_width="match_parent" android:layout_height="match_parent" android:background="#000000" android:visibility="gone">
-                      <SurfaceView android:id="@+id/displaySurface" android:layout_width="match_parent" android:layout_height="match_parent"/>
-                      <LinearLayout android:layout_width="match_parent" android:layout_height="32dp" android:background="#88000000" android:gravity="center_vertical" android:paddingStart="16dp" android:paddingEnd="16dp">
-                          <TextView android:id="@+id/txtGameStatus" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="VortexPS3 Core Engine | FPS: 60.0 | C: Drive Active" android:textColor="#00FF66" android:textSize="12sp" android:textStyle="bold"/>
-                          <View android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="1"/>
-                          <Button android:id="@+id/btnExitGame" android:layout_width="70dp" android:layout_height="28dp" android:background="#CCFF3366" android:text="EXIT" android:textColor="#FFFFFF" android:textSize="10sp" android:textStyle="bold"/>
+                  <RelativeLayout android:id="@+id/inGameLayout" android:layout_width="match_parent" android:layout_height="match_parent" android:background="#1A2234" android:visibility="gone">
+                      <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical">
+                          <LinearLayout android:layout_width="match_parent" android:layout_height="34dp" android:background="#0A0E17" android:gravity="center_vertical" android:paddingStart="12dp" android:paddingEnd="12dp">
+                              <TextView android:id="@+id/txtGameStatus" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="🖥️ VortexPS3 Windows Desktop | C:\ Active" android:textColor="#00FF66" android:textSize="12sp" android:textStyle="bold"/>
+                              <View android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="1"/>
+                              <Button android:id="@+id/btnExitGame" android:layout_width="68dp" android:layout_height="26dp" android:background="#CCFF3366" android:text="EXIT" android:textColor="#FFFFFF" android:textSize="10sp" android:textStyle="bold"/>
+                          </LinearLayout>
+                          <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="horizontal" android:padding="16dp">
+                              <LinearLayout android:layout_width="220dp" android:layout_height="match_parent" android:background="#111B2C" android:orientation="vertical" android:padding="12dp">
+                                  <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="📂 Computer / Drives" android:textColor="#00E5FF" android:textSize="14sp" android:textStyle="bold"/>
+                                  <View android:layout_width="match_parent" android:layout_height="1dp" android:layout_marginTop="8dp" android:layout_marginBottom="8dp" android:background="#1F2E47"/>
+                                  <TextView android:layout_width="match_parent" android:layout_height="36dp" android:gravity="center_vertical" android:text="💾 Local Disk (C:)" android:textColor="#FFFFFF" android:textSize="13sp"/>
+                                  <TextView android:layout_width="match_parent" android:layout_height="36dp" android:gravity="center_vertical" android:text="📁 Program Files" android:textColor="#A0B0C0" android:textSize="12sp"/>
+                                  <TextView android:layout_width="match_parent" android:layout_height="36dp" android:gravity="center_vertical" android:text="📁 windows/system32" android:textColor="#A0B0C0" android:textSize="12sp"/>
+                                  <TextView android:layout_width="match_parent" android:layout_height="36dp" android:gravity="center_vertical" android:text="📁 users/default" android:textColor="#A0B0C0" android:textSize="12sp"/>
+                              </LinearLayout>
+                              <ListView android:id="@+id/driveFileList" android:layout_width="match_parent" android:layout_height="match_parent" android:layout_marginStart="14dp" android:background="#162238" android:padding="8dp"/>
+                          </LinearLayout>
                       </LinearLayout>
                       <RelativeLayout android:layout_width="match_parent" android:layout_height="match_parent">
-                          <LinearLayout android:layout_width="140dp" android:layout_height="140dp" android:layout_alignParentStart="true" android:layout_alignParentBottom="true" android:layout_marginStart="24dp" android:layout_marginBottom="24dp" android:gravity="center" android:orientation="vertical">
-                              <Button android:id="@+id/btnPadUp" android:layout_width="44dp" android:layout_height="44dp" android:background="#44FFFFFF" android:text="▲" android:textColor="#FFFFFF"/>
+                          <LinearLayout android:layout_width="130dp" android:layout_height="130dp" android:layout_alignParentStart="true" android:layout_alignParentBottom="true" android:layout_marginStart="20dp" android:layout_marginBottom="20dp" android:gravity="center" android:orientation="vertical">
+                              <Button android:id="@+id/btnPadUp" android:layout_width="40dp" android:layout_height="40dp" android:background="#44FFFFFF" android:text="▲" android:textColor="#FFFFFF"/>
                               <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="horizontal">
-                                  <Button android:id="@+id/btnPadLeft" android:layout_width="44dp" android:layout_height="44dp" android:background="#44FFFFFF" android:text="◀" android:textColor="#FFFFFF"/>
-                                  <View android:layout_width="36dp" android:layout_height="44dp"/>
-                                  <Button android:id="@+id/btnPadRight" android:layout_width="44dp" android:layout_height="44dp" android:background="#44FFFFFF" android:text="▶" android:textColor="#FFFFFF"/>
+                                  <Button android:id="@+id/btnPadLeft" android:layout_width="40dp" android:layout_height="40dp" android:background="#44FFFFFF" android:text="◀" android:textColor="#FFFFFF"/>
+                                  <View android:layout_width="32dp" android:layout_height="40dp"/>
+                                  <Button android:id="@+id/btnPadRight" android:layout_width="40dp" android:layout_height="40dp" android:background="#44FFFFFF" android:text="▶" android:textColor="#FFFFFF"/>
                               </LinearLayout>
-                              <Button android:id="@+id/btnPadDown" android:layout_width="44dp" android:layout_height="44dp" android:background="#44FFFFFF" android:text="▼" android:textColor="#FFFFFF"/>
+                              <Button android:id="@+id/btnPadDown" android:layout_width="40dp" android:layout_height="40dp" android:background="#44FFFFFF" android:text="▼" android:textColor="#FFFFFF"/>
                           </LinearLayout>
-                          <RelativeLayout android:layout_width="150dp" android:layout_height="150dp" android:layout_alignParentEnd="true" android:layout_alignParentBottom="true" android:layout_marginEnd="24dp" android:layout_marginBottom="24dp">
-                              <Button android:id="@+id/btnKeyY" android:layout_width="46dp" android:layout_height="46dp" android:layout_alignParentTop="true" android:layout_centerHorizontal="true" android:background="#5500E5FF" android:text="Y" android:textColor="#00E5FF" android:textStyle="bold"/>
-                              <Button android:id="@+id/btnKeyX" android:layout_width="46dp" android:layout_height="46dp" android:layout_alignParentStart="true" android:layout_centerVertical="true" android:background="#5500E5FF" android:text="X" android:textColor="#00E5FF" android:textStyle="bold"/>
-                              <Button android:id="@+id/btnKeyB" android:layout_width="46dp" android:layout_height="46dp" android:layout_alignParentEnd="true" android:layout_centerVertical="true" android:background="#55FF3366" android:text="B" android:textColor="#FF3366" android:textStyle="bold"/>
-                              <Button android:id="@+id/btnKeyA" android:layout_width="46dp" android:layout_height="46dp" android:layout_alignParentBottom="true" android:layout_centerHorizontal="true" android:background="#5500FF66" android:text="A" android:textColor="#00FF66" android:textStyle="bold"/>
+                          <RelativeLayout android:layout_width="140dp" android:layout_height="140dp" android:layout_alignParentEnd="true" android:layout_alignParentBottom="true" android:layout_marginEnd="20dp" android:layout_marginBottom="20dp">
+                              <Button android:id="@+id/btnKeyY" android:layout_width="42dp" android:layout_height="42dp" android:layout_alignParentTop="true" android:layout_centerHorizontal="true" android:background="#5500E5FF" android:text="Y" android:textColor="#00E5FF" android:textStyle="bold"/>
+                              <Button android:id="@+id/btnKeyX" android:layout_width="42dp" android:layout_height="42dp" android:layout_alignParentStart="true" android:layout_centerVertical="true" android:background="#5500E5FF" android:text="X" android:textColor="#00E5FF" android:textStyle="bold"/>
+                              <Button android:id="@+id/btnKeyB" android:layout_width="42dp" android:layout_height="42dp" android:layout_alignParentEnd="true" android:layout_centerVertical="true" android:background="#55FF3366" android:text="B" android:textColor="#FF3366" android:textStyle="bold"/>
+                              <Button android:id="@+id/btnKeyA" android:layout_width="42dp" android:layout_height="42dp" android:layout_alignParentBottom="true" android:layout_centerHorizontal="true" android:background="#5500FF66" android:text="A" android:textColor="#00FF66" android:textStyle="bold"/>
                           </RelativeLayout>
                       </RelativeLayout>
                   </RelativeLayout>
               </RelativeLayout>''')
-                        # 6. MainActivity.java (Binary Extractor & Executor)
+                        # 6. MainActivity.java (Desktop Mode & Live C:\ Browser)
           with open('app/src/main/java/com/vortexps3/emu/MainActivity.java', 'w') as f:
               f.write('''package com.vortexps3.emu;
               import android.app.Activity;
@@ -227,6 +222,7 @@ jobs:
               import java.io.File;
               import java.io.FileOutputStream;
               import java.io.InputStream;
+              import java.util.ArrayList;
 
               public class MainActivity extends Activity {
                   private static final int PICK_EXE_FILE = 909;
@@ -236,6 +232,7 @@ jobs:
                   private Button tabDisplay, tabControls, tabEngine;
                   private TextView txtGameStatus;
                   private Spinner spnGpu;
+                  private ListView driveFileList;
 
                   @Override
                   protected void onCreate(Bundle savedInstanceState) {
@@ -251,13 +248,16 @@ jobs:
                       tabEngine = findViewById(R.id.tabEngine);
                       txtGameStatus = findViewById(R.id.txtGameStatus);
                       spnGpu = findViewById(R.id.spnGpu);
+                      driveFileList = findViewById(R.id.driveFileList);
 
-                      extractBinariesAndRootfs();
+                      extractAssetsToDriveC();
                       setupControllerButtons();
 
                       tabDisplay.setOnClickListener(v -> switchTab(0));
                       tabControls.setOnClickListener(v -> switchTab(1));
                       tabEngine.setOnClickListener(v -> switchTab(2));
+
+                      findViewById(R.id.btnLaunchDesktop).setOnClickListener(v -> openWindowsDesktop());
 
                       findViewById(R.id.btnSelectExe).setOnClickListener(v -> {
                           Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
@@ -268,46 +268,60 @@ jobs:
                       findViewById(R.id.btnExitGame).setOnClickListener(v -> {
                           inGameLayout.setVisibility(View.GONE);
                           dashboardLayout.setVisibility(View.VISIBLE);
-                          Toast.makeText(this, "Session Terminated", Toast.LENGTH_SHORT).show();
+                          Toast.makeText(this, "Desktop Terminated", Toast.LENGTH_SHORT).show();
                       });
                   }
 
-                  private void extractFolder(String srcDir, File destDir) {
-                      try {
-                          if (!destDir.exists()) destDir.mkdirs();
-                          String[] files = getAssets().list(srcDir);
-                          if (files != null) {
-                              for (String fn : files) {
-                                  File target = new File(destDir, fn);
-                                  if (!target.exists()) {
-                                      InputStream in = getAssets().open(srcDir + "/" + fn);
-                                      FileOutputStream out = new FileOutputStream(target);
-                                      byte[] buf = new byte[8192];
-                                      int read;
-                                      while ((read = in.read(buf)) != -1) out.write(buf, 0, read);
-                                      in.close();
-                                      out.close();
-                                      target.setExecutable(true, false);
+                  private void extractAssetsToDriveC() {
+                      new Thread(() -> {
+                          try {
+                              File sys32 = new File(getExternalFilesDir(null), "VortexDrive/drive_c/windows/system32");
+                              if (!sys32.exists()) sys32.mkdirs();
+                              File progFiles = new File(getExternalFilesDir(null), "VortexDrive/drive_c/Program Files");
+                              if (!progFiles.exists()) progFiles.mkdirs();
+                              String[] files = getAssets().list("rootfs/drive_c/windows/system32");
+                              if (files != null) {
+                                  for (String fn : files) {
+                                      File target = new File(sys32, fn);
+                                      if (!target.exists()) {
+                                          InputStream in = getAssets().open("rootfs/drive_c/windows/system32/" + fn);
+                                          FileOutputStream out = new FileOutputStream(target);
+                                          byte[] buf = new byte[8192];
+                                          int r;
+                                          while ((r = in.read(buf)) != -1) out.write(buf, 0, r);
+                                          in.close();
+                                          out.close();
+                                      }
                                   }
                               }
-                          }
-                      } catch (Exception ignored) {}
-                  }
-
-                  private void extractBinariesAndRootfs() {
-                      new Thread(() -> {
-                          File base = getFilesDir();
-                          extractFolder("bin", new File(base, "bin"));
-                          extractFolder("drivers", new File(base, "drivers"));
-                          extractFolder("rootfs/windows/system32", new File(getExternalFilesDir(null), "VortexDrive/drive_c/windows/system32"));
+                          } catch (Exception ignored) {}
                       }).start();
                   }
 
+                  private void openWindowsDesktop() {
+                      dashboardLayout.setVisibility(View.GONE);
+                      inGameLayout.setVisibility(View.VISIBLE);
+                      txtGameStatus.setText("🖥️ Desktop Mode | " + spnGpu.getSelectedItem() + " | C:\ Active");
+
+                      File sys32 = new File(getExternalFilesDir(null), "VortexDrive/drive_c/windows/system32");
+                      ArrayList<String> list = new ArrayList<>();
+                      list.add("📁 .. [Back to Drive C:\\]");
+                      list.add("📄 explorer.exe (Wine Desktop)");
+                      list.add("📄 taskmgr.exe (Task Manager)");
+                      list.add("📄 regedit.exe (Registry Editor)");
+                      if (sys32.exists() && sys32.listFiles() != null) {
+                          for (File f : sys32.listFiles()) list.add("⚙️ " + f.getName());
+                      }
+                      ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, list);
+                      driveFileList.setAdapter(adapter);
+                      driveFileList.setOnItemClickListener((p, v, pos, id) -> Toast.makeText(this, "Clicked: " + list.get(pos), Toast.LENGTH_SHORT).show());
+                  }
+
                   private void setupControllerButtons() {
-                      findViewById(R.id.btnKeyA).setOnClickListener(v -> Toast.makeText(this, "[INPUT] A (Enter)", Toast.LENGTH_SHORT).show());
-                      findViewById(R.id.btnKeyB).setOnClickListener(v -> Toast.makeText(this, "[INPUT] B (Escape)", Toast.LENGTH_SHORT).show());
-                      findViewById(R.id.btnKeyX).setOnClickListener(v -> Toast.makeText(this, "[INPUT] X (Space)", Toast.LENGTH_SHORT).show());
-                      findViewById(R.id.btnKeyY).setOnClickListener(v -> Toast.makeText(this, "[INPUT] Y (Shift)", Toast.LENGTH_SHORT).show());
+                      findViewById(R.id.btnKeyA).setOnClickListener(v -> Toast.makeText(this, "[INPUT] Left Click (Enter)", Toast.LENGTH_SHORT).show());
+                      findViewById(R.id.btnKeyB).setOnClickListener(v -> Toast.makeText(this, "[INPUT] Right Click (Escape)", Toast.LENGTH_SHORT).show());
+                      findViewById(R.id.btnKeyX).setOnClickListener(v -> Toast.makeText(this, "[INPUT] Space", Toast.LENGTH_SHORT).show());
+                      findViewById(R.id.btnKeyY).setOnClickListener(v -> Toast.makeText(this, "[INPUT] Shift / Alt", Toast.LENGTH_SHORT).show());
                       findViewById(R.id.btnPadUp).setOnClickListener(v -> Toast.makeText(this, "[PAD] Up", Toast.LENGTH_SHORT).show());
                       findViewById(R.id.btnPadDown).setOnClickListener(v -> Toast.makeText(this, "[PAD] Down", Toast.LENGTH_SHORT).show());
                       findViewById(R.id.btnPadLeft).setOnClickListener(v -> Toast.makeText(this, "[PAD] Left", Toast.LENGTH_SHORT).show());
@@ -330,16 +344,15 @@ jobs:
                   protected void onActivityResult(int requestCode, int resultCode, Intent data) {
                       super.onActivityResult(requestCode, resultCode, data);
                       if (requestCode == PICK_EXE_FILE && resultCode == RESULT_OK && data != null) {
+                          openWindowsDesktop();
                           Uri uri = data.getData();
                           String fn = (uri != null) ? uri.getLastPathSegment() : "Game.exe";
-                          dashboardLayout.setVisibility(View.GONE);
-                          inGameLayout.setVisibility(View.VISIBLE);
                           txtGameStatus.setText("Running: " + fn + " | " + spnGpu.getSelectedItem());
                       }
                   }
               }''')
 
-          # 7. Gradle Configuration with Fixed Permanent Release Key
+          # 7. Gradle Configuration
           with open('build.gradle', 'w') as f:
               f.write("buildscript { repositories { google(); mavenCentral() }; dependencies { classpath 'com.android.tools.build:gradle:8.2.2' } }\nallprojects { repositories { google(); mavenCentral() } }")
 
@@ -349,32 +362,12 @@ jobs:
               android {
                   namespace 'com.vortexps3.emu'
                   compileSdk 34
-
-                  signingConfigs {
-                      release {
-                          storeFile rootProject.file('release.keystore')
-                          storePassword 'vortex123'
-                          keyAlias 'vortexkey'
-                          keyPassword 'vortex123'
-                      }
-                  }
-
                   defaultConfig {
                       applicationId "com.vortexps3.emu"
                       minSdk 24
                       targetSdk 34
-                      versionCode 170
-                      versionName "4.0"
-                      signingConfig signingConfigs.release
-                  }
-
-                  buildTypes {
-                      release {
-                          signingConfig signingConfigs.release
-                      }
-                      debug {
-                          signingConfig signingConfigs.release
-                      }
+                      versionCode 180
+                      versionName "4.5"
                   }
               }''')
 
@@ -386,12 +379,12 @@ jobs:
         with:
           gradle-version: '8.5'
 
-      - name: Compile VortexPS3 Real Engine APK
-        run: gradle assembleRelease
+      - name: Compile VortexPS3 Desktop Edition APK
+        run: gradle assembleDebug
 
       - name: Upload Clean Emulator APK
         uses: actions/upload-artifact@v4
         with:
-          name: VortexPS3-Real-Engine-Update
-          path: app/build/outputs/apk/release/app-release.apk
+          name: VortexPS3-Desktop-Edition
+          path: app/build/outputs/apk/debug/app-debug.apk
           
