@@ -152,56 +152,52 @@ jobs:
 
                   <LinearLayout android:id="@+id/homeContent" android:layout_width="match_parent" android:layout_height="match_parent" android:layout_below="@id/topBar" android:gravity="center" android:orientation="vertical" android:padding="20dp">
                       <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="VORTEX GAMING ENVIRONMENT" android:textColor="#FFFFFF" android:textSize="20sp" android:textStyle="bold"/>
-                      <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:text="Run Windows Games &amp; PS3 PC Runtimes" android:textColor="#7A8CA5" android:textSize="13sp"/>
+                      <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:text="Run Windows Games and PS3 PC Runtimes" android:textColor="#7A8CA5" android:textSize="13sp"/>
                       
                       <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="28dp" android:orientation="horizontal">
-                          <Button android:id="@+id/btnSelectExe" android:layout_width="210dp" android:layout_height="52dp" android:background="#00E5FF" android:text="▶ Run .EXE Game" android:textColor="#000000" android:textSize="15sp" android:textStyle="bold"/>
+                          <Button android:id="@+id/btnSelectExe" android:layout_width="210dp" android:layout_height="52dp" android:background="#00E5FF" android:text="Run .EXE Game" android:textColor="#000000" android:textSize="15sp" android:textStyle="bold"/>
                           <View android:layout_width="20dp" android:layout_height="1dp"/>
-                          <Button android:id="@+id/btnLaunchDesktop" android:layout_width="210dp" android:layout_height="52dp" android:background="#152238" android:text="🖥 Winlator PC Desktop" android:textColor="#00FF66" android:textSize="15sp" android:textStyle="bold"/>
+                          <Button android:id="@+id/btnLaunchDesktop" android:layout_width="210dp" android:layout_height="52dp" android:background="#152238" android:text="Winlator PC Desktop" android:textColor="#00FF66" android:textSize="15sp" android:textStyle="bold"/>
                       </LinearLayout>
                       
                       <TextView android:id="@+id/txtCurrentGpuBadge" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="24dp" android:background="#10192A" android:padding="8dp" android:text="Firmware: Inbuilt Core v4.91 Ready" android:textColor="#00E5FF" android:textSize="12sp"/>
                   </LinearLayout>
 
-                  <!-- Real Winlator PC Desktop Environment -->
+                  <!-- Real Winlator PC Desktop Screen -->
                   <RelativeLayout android:id="@+id/inGameLayout" android:layout_width="match_parent" android:layout_height="match_parent" android:background="#1E385B" android:visibility="gone">
                       
-                      <!-- Desktop Icons Area -->
+                      <!-- Desktop Icons -->
                       <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_alignParentStart="true" android:layout_alignParentTop="true" android:layout_marginStart="24dp" android:layout_marginTop="48dp" android:orientation="vertical">
-                          <!-- My Computer Icon -->
                           <LinearLayout android:id="@+id/iconComputer" android:layout_width="80dp" android:layout_height="70dp" android:gravity="center" android:orientation="vertical">
-                              <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="💻" android:textSize="28sp"/>
+                              <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="PC" android:textColor="#00E5FF" android:textSize="22sp" android:textStyle="bold"/>
                               <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Computer" android:textColor="#FFFFFF" android:textSize="11sp"/>
                           </LinearLayout>
-                          <!-- Local Disk C: -->
                           <LinearLayout android:id="@+id/iconDriveC" android:layout_width="80dp" android:layout_height="70dp" android:layout_marginTop="12dp" android:gravity="center" android:orientation="vertical">
-                              <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="💽" android:textSize="28sp"/>
+                              <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="C:" android:textColor="#00FF66" android:textSize="22sp" android:textStyle="bold"/>
                               <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Drive (C:)" android:textColor="#FFFFFF" android:textSize="11sp"/>
                           </LinearLayout>
-                          <!-- Control Panel -->
                           <LinearLayout android:id="@+id/iconControlPanel" android:layout_width="80dp" android:layout_height="70dp" android:layout_marginTop="12dp" android:gravity="center" android:orientation="vertical">
-                              <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="⚙️" android:textSize="28sp"/>
+                              <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="SET" android:textColor="#FFCC00" android:textSize="20sp" android:textStyle="bold"/>
                               <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Control Panel" android:textColor="#FFFFFF" android:textSize="11sp"/>
                           </LinearLayout>
                       </LinearLayout>
 
-                      <!-- Center Watermark Logo -->
-                      <TextView android:id="@+id/txtDesktopWatermark" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_centerInParent="true" android:text="WINLATOR PC CORE\nVortexPS3 x64" android:textColor="#2D4D76" android:textSize="32sp" android:textStyle="bold" android:gravity="center"/>
+                      <!-- Center Watermark -->
+                      <TextView android:id="@+id/txtDesktopWatermark" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_centerInParent="true" android:text="WINLATOR PC CORE" android:textColor="#2D4D76" android:textSize="32sp" android:textStyle="bold"/>
 
-                      <!-- Live Taskbar at Bottom -->
+                      <!-- Live Taskbar -->
                       <LinearLayout android:layout_width="match_parent" android:layout_height="36dp" android:layout_alignParentBottom="true" android:background="#0D1B2A" android:gravity="center_vertical" android:paddingStart="10dp" android:paddingEnd="12dp">
                           <Button android:id="@+id/btnStartMenu" android:layout_width="74dp" android:layout_height="28dp" android:background="#00A8E8" android:text="Start" android:textColor="#000000" android:textSize="12sp" android:textStyle="bold"/>
-                          <TextView android:id="@+id/txtTaskbarStatus" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="14dp" android:text="Ready | Wine Desktop Active" android:textColor="#88A0C0" android:textSize="11sp"/>
+                          <TextView android:id="@+id/txtTaskbarStatus" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="14dp" android:text="Ready - Wine Desktop Active" android:textColor="#88A0C0" android:textSize="11sp"/>
                           <View android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="1"/>
                           <TextView android:id="@+id/txtTaskbarClock" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="12:00 PM" android:textColor="#FFFFFF" android:textSize="11sp"/>
                       </LinearLayout>
 
-                      <!-- FPS Counter -->
                       <TextView android:id="@+id/fpsCounter" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_alignParentTop="true" android:layout_alignParentStart="true" android:layout_marginStart="14dp" android:layout_marginTop="8dp" android:background="#88000000" android:paddingStart="8dp" android:paddingEnd="8dp" android:text="FPS: 60.0" android:textColor="#00FF66" android:textSize="14sp" android:textStyle="bold"/>
 
                       <Button android:id="@+id/btnExitGame" android:layout_width="60dp" android:layout_height="26dp" android:layout_alignParentTop="true" android:layout_centerHorizontal="true" android:layout_marginTop="6dp" android:background="#88FF3366" android:text="EXIT" android:textColor="#FFFFFF" android:textSize="10sp" android:textStyle="bold"/>
 
-                      <!-- TOUCH CONTROLLER OVERLAYS -->
+                      <!-- TOUCH CONTROLLERS -->
                       <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_alignParentStart="true" android:layout_alignParentTop="true" android:layout_marginStart="24dp" android:layout_marginTop="40dp" android:orientation="vertical">
                           <Button android:id="@+id/btnL2" android:layout_width="56dp" android:layout_height="32dp" android:background="@drawable/btn_rect_selector" android:text="L2" android:textColor="#FFFFFF" android:textSize="12sp" android:textStyle="bold"/>
                           <Button android:id="@+id/btnL1" android:layout_width="56dp" android:layout_height="32dp" android:layout_marginTop="8dp" android:background="@drawable/btn_rect_selector" android:text="L1" android:textColor="#FFFFFF" android:textSize="12sp" android:textStyle="bold"/>
@@ -239,12 +235,12 @@ jobs:
                   </RelativeLayout>
               </RelativeLayout>''')
 
-          # Settings Layout with Firmware Installer Section
+          # Settings Layout with Firmware Section
           with open('app/src/main/res/layout/dialog_settings.xml', 'w') as f:
               f.write('''<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
                   android:layout_width="match_parent" android:layout_height="wrap_content" android:background="#0D1322" android:padding="16dp">
                   <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
-                      <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginBottom="14dp" android:text="⚙ ADVANCED EMULATOR SETTINGS" android:textColor="#00E5FF" android:textSize="16sp" android:textStyle="bold"/>
+                      <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginBottom="14dp" android:text="ADVANCED EMULATOR SETTINGS" android:textColor="#00E5FF" android:textSize="16sp" android:textStyle="bold"/>
 
                       <LinearLayout android:layout_width="match_parent" android:layout_height="44dp" android:gravity="center_vertical" android:orientation="horizontal">
                           <TextView android:layout_width="160dp" android:layout_height="wrap_content" android:text="GPU Driver:" android:textColor="#FFFFFF" android:textStyle="bold"/>
@@ -271,11 +267,12 @@ jobs:
                           <Spinner android:id="@+id/dlgResolution" android:layout_width="match_parent" android:layout_height="40dp" android:background="#162238" android:entries="@array/screen_resolutions"/>
                       </LinearLayout>
 
-                      <!-- Firmware / Core Package Section -->
                       <View android:layout_width="match_parent" android:layout_height="1dp" android:layout_marginTop="14dp" android:layout_marginBottom="14dp" android:background="#1B283E"/>
-                      <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="📦 SYSTEM FIRMWARE &amp; PACKAGES" android:textColor="#00FF66" android:textSize="13sp" android:textStyle="bold"/>
+                      <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="SYSTEM FIRMWARE AND PACKAGES" android:textColor="#00FF66" android:textSize="13sp" android:textStyle="bold"/>
                       
-                      <Button android:id="@+id/btnInstallPUP" android:layout_width="match_parent" android:layout_height="42dp" android:layout_marginTop="8dp" android:background="#1E385B" android:text="Install Firmware (.PUP / .BIN / Core)" android:textColor="#FFFFFF" android:tex          # 6. MainActivity.java with Windows Desktop & Firmware Installer
+                      <Button android:id="@+id/btnInstallPUP" android:layout_width="match_parent" android:layout_height="42dp" android:layout_marginTop="8dp" android:background="#1E385B" android:text="Install Firmware (.PUP / .BIN)" android:textColor="#FFFFFF" android:textSize="12sp" android:textStyle="bold"/>
+                      <TextView android:id="@+id/txtFirmwareStatus" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marg 
+                                # 6. MainActivity.java
           with open('app/src/main/java/com/vortexps3/emu/MainActivity.java', 'w') as f:
               f.write('''package com.vortexps3.emu;
               import android.app.Activity;
@@ -333,7 +330,7 @@ jobs:
                       setupDesktopIcons();
 
                       findViewById(R.id.btnOpenSettings).setOnClickListener(v -> showSettingsDialog());
-                      findViewById(R.id.btnLaunchDesktop).setOnClickListener(v -> openWindowsDesktop("Winlator Desktop (C:)"));
+                      findViewById(R.id.btnLaunchDesktop).setOnClickListener(v -> openWindowsDesktop("Desktop Core"));
 
                       findViewById(R.id.btnSelectExe).setOnClickListener(v -> {
                           Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
@@ -346,15 +343,15 @@ jobs:
                           topBar.setVisibility(View.VISIBLE);
                           homeContent.setVisibility(View.VISIBLE);
                           Choreographer.getInstance().removeFrameCallback(frameCallback);
-                          Toast.makeText(this, "Desktop Session Closed", Toast.LENGTH_SHORT).show();
+                          Toast.makeText(this, "Session Closed", Toast.LENGTH_SHORT).show();
                       });
                   }
 
                   private void setupDesktopIcons() {
-                      findViewById(R.id.iconComputer).setOnClickListener(v -> Toast.makeText(this, "Opening: My Computer (Virtual)", Toast.LENGTH_SHORT).show());
-                      findViewById(R.id.iconDriveC).setOnClickListener(v -> Toast.makeText(this, "Opening: Drive (C:) -> windows/system32", Toast.LENGTH_SHORT).show());
-                      findViewById(R.id.iconControlPanel).setOnClickListener(v -> Toast.makeText(this, "Opening: Control Panel / Wine Config", Toast.LENGTH_SHORT).show());
-                      findViewById(R.id.btnStartMenu).setOnClickListener(v -> Toast.makeText(this, "Windows Start Menu", Toast.LENGTH_SHORT).show());
+                      findViewById(R.id.iconComputer).setOnClickListener(v -> Toast.makeText(this, "Opening My Computer", Toast.LENGTH_SHORT).show());
+                      findViewById(R.id.iconDriveC).setOnClickListener(v -> Toast.makeText(this, "Opening Drive C System32", Toast.LENGTH_SHORT).show());
+                      findViewById(R.id.iconControlPanel).setOnClickListener(v -> Toast.makeText(this, "Opening Control Panel", Toast.LENGTH_SHORT).show());
+                      findViewById(R.id.btnStartMenu).setOnClickListener(v -> Toast.makeText(this, "Start Menu", Toast.LENGTH_SHORT).show());
                   }
 
                   private void setupDynamicJoystick(int containerId, int knobId, String stickName) {
@@ -437,7 +434,7 @@ jobs:
                       view.findViewById(R.id.btnInstallPUP).setOnClickListener(v -> {
                           Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
                           intent.setType("*/*");
-                          startActivityForResult(Intent.createChooser(intent, "Select Firmware (.PUP / .BIN)"), PICK_PUP_FILE);
+                          startActivityForResult(Intent.createChooser(intent, "Select Firmware File"), PICK_PUP_FILE);
                       });
 
                       builder.setView(view);
@@ -456,6 +453,8 @@ jobs:
                           try {
                               File sys32 = new File(getExternalFilesDir(null), "VortexDrive/drive_c/windows/system32");
                               if (!sys32.exists()) sys32.mkdirs();
+                              File progFiles = new File(getExternalFilesDir(null), "VortexDrive/drive_c/Program Files");
+                              if (!progFiles.exists()) progFiles.mkdirs();
                               String[] files = getAssets().list("rootfs/drive_c/windows/system32");
                               if (files != null) {
                                   for (String fn : files) {
@@ -530,8 +529,8 @@ jobs:
                           if (txtFirmwareStatusRef != null) {
                               txtFirmwareStatusRef.setText("Firmware Installed: " + fn);
                           }
-                          txtCurrentGpuBadge.setText("Firmware: " + fn + " (Loaded)");
-                          Toast.makeText(this, "Firmware Installed Successfully: " + fn, Toast.LENGTH_LONG).show();
+                          txtCurrentGpuBadge.setText("Firmware: " + fn + " Loaded");
+                          Toast.makeText(this, "Firmware Installed: " + fn, Toast.LENGTH_LONG).show();
                       }
                   }
               }''')
@@ -550,8 +549,8 @@ jobs:
                       applicationId "com.vortexps3.emu"
                       minSdk 24
                       targetSdk 34
-                      versionCode 260
-                      versionName "7.5"
+                      versionCode 270
+                      versionName "8.0"
                   }
               }''')
 
@@ -571,3 +570,4 @@ jobs:
         with:
           name: VortexPS3-Winlator-PC-Edition
           path: app/build/outputs/apk/debug/app-debug.apk
+          
