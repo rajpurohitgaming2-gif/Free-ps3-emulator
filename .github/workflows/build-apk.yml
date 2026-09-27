@@ -1,4 +1,4 @@
-name: Build VortexPS3 GameHub 3Part
+name: Build VortexPS3 GameHub Full Engine
 
 on:
   workflow_dispatch:
@@ -15,7 +15,7 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Setup Folders and Resources
+      - name: Setup GameHub Full Assets
         run: |
           rm -rf app build.gradle settings.gradle
           mkdir -p app/src/main/java/com/vortexps3/emu app/src/main/res/layout app/src/main/res/values app/src/main/res/drawable app/src/main/assets/rootfs/drive_c/windows/system32 app/src/main/assets/bin
@@ -51,11 +51,44 @@ jobs:
           cat << 'EOF' > app/src/main/res/values/strings.xml
           <resources>
               <string name="app_name">VortexPS3 Emu</string>
-              <string-array name="arr_gpus"><item>Turnip v26.1 (Adreno)</item><item>VirGL 3D (Mali)</item><item>Native Vulkan Core</item><item>Auto Tune</item></string-array>
-              <string-array name="arr_dxvk"><item>DXVK 2.4.1-async</item><item>DXVK 2.3.1</item><item>WineD3D</item></string-array>
-              <string-array name="arr_proton"><item>Proton 9.0 Core</item><item>Wine 9.3 GE</item><item>Wine 8.0</item></string-array>
-              <string-array name="arr_armx"><item>Box64 v0.3.1 Dynarec</item><item>Proton-ARMx Hybrid</item><item>FEX ARM64</item></string-array>
-              <string-array name="arr_ps3"><item>PS3 Firmware v4.91 Inbuilt</item><item>Custom .PUP File</item></string-array>
+              <string-array name="arr_gpus">
+                  <item>Turnip v26.1 (Adreno 7xx / 8xx)</item>
+                  <item>Turnip v24.3.0 (Adreno 6xx Stable)</item>
+                  <item>VirGL 3D Universal (Mali G710/G720)</item>
+                  <item>Panfrost Open Source (Mali)</item>
+                  <item>System Native Vulkan Core</item>
+                  <item>Qualcomm Proprietary Adreno Driver</item>
+                  <item>LLVMpipe CPU Software Rendering</item>
+                  <item>Auto Hardware Detect &amp; Tune</item>
+              </string-array>
+              <string-array name="arr_dxvk">
+                  <item>DXVK 2.4.1-async (Ultra Smooth FPS)</item>
+                  <item>DXVK 2.3.1-gplasync</item>
+                  <item>DXVK 2.2 Stable</item>
+                  <item>DXVK 1.10.3 (Old DX9/DX10 Games)</item>
+                  <item>D8VK (DirectX 8 Emulation)</item>
+                  <item>WineD3D (DirectX to OpenGL Native)</item>
+              </string-array>
+              <string-array name="arr_proton">
+                  <item>Proton 9.0-x86_64 (Steam Core Pro)</item>
+                  <item>Proton 8.0-4 GE (Gaming Edition)</item>
+                  <item>Wine 9.3 GE Custom Staging</item>
+                  <item>Wine 8.21 WoW64 Stable</item>
+                  <item>Wine 7.0 Vanilla (Low RAM Mode)</item>
+              </string-array>
+              <string-array name="arr_armx">
+                  <item>Box64 v0.3.1 (Dynarec Fast Mode)</item>
+                  <item>Box64 v0.2.8 (High Stability)</item>
+                  <item>Proton-ARMx Hybrid Core</item>
+                  <item>FEX-Emu ARM64 Multi-Thread</item>
+                  <item>WOW64 ARM64EC Engine</item>
+              </string-array>
+              <string-array name="arr_ps3">
+                  <item>PS3 Core Firmware v4.91 (Auto Inbuilt)</item>
+                  <item>PS3 Hybrid Firmware HFW v4.91</item>
+                  <item>RPCS3 Core LLE Modules Runtime</item>
+                  <item>Custom PS3UPDAT.PUP File Picker</item>
+              </string-array>
           </resources>
           EOF
 
@@ -69,23 +102,23 @@ jobs:
               </application>
           </manifest>
           EOF
-
-          cat << 'EOF' > app/src/main/res/layout/dialog_settings.xml
+                    cat << 'EOF' > app/src/main/res/layout/dialog_settings.xml
           <ScrollView xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="wrap_content" android:background="#0F1726" android:padding="16dp">
               <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
                   <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="⚙ GAMEHUB ADVANCED ENGINES" android:textColor="#00E5FF" android:textSize="14sp" android:textStyle="bold" android:layout_marginBottom="10dp"/>
-                  <LinearLayout android:layout_width="match_parent" android:layout_height="36dp" android:gravity="center_vertical"><TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="⚡ GPU Driver:" android:textColor="#FFF" android:textSize="11sp" android:textStyle="bold"/><Spinner android:id="@+id/spnGpu" android:layout_width="0dp" android:layout_height="32dp" android:layout_weight="1.6" android:background="#1B283E" android:entries="@array/arr_gpus"/></LinearLayout>
-                  <LinearLayout android:layout_width="match_parent" android:layout_height="36dp" android:gravity="center_vertical" android:layout_marginTop="4dp"><TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="🖥 DXVK Engine:" android:textColor="#FFF" android:textSize="11sp" android:textStyle="bold"/><Spinner android:id="@+id/spnDxvk" android:layout_width="0dp" android:layout_height="32dp" android:layout_weight="1.6" android:background="#1B283E" android:entries="@array/arr_dxvk"/></LinearLayout>
-                  <LinearLayout android:layout_width="match_parent" android:layout_height="36dp" android:gravity="center_vertical" android:layout_marginTop="4dp"><TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="🍷 Proton / Wine:" android:textColor="#FFF" android:textSize="11sp" android:textStyle="bold"/><Spinner android:id="@+id/spnProton" android:layout_width="0dp" android:layout_height="32dp" android:layout_weight="1.6" android:background="#1B283E" android:entries="@array/arr_proton"/></LinearLayout>
-                  <LinearLayout android:layout_width="match_parent" android:layout_height="36dp" android:gravity="center_vertical" android:layout_marginTop="4dp"><TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="⚙ CPU (ARMx):" android:textColor="#FFF" android:textSize="11sp" android:textStyle="bold"/><Spinner android:id="@+id/spnArmx" android:layout_width="0dp" android:layout_height="32dp" android:layout_weight="1.6" android:background="#1B283E" android:entries="@array/arr_armx"/></LinearLayout>
-                  <LinearLayout android:layout_width="match_parent" android:layout_height="36dp" android:gravity="center_vertical" android:layout_marginTop="4dp"><TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="📦 PS3 Core:" android:textColor="#FFF" android:textSize="11sp" android:textStyle="bold"/><Spinner android:id="@+id/spnPs3" android:layout_width="0dp" android:layout_height="32dp" android:layout_weight="1.6" android:background="#1B283E" android:entries="@array/arr_ps3"/></LinearLayout>
+                  <LinearLayout android:layout_width="match_parent" android:layout_height="36dp" android:gravity="center_vertical"><TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="⚡ GPU Driver:" android:textColor="#FFF" android:textSize="11sp" android:textStyle="bold"/><Spinner android:id="@+id/spnGpu" android:layout_width="0dp" android:layout_height="32dp" android:layout_weight="1.8" android:background="#1B283E" android:entries="@array/arr_gpus"/></LinearLayout>
+                  <LinearLayout android:layout_width="match_parent" android:layout_height="36dp" android:gravity="center_vertical" android:layout_marginTop="4dp"><TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="🖥 DXVK Engine:" android:textColor="#FFF" android:textSize="11sp" android:textStyle="bold"/><Spinner android:id="@+id/spnDxvk" android:layout_width="0dp" android:layout_height="32dp" android:layout_weight="1.8" android:background="#1B283E" android:entries="@array/arr_dxvk"/></LinearLayout>
+                  <LinearLayout android:layout_width="match_parent" android:layout_height="36dp" android:gravity="center_vertical" android:layout_marginTop="4dp"><TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="🍷 Proton / Wine:" android:textColor="#FFF" android:textSize="11sp" android:textStyle="bold"/><Spinner android:id="@+id/spnProton" android:layout_width="0dp" android:layout_height="32dp" android:layout_weight="1.8" android:background="#1B283E" android:entries="@array/arr_proton"/></LinearLayout>
+                  <LinearLayout android:layout_width="match_parent" android:layout_height="36dp" android:gravity="center_vertical" android:layout_marginTop="4dp"><TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="⚙ CPU (ARMx):" android:textColor="#FFF" android:textSize="11sp" android:textStyle="bold"/><Spinner android:id="@+id/spnArmx" android:layout_width="0dp" android:layout_height="32dp" android:layout_weight="1.8" android:background="#1B283E" android:entries="@array/arr_armx"/></LinearLayout>
+                  <LinearLayout android:layout_width="match_parent" android:layout_height="36dp" android:gravity="center_vertical" android:layout_marginTop="4dp"><TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="📦 PS3 Core:" android:textColor="#FFF" android:textSize="11sp" android:textStyle="bold"/><Spinner android:id="@+id/spnPs3" android:layout_width="0dp" android:layout_height="32dp" android:layout_weight="1.8" android:background="#1B283E" android:entries="@array/arr_ps3"/></LinearLayout>
                   <LinearLayout android:layout_width="match_parent" android:layout_height="36dp" android:gravity="center_vertical" android:layout_marginTop="4dp"><TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="🎮 Game Controls:" android:textColor="#FFF" android:textSize="11sp" android:textStyle="bold"/><Button android:id="@+id/btnToggleControls" android:layout_width="wrap_content" android:layout_height="26dp" android:background="#00FF66" android:text="ON" android:textColor="#000" android:textSize="10sp" android:textStyle="bold"/></LinearLayout>
                   <LinearLayout android:layout_width="match_parent" android:layout_height="36dp" android:gravity="center_vertical" android:layout_marginTop="4dp"><TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="🖱 Virtual Mouse:" android:textColor="#FFF" android:textSize="11sp" android:textStyle="bold"/><Button android:id="@+id/btnToggleMouse" android:layout_width="wrap_content" android:layout_height="26dp" android:background="#00FF66" android:text="ON" android:textColor="#000" android:textSize="10sp" android:textStyle="bold"/></LinearLayout>
                   <Button android:id="@+id/btnSaveSettings" android:layout_width="match_parent" android:layout_height="36dp" android:layout_marginTop="10dp" android:background="#00E5FF" android:text="✓ SAVE &amp; APPLY ENGINES" android:textColor="#000" android:textSize="11sp" android:textStyle="bold"/>
               </LinearLayout>
           </ScrollView>
           EOF
-                    cat << 'EOF' > app/src/main/res/layout/activity_main.xml
+
+          cat << 'EOF' > app/src/main/res/layout/activity_main.xml
           <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent" android:background="#090D16">
               <LinearLayout android:id="@+id/homeScreen" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical">
                   <LinearLayout android:layout_width="match_parent" android:layout_height="48dp" android:background="#0F1726" android:gravity="center_vertical" android:paddingStart="16dp" android:paddingEnd="16dp">
@@ -94,7 +127,7 @@ jobs:
                   <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent" android:gravity="center" android:orientation="vertical" android:padding="16dp">
                       <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="WINLATOR PRO &amp; PS3 ENVIRONMENT" android:textColor="#FFFFFF" android:textSize="18sp" android:textStyle="bold"/><TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:text="Proton 9.0 • ARMx Translation • Complete File Explorer" android:textColor="#7A8CA5" android:textSize="11sp"/>
                       <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="20dp"><Button android:id="@+id/btnSelectExe" android:layout_width="190dp" android:layout_height="48dp" android:background="#00E5FF" android:text="⚡ Run .EXE (Auto Setup)" android:textColor="#000" android:textSize="12sp" android:textStyle="bold"/><View android:layout_width="14dp" android:layout_height="1dp"/><Button android:id="@+id/btnLaunchDesktop" android:layout_width="190dp" android:layout_height="48dp" android:background="#152238" android:text="Start Desktop (C:)" android:textColor="#00FF66" android:textSize="12sp" android:textStyle="bold"/></LinearLayout>
-                      <TextView android:id="@+id/txtHomeStatus" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="16dp" android:background="#10192A" android:padding="8dp" android:text="Status: Turnip v26.1 | Proton 9.0 Active" android:textColor="#00E5FF" android:textSize="11sp"/>
+                      <TextView android:id="@+id/txtHomeStatus" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="16dp" android:background="#10192A" android:padding="8dp" android:text="Status: Turnip v26.1 | Proton 9.0 | Box64 v0.3.1 Active" android:textColor="#00E5FF" android:textSize="11sp"/>
                   </LinearLayout>
               </LinearLayout>
               <RelativeLayout android:id="@+id/desktopContainer" android:layout_width="match_parent" android:layout_height="match_parent" android:background="#1B3556" android:visibility="gone">
@@ -145,7 +178,7 @@ jobs:
               private long lastTime = 0;
               private int frames = 0;
               private boolean showControls = true, mouseActive = true;
-              private String selectedGpu = "Turnip v26.1", selectedProton = "Proton 9.0";
+              private String selectedGpu = "Turnip v26.1 (Adreno 7xx / 8xx)", selectedProton = "Proton 9.0-x86_64 (Steam Core Pro)", selectedArmx = "Box64 v0.3.1 (Dynarec Fast Mode)";
 
               @Override
               protected void onCreate(Bundle savedInstanceState) {
@@ -216,7 +249,7 @@ jobs:
               private void showGameHubSettings() {
                   View dv = LayoutInflater.from(this).inflate(R.layout.dialog_settings, null);
                   AlertDialog dialog = new AlertDialog.Builder(this).setView(dv).create();
-                  Spinner spnGpu = dv.findViewById(R.id.spnGpu), spnProton = dv.findViewById(R.id.spnProton);
+                  Spinner spnGpu = dv.findViewById(R.id.spnGpu), spnProton = dv.findViewById(R.id.spnProton), spnArmx = dv.findViewById(R.id.spnArmx);
                   Button btnCtrl = dv.findViewById(R.id.btnToggleControls), btnMouse = dv.findViewById(R.id.btnToggleMouse);
 
                   final boolean[] tCtrl = {showControls}, tMouse = {mouseActive};
@@ -227,13 +260,13 @@ jobs:
                   btnMouse.setOnClickListener(v -> { tMouse[0] = !tMouse[0]; btnMouse.setText(tMouse[0] ? "ON" : "OFF"); btnMouse.setBackgroundColor(tMouse[0] ? Color.parseColor("#00FF66") : Color.parseColor("#555")); });
 
                   dv.findViewById(R.id.btnSaveSettings).setOnClickListener(v -> {
-                      selectedGpu = spnGpu.getSelectedItem().toString(); selectedProton = spnProton.getSelectedItem().toString();
+                      selectedGpu = spnGpu.getSelectedItem().toString(); selectedProton = spnProton.getSelectedItem().toString(); selectedArmx = spnArmx.getSelectedItem().toString();
                       showControls = tCtrl[0]; mouseActive = tMouse[0];
                       gameControlsGroup.setVisibility(showControls ? View.VISIBLE : View.GONE);
                       imgMouseCursor.setVisibility(mouseActive ? View.VISIBLE : View.GONE);
                       mouseClicksPanel.setVisibility(mouseActive ? View.VISIBLE : View.GONE);
-                      txtHomeStatus.setText("Status: " + selectedGpu + " | " + selectedProton);
-                      Toast.makeText(this, "Settings Saved!", Toast.LENGTH_SHORT).show();
+                      txtHomeStatus.setText("Status: " + selectedGpu + " Active");
+                      Toast.makeText(this, "Settings Applied Successfully!", Toast.LENGTH_SHORT).show();
                       dialog.dismiss();
                   });
                   dialog.show();
@@ -295,8 +328,8 @@ jobs:
                   applicationId "com.vortexps3.emu"
                   minSdk 24
                   targetSdk 34
-                  versionCode 580
-                  versionName "38.0"
+                  versionCode 590
+                  versionName "39.0"
               }
           }
           EOF
@@ -313,6 +346,6 @@ jobs:
       - name: Upload Clean Emulator APK
         uses: actions/upload-artifact@v4
         with:
-          name: VortexPS3-GameHub-ProClean
+          name: VortexPS3-GameHub-EnginesAll
           path: app/build/outputs/apk/debug/app-debug.apk
           
