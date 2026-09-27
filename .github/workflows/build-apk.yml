@@ -1,4 +1,4 @@
-name: Build VortexPS3 GameHub SingleCopy
+name: Build VortexPS3 GameHub Auto
 
 on:
   workflow_dispatch:
@@ -15,7 +15,7 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Build All Files
+      - name: Build Resources
         run: |
           rm -rf app build.gradle settings.gradle
           mkdir -p app/src/main/java/com/vortexps3/emu app/src/main/res/layout app/src/main/res/values app/src/main/res/drawable app/src/main/assets/rootfs/drive_c/windows/system32 app/src/main/assets/bin
@@ -25,7 +25,7 @@ jobs:
             head -c 2M </dev/zero > "app/src/main/assets/rootfs/drive_c/windows/system32/$d"
           done
 
-          # 1. Custom Neon Gaming Icon
+          # Custom Neon Gaming Icon
           cat << 'EOF' > app/src/main/res/drawable/ic_launcher.xml
           <vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
               <path android:fillColor="#0A0E17" android:pathData="M0,0h108v108h-108z"/>
@@ -80,10 +80,33 @@ jobs:
           </manifest>
           EOF
 
-          # MAIN UI LAYOUT
+          # GameHub Settings Dialog (Side-by-Side)
+          cat << 'EOF' > app/src/main/res/layout/dialog_settings.xml
+          <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="wrap_content" android:background="#0F1726" android:orientation="vertical" android:padding="16dp">
+              <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="⚙ GAMEHUB SETTINGS" android:textColor="#00E5FF" android:textSize="15sp" android:textStyle="bold" android:layout_marginBottom="12dp"/>
+              <LinearLayout android:layout_width="match_parent" android:layout_height="40dp" android:gravity="center_vertical" android:orientation="horizontal">
+                  <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="⚡ GPU Driver:" android:textColor="#FFFFFF" android:textSize="12sp" android:textStyle="bold"/>
+                  <Spinner android:id="@+id/spnGpu" android:layout_width="0dp" android:layout_height="36dp" android:layout_weight="1.6" android:background="#1B283E" android:entries="@array/arr_gpus"/>
+              </LinearLayout>
+              <LinearLayout android:layout_width="match_parent" android:layout_height="40dp" android:gravity="center_vertical" android:orientation="horizontal" android:layout_marginTop="8dp">
+                  <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="🖥 DXVK Engine:" android:textColor="#FFFFFF" android:textSize="12sp" android:textStyle="bold"/>
+                  <Spinner android:id="@+id/spnDxvk" android:layout_width="0dp" android:layout_height="36dp" android:layout_weight="1.6" android:background="#1B283E" android:entries="@array/arr_dxvk"/>
+              </LinearLayout>
+              <LinearLayout android:layout_width="match_parent" android:layout_height="40dp" android:gravity="center_vertical" android:orientation="horizontal" android:layout_marginTop="8dp">
+                  <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="🎮 Game Controls:" android:textColor="#FFFFFF" android:textSize="12sp" android:textStyle="bold"/>
+                  <Button android:id="@+id/btnToggleControls" android:layout_width="wrap_content" android:layout_height="30dp" android:background="#00FF66" android:text="ON" android:textColor="#000000" android:textSize="10sp" android:textStyle="bold"/>
+              </LinearLayout>
+              <LinearLayout android:layout_width="match_parent" android:layout_height="40dp" android:gravity="center_vertical" android:orientation="horizontal" android:layout_marginTop="8dp">
+                  <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="🖱 Virtual Mouse:" android:textColor="#FFFFFF" android:textSize="12sp" android:textStyle="bold"/>
+                  <Button android:id="@+id/btnToggleMouse" android:layout_width="wrap_content" android:layout_height="30dp" android:background="#00FF66" android:text="ON" android:textColor="#000000" android:textSize="10sp" android:textStyle="bold"/>
+              </LinearLayout>
+              <Button android:id="@+id/btnSaveSettings" android:layout_width="match_parent" android:layout_height="40dp" android:layout_marginTop="14dp" android:background="#00E5FF" android:text="✓ SAVE &amp; APPLY SETTINGS" android:textColor="#000000" android:textSize="11sp" android:textStyle="bold"/>
+          </LinearLayout>
+          EOF
+
+          # Main Activity Layout
           cat << 'EOF' > app/src/main/res/layout/activity_main.xml
           <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent" android:background="#090D16">
-              <!-- Home Screen -->
               <LinearLayout android:id="@+id/homeScreen" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical">
                   <LinearLayout android:layout_width="match_parent" android:layout_height="48dp" android:background="#0F1726" android:gravity="center_vertical" android:paddingStart="16dp" android:paddingEnd="16dp">
                       <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="VORTEX-PS3 GAMEHUB" android:textColor="#00E5FF" android:textSize="17sp" android:textStyle="bold"/>
@@ -102,8 +125,6 @@ jobs:
                       <TextView android:id="@+id/txtHomeStatus" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="20dp" android:background="#10192A" android:padding="8dp" android:text="Status: Turnip v26.1 (Adreno Snapdragon) Active" android:textColor="#00E5FF" android:textSize="11sp"/>
                   </LinearLayout>
               </LinearLayout>
-
-              <!-- Desktop & Controls -->
               <RelativeLayout android:id="@+id/desktopContainer" android:layout_width="match_parent" android:layout_height="match_parent" android:background="#1B3556" android:visibility="gone">
                   <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="20dp" android:layout_marginTop="40dp" android:orientation="vertical">
                       <LinearLayout android:id="@+id/iconComputer" android:layout_width="66dp" android:layout_height="50dp" android:gravity="center" android:orientation="vertical">
@@ -115,22 +136,15 @@ jobs:
                           <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Drive (C:)" android:textColor="#FFFFFF" android:textSize="9sp"/>
                       </LinearLayout>
                   </LinearLayout>
-
                   <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_centerInParent="true" android:text="WINLATOR PC CORE\nVortexPS3 x64" android:textColor="#263E5E" android:textSize="26sp" android:textStyle="bold" android:gravity="center"/>
-
-                  <!-- Taskbar -->
                   <LinearLayout android:layout_width="match_parent" android:layout_height="30dp" android:layout_alignParentBottom="true" android:background="#0A1320" android:gravity="center_vertical" android:paddingStart="8dp" android:paddingEnd="10dp">
                       <Button android:id="@+id/btnStartMenu" android:layout_width="60dp" android:layout_height="22dp" android:background="#00A8E8" android:text="Start" android:textColor="#000000" android:textSize="9sp" android:textStyle="bold"/>
                       <TextView android:id="@+id/txtTaskStatus" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="12dp" android:text="System Ready" android:textColor="#88A0C0" android:textSize="9sp"/>
                       <View android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="1"/>
                       <TextView android:id="@+id/txtTaskClock" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="12:00 PM" android:textColor="#FFFFFF" android:textSize="9sp"/>
                   </LinearLayout>
-
-                  <!-- Top Bar -->
                   <TextView android:id="@+id/fpsCounter" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="10dp" android:layout_marginTop="6dp" android:background="#88000000" android:padding="4dp" android:text="FPS: 60.0" android:textColor="#00FF66" android:textSize="11sp" android:textStyle="bold"/>
                   <Button android:id="@+id/btnExit" android:layout_width="48dp" android:layout_height="24dp" android:layout_alignParentTop="true" android:layout_centerHorizontal="true" android:layout_marginTop="6dp" android:background="#AAFF3366" android:text="EXIT" android:textColor="#FFFFFF" android:textSize="9sp" android:textStyle="bold"/>
-
-                  <!-- Controls Layer -->
                   <RelativeLayout android:id="@+id/gameControlsGroup" android:layout_width="match_parent" android:layout_height="match_parent">
                       <Button android:id="@+id/btnL1" android:layout_width="46dp" android:layout_height="26dp" android:layout_marginStart="16dp" android:layout_marginTop="36dp" android:background="@drawable/btn_box" android:text="L1" android:textColor="#FFFFFF" android:textSize="10sp"/>
                       <RelativeLayout android:id="@+id/joyL" android:layout_width="92dp" android:layout_height="92dp" android:layout_alignParentBottom="true" android:layout_marginStart="14dp" android:layout_marginBottom="36dp" android:background="@drawable/btn_round">
@@ -144,8 +158,6 @@ jobs:
                           <Button android:id="@+id/btnKeyB" android:layout_width="30dp" android:layout_height="30dp" android:layout_alignParentEnd="true" android:layout_centerVertical="true" android:background="@drawable/btn_round" android:text="B" android:textColor="#FFFFFF" android:textSize="10sp"/>
                       </RelativeLayout>
                   </RelativeLayout>
-
-                  <!-- Mouse Pointer -->
                   <ImageView android:id="@+id/imgMouseCursor" android:layout_width="24dp" android:layout_height="24dp" android:src="@drawable/ic_mouse" android:visibility="visible"/>
                   <LinearLayout android:id="@+id/mouseClicksPanel" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_alignParentBottom="true" android:layout_centerHorizontal="true" android:layout_marginBottom="34dp">
                       <Button android:id="@+id/btnLeftClick" android:layout_width="64dp" android:layout_height="26dp" android:background="#3300E5FF" android:text="L-Click" android:textColor="#00E5FF" android:textSize="9sp" android:textStyle="bold"/>
@@ -155,289 +167,252 @@ jobs:
               </RelativeLayout>
           </RelativeLayout>
           EOF
-
-          # DIALOG GAMEHUB REAL SETTINGS (SIDE-BY-SIDE)
-          cat << 'EOF' > app/src/main/res/layout/dialog_gamehub_settings.xml
-          <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-              android:layout_width="match_parent" android:layout_height="wrap_content" android:background="#0F1726" android:orientation="vertical" android:padding="16dp">
-              <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="⚙ GAMEHUB SETTINGS" android:textColor="#00E5FF" android:textSize="15sp" android:textStyle="bold" android:layout_marginBottom="12dp"/>
-              
-              <LinearLayout android:layout_width="match_parent" android:layout_height="40dp" android:gravity="center_vertical" android:orientation="horizontal">
-                  <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="⚡ GPU Driver:" android:textColor="#FFFFFF" android:textSize="12sp" android:textStyle="bold"/>
-                  <Spinner android:id="@+id/spnGpu" android:layout_width="0dp" android:layout_height="36dp" android:layout_weight="1.6" android:background="#1B283E" android:entries="@array/arr_gpus"/>
-              </LinearLayout>
-              <LinearLayout android:layout_width="match_parent" android:layout_height="40dp" android:gravity="center_vertical" android:orientation="horizontal" android:layout_marginTop="8dp">
-                  <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="🖥 DXVK Engine:" android:textColor="#FFFFFF" android:textSize="12sp" android:textStyle="bold"/>
-                  <Spinner android:id="@+id/spnDxvk" android:layout_width="0dp" android:layout_height="36dp" android:layout_weight="1.6" android:background="#1B283E" android:entries="@array/arr_dxvk"/>
-              </LinearLayout>
-              <LinearLayout android:layout_width="match_parent" android:layout_height="40dp" android:gravity="center_vertical" android:orientation="horizontal" android:layout_marginTop="8dp">
-                  <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="🎮 Game Controls:" android:textColor="#FFFFFF" android:textSize="12sp" android:textStyle="bold"/>
-                  <Button android:id="@+id/btnToggleControlsState" android:layout_width="wrap_content" android:layout_height="30dp" android:background="#00FF66" android:text="ON" android:textColor="#000000" android:textSize="10sp" android:textStyle="bold"/>
-              </LinearLayout>
-              <LinearLayout android:layout_width="match_parent" android:layout_height="40dp" android:gravity="center_vertical" android:orientation="horizontal" android:layout_marginTop="8dp">
-                  <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="🖱 Virtual Mouse:" android:textColor="#FFFFFF" android:textSize="12sp" android:textStyle="bold"/>
-                  <Button android:id="@+id/btnToggleMouseState" android:layout_width="wrap_content" android:layout_height="30dp" android:background="#00FF66" android:text="ON" android:textColor="#000000" android:textSize="10sp" android:textStyle="bold"/>
-              </LinearLayout>
-              <Button android:id="@+id/btnSaveSettings" android:layout_width="match_parent" android:layout_height="40dp" android:layout_marginTop="14dp" android:background="#00E5FF" android:text="✓ SAVE &amp; APPLY SETTINGS" android:textColor="#000000" android:textSize="11sp" android:textStyle="bold"/>
-          </LinearLayout>
-          EOF
-
-          # JAVA MAIN ACTIVITY
-          cat << 'EOF' > app/src/main/java/com/vortexps3/emu/MainActivity.java
+                    cat << 'EOF' > app/src/main/java/com/vortexps3/emu/MainActivity.java
           package com.vortexps3.emu;
-          import android.app.Activity;
-          import android.app.AlertDialog;
-          import android.app.ProgressDialog;
-          import android.content.Context;
+          import android.app.*;
+          import android.content.*;
           import android.graphics.Color;
-import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
-import android.os.Vibrator;
-import android.view.Choreographer;
-import android.view.LayoutInflater;
-import android.view.MotionEvent;
-import android.view.View;
-import android.widget.*;
-import java.io.File;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.Locale;
+          import android.os.*;
+          import android.view.*;
+          import android.widget.*;
+          import java.io.File;
+          import java.text.SimpleDateFormat;
+          import java.util.*;
 
-public class MainActivity extends Activity {
-    private View homeScreen;
-    private RelativeLayout desktopContainer, gameControlsGroup;
-    private ImageView imgMouseCursor;
-    private LinearLayout mouseClicksPanel;
-    private TextView fpsCounter, txtTaskStatus, txtTaskClock, txtHomeStatus;
-    private Vibrator vibrator;
-    private long lastTime = 0;
-    private int frames = 0;
-    private boolean showControls = true;
-    private boolean mouseActive = true;
-    private String selectedGpu = "Turnip v26.1 (Adreno Snapdragon)";
+          public class MainActivity extends Activity {
+              private View homeScreen;
+              private RelativeLayout desktopContainer, gameControlsGroup;
+              private ImageView imgMouseCursor;
+              private LinearLayout mouseClicksPanel;
+              private TextView fpsCounter, txtTaskStatus, txtTaskClock, txtHomeStatus;
+              private Vibrator vibrator;
+              private long lastTime = 0;
+              private int frames = 0;
+              private boolean showControls = true;
+              private boolean mouseActive = true;
+              private String selectedGpu = "Turnip v26.1 (Adreno Snapdragon)";
 
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+              @Override
+              protected void onCreate(Bundle savedInstanceState) {
+                  super.onCreate(savedInstanceState);
+                  setContentView(R.layout.activity_main);
 
-        homeScreen = findViewById(R.id.homeScreen);
-        desktopContainer = findViewById(R.id.desktopContainer);
-        gameControlsGroup = findViewById(R.id.gameControlsGroup);
-        imgMouseCursor = findViewById(R.id.imgMouseCursor);
-        mouseClicksPanel = findViewById(R.id.mouseClicksPanel);
-        fpsCounter = findViewById(R.id.fpsCounter);
-        txtTaskStatus = findViewById(R.id.txtTaskStatus);
-        txtTaskClock = findViewById(R.id.txtTaskClock);
-        txtHomeStatus = findViewById(R.id.txtHomeStatus);
-        vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+                  homeScreen = findViewById(R.id.homeScreen);
+                  desktopContainer = findViewById(R.id.desktopContainer);
+                  gameControlsGroup = findViewById(R.id.gameControlsGroup);
+                  imgMouseCursor = findViewById(R.id.imgMouseCursor);
+                  mouseClicksPanel = findViewById(R.id.mouseClicksPanel);
+                  fpsCounter = findViewById(R.id.fpsCounter);
+                  txtTaskStatus = findViewById(R.id.txtTaskStatus);
+                  txtTaskClock = findViewById(R.id.txtTaskClock);
+                  txtHomeStatus = findViewById(R.id.txtHomeStatus);
+                  vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
 
-        File c = new File(getExternalFilesDir(null), "drive_c");
-        if (!c.exists()) c.mkdirs();
+                  File c = new File(getExternalFilesDir(null), "drive_c");
+                  if (!c.exists()) c.mkdirs();
 
-        findViewById(R.id.btnLaunchDesktop).setOnClickListener(v -> openDesktop("Desktop (C:)"));
-        findViewById(R.id.btnSettings).setOnClickListener(v -> showGameHubSettings());
+                  findViewById(R.id.btnLaunchDesktop).setOnClickListener(v -> openDesktop("Desktop (C:)"));
+                  findViewById(R.id.btnSettings).setOnClickListener(v -> showGameHubSettings());
 
-        findViewById(R.id.btnSelectExe).setOnClickListener(v -> {
-            Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
-            intent.setType("*/*");
-            startActivityForResult(Intent.createChooser(intent, "Select Windows EXE Game"), 909);
-        });
+                  findViewById(R.id.btnSelectExe).setOnClickListener(v -> {
+                      Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+                      intent.setType("*/*");
+                      startActivityForResult(Intent.createChooser(intent, "Select Windows EXE Game"), 909);
+                  });
 
-        findViewById(R.id.btnExit).setOnClickListener(v -> {
-            desktopContainer.setVisibility(View.GONE);
-            homeScreen.setVisibility(View.VISIBLE);
-        });
+                  findViewById(R.id.btnExit).setOnClickListener(v -> {
+                      desktopContainer.setVisibility(View.GONE);
+                      homeScreen.setVisibility(View.VISIBLE);
+                  });
 
-        imgMouseCursor.setX(260);
-        imgMouseCursor.setY(180);
-        desktopContainer.setOnTouchListener((v, e) -> {
-            if (!mouseActive) return false;
-            if (e.getAction() == MotionEvent.ACTION_DOWN || e.getAction() == MotionEvent.ACTION_MOVE) {
-                imgMouseCursor.setX(e.getX());
-                imgMouseCursor.setY(e.getY());
-            }
-            return false;
-        });
+                  imgMouseCursor.setX(260);
+                  imgMouseCursor.setY(180);
+                  desktopContainer.setOnTouchListener((v, e) -> {
+                      if (!mouseActive) return false;
+                      if (e.getAction() == MotionEvent.ACTION_DOWN || e.getAction() == MotionEvent.ACTION_MOVE) {
+                          imgMouseCursor.setX(e.getX());
+                          imgMouseCursor.setY(e.getY());
+                      }
+                      return false;
+                  });
 
-        findViewById(R.id.btnLeftClick).setOnClickListener(v -> {
-            if (vibrator != null) vibrator.vibrate(15);
-            txtTaskStatus.setText("Mouse: Left Click");
-        });
-        findViewById(R.id.btnRightClick).setOnClickListener(v -> {
-            if (vibrator != null) vibrator.vibrate(25);
-            txtTaskStatus.setText("Mouse: Right Click");
-        });
+                  findViewById(R.id.btnLeftClick).setOnClickListener(v -> {
+                      if (vibrator != null) vibrator.vibrate(15);
+                      txtTaskStatus.setText("Mouse: Left Click");
+                  });
+                  findViewById(R.id.btnRightClick).setOnClickListener(v -> {
+                      if (vibrator != null) vibrator.vibrate(25);
+                      txtTaskStatus.setText("Mouse: Right Click");
+                  });
 
-        setupJoy(R.id.joyL, R.id.knobL);
+                  setupJoy(R.id.joyL, R.id.knobL);
 
-        int[] btns = {R.id.btnKeyA, R.id.btnKeyB, R.id.btnKeyX, R.id.btnKeyY, R.id.btnL1, R.id.btnR1};
-        for (int id : btns) {
-            View v = findViewById(id);
-            if (v != null) v.setOnTouchListener((view, event) -> {
-                if (event.getAction() == MotionEvent.ACTION_DOWN) {
-                    if (vibrator != null) vibrator.vibrate(20);
-                    txtTaskStatus.setText("Input: " + ((Button)view).getText());
-                }
-                return false;
-            });
-        }
+                  int[] btns = {R.id.btnKeyA, R.id.btnKeyB, R.id.btnKeyX, R.id.btnKeyY, R.id.btnL1, R.id.btnR1};
+                  for (int id : btns) {
+                      View v = findViewById(id);
+                      if (v != null) v.setOnTouchListener((view, event) -> {
+                          if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                              if (vibrator != null) vibrator.vibrate(20);
+                              txtTaskStatus.setText("Input: " + ((Button)view).getText());
+                          }
+                          return false;
+                      });
+                  }
 
-        findViewById(R.id.iconComputer).setOnClickListener(v -> openExplorer(getExternalFilesDir(null)));
-        findViewById(R.id.iconDriveC).setOnClickListener(v -> openExplorer(new File(getExternalFilesDir(null), "drive_c")));
-        findViewById(R.id.btnStartMenu).setOnClickListener(v -> {
-            String[] m = {"Programs", "Control Panel", "Exit Desktop"};
-            new AlertDialog.Builder(this).setTitle("Windows Start").setItems(m, (d, w) -> {
-                if (w == 2) { desktopContainer.setVisibility(View.GONE); homeScreen.setVisibility(View.VISIBLE); }
-                else { Toast.makeText(this, m[w], Toast.LENGTH_SHORT).show(); }
-            }).show();
-        });
+                  findViewById(R.id.iconComputer).setOnClickListener(v -> openExplorer(getExternalFilesDir(null)));
+                  findViewById(R.id.iconDriveC).setOnClickListener(v -> openExplorer(new File(getExternalFilesDir(null), "drive_c")));
+                  findViewById(R.id.btnStartMenu).setOnClickListener(v -> {
+                      String[] m = {"Programs", "Control Panel", "Exit Desktop"};
+                      new AlertDialog.Builder(this).setTitle("Windows Start").setItems(m, (d, w) -> {
+                          if (w == 2) { desktopContainer.setVisibility(View.GONE); homeScreen.setVisibility(View.VISIBLE); }
+                          else { Toast.makeText(this, m[w], Toast.LENGTH_SHORT).show(); }
+                      }).show();
+                  });
 
-        Choreographer.getInstance().postFrameCallback(new Choreographer.FrameCallback() {
-            @Override
-            public void doFrame(long time) {
-                if (lastTime == 0) lastTime = time;
-                frames++;
-                long diff = time - lastTime;
-                if (diff >= 1000000000L) {
-                    fpsCounter.setText(String.format("FPS: %.1f", (frames * 1000000000.0) / diff));
-                    frames = 0;
-                    lastTime = time;
-                    txtTaskClock.setText(new SimpleDateFormat("hh:mm a", Locale.getDefault()).format(new Date()));
-                }
-                Choreographer.getInstance().postFrameCallback(this);
-            }
-        });
-    }
+                  Choreographer.getInstance().postFrameCallback(new Choreographer.FrameCallback() {
+                      @Override
+                      public void doFrame(long time) {
+                          if (lastTime == 0) lastTime = time;
+                          frames++;
+                          long diff = time - lastTime;
+                          if (diff >= 1000000000L) {
+                              fpsCounter.setText(String.format("FPS: %.1f", (frames * 1000000000.0) / diff));
+                              frames = 0;
+                              lastTime = time;
+                              txtTaskClock.setText(new SimpleDateFormat("hh:mm a", Locale.getDefault()).format(new Date()));
+                          }
+                          Choreographer.getInstance().postFrameCallback(this);
+                      }
+                  });
+              }
 
-    private void showGameHubSettings() {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_gamehub_settings, null);
-        builder.setView(dialogView);
-        AlertDialog dialog = builder.create();
+              private void showGameHubSettings() {
+                  AlertDialog.Builder builder = new AlertDialog.Builder(this);
+                  View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_settings, null);
+                  builder.setView(dialogView);
+                  AlertDialog dialog = builder.create();
 
-        Spinner spnGpu = dialogView.findViewById(R.id.spnGpu);
-        Button btnCtrlState = dialogView.findViewById(R.id.btnToggleControlsState);
-        Button btnMouseState = dialogView.findViewById(R.id.btnToggleMouseState);
-        Button btnSave = dialogView.findViewById(R.id.btnSaveSettings);
+                  Spinner spnGpu = dialogView.findViewById(R.id.spnGpu);
+                  Button btnCtrl = dialogView.findViewById(R.id.btnToggleControls);
+                  Button btnMouse = dialogView.findViewById(R.id.btnToggleMouse);
+                  Button btnSave = dialogView.findViewById(R.id.btnSaveSettings);
 
-        final boolean[] tempControls = {showControls};
-        final boolean[] tempMouse = {mouseActive};
+                  final boolean[] tempControls = {showControls};
+                  final boolean[] tempMouse = {mouseActive};
 
-        btnCtrlState.setText(tempControls[0] ? "ON" : "OFF");
-        btnCtrlState.setBackgroundColor(tempControls[0] ? Color.parseColor("#00FF66") : Color.parseColor("#555555"));
-        btnCtrlState.setOnClickListener(v -> {
-            tempControls[0] = !tempControls[0];
-            btnCtrlState.setText(tempControls[0] ? "ON" : "OFF");
-            btnCtrlState.setBackgroundColor(tempControls[0] ? Color.parseColor("#00FF66") : Color.parseColor("#555555"));
-        });
+                  btnCtrl.setText(tempControls[0] ? "ON" : "OFF");
+                  btnCtrl.setBackgroundColor(tempControls[0] ? Color.parseColor("#00FF66") : Color.parseColor("#555555"));
+                  btnCtrl.setOnClickListener(v -> {
+                      tempControls[0] = !tempControls[0];
+                      btnCtrl.setText(tempControls[0] ? "ON" : "OFF");
+                      btnCtrl.setBackgroundColor(tempControls[0] ? Color.parseColor("#00FF66") : Color.parseColor("#555555"));
+                  });
 
-        btnMouseState.setText(tempMouse[0] ? "ON" : "OFF");
-        btnMouseState.setBackgroundColor(tempMouse[0] ? Color.parseColor("#00FF66") : Color.parseColor("#555555"));
-        btnMouseState.setOnClickListener(v -> {
-            tempMouse[0] = !tempMouse[0];
-            btnMouseState.setText(tempMouse[0] ? "ON" : "OFF");
-            btnMouseState.setBackgroundColor(tempMouse[0] ? Color.parseColor("#00FF66") : Color.parseColor("#555555"));
-        });
+                  btnMouse.setText(tempMouse[0] ? "ON" : "OFF");
+                  btnMouse.setBackgroundColor(tempMouse[0] ? Color.parseColor("#00FF66") : Color.parseColor("#555555"));
+                  btnMouse.setOnClickListener(v -> {
+                      tempMouse[0] = !tempMouse[0];
+                      btnMouse.setText(tempMouse[0] ? "ON" : "OFF");
+                      btnMouse.setBackgroundColor(tempMouse[0] ? Color.parseColor("#00FF66") : Color.parseColor("#555555"));
+                  });
 
-        btnSave.setOnClickListener(v -> {
-            selectedGpu = spnGpu.getSelectedItem().toString();
-            showControls = tempControls[0];
-            mouseActive = tempMouse[0];
+                  btnSave.setOnClickListener(v -> {
+                      selectedGpu = spnGpu.getSelectedItem().toString();
+                      showControls = tempControls[0];
+                      mouseActive = tempMouse[0];
 
-            gameControlsGroup.setVisibility(showControls ? View.VISIBLE : View.GONE);
-            imgMouseCursor.setVisibility(mouseActive ? View.VISIBLE : View.GONE);
-            mouseClicksPanel.setVisibility(mouseActive ? View.VISIBLE : View.GONE);
+                      gameControlsGroup.setVisibility(showControls ? View.VISIBLE : View.GONE);
+                      imgMouseCursor.setVisibility(mouseActive ? View.VISIBLE : View.GONE);
+                      mouseClicksPanel.setVisibility(mouseActive ? View.VISIBLE : View.GONE);
 
-            txtHomeStatus.setText("Status: " + selectedGpu + " Active");
-            Toast.makeText(this, "Settings Applied Successfully!", Toast.LENGTH_SHORT).show();
-            dialog.dismiss();
-        });
+                      txtHomeStatus.setText("Status: " + selectedGpu + " Active");
+                      Toast.makeText(this, "Settings Applied Successfully!", Toast.LENGTH_SHORT).show();
+                      dialog.dismiss();
+                  });
 
-        dialog.show();
-    }
+                  dialog.show();
+              }
 
-    private void openExplorer(File dir) {
-        if (dir == null) return;
-        if (!dir.exists()) dir.mkdirs();
-        File[] files = dir.listFiles();
-        int count = (files != null) ? files.length : 0;
-        String[] items = new String[count + 1];
-        items[0] = "➕ [New Folder]";
-        if (files != null) {
-            for (int i = 0; i < count; i++) {
-                items[i + 1] = (files[i].isDirectory() ? "📁 " : "📄 ") + files[i].getName();
-            }
-        }
-        new AlertDialog.Builder(this).setTitle("Explorer: /" + dir.getName()).setItems(items, (d, which) -> {
-            if (which == 0) {
-                new File(dir, "Folder_" + (System.currentTimeMillis() % 1000)).mkdirs();
-                Toast.makeText(this, "Created Folder", Toast.LENGTH_SHORT).show();
-                openExplorer(dir);
-            } else {
-                File sel = files[which - 1];
-                if (sel.isDirectory()) openExplorer(sel);
-                else Toast.makeText(this, "File: " + sel.getName(), Toast.LENGTH_SHORT).show();
-            }
-        }).setNegativeButton("Back", null).show();
-    }
+              private void openExplorer(File dir) {
+                  if (dir == null) return;
+                  if (!dir.exists()) dir.mkdirs();
+                  File[] files = dir.listFiles();
+                  int count = (files != null) ? files.length : 0;
+                  String[] items = new String[count + 1];
+                  items[0] = "➕ [New Folder]";
+                  if (files != null) {
+                      for (int i = 0; i < count; i++) {
+                          items[i + 1] = (files[i].isDirectory() ? "📁 " : "📄 ") + files[i].getName();
+                      }
+                  }
+                  new AlertDialog.Builder(this).setTitle("Explorer: /" + dir.getName()).setItems(items, (d, which) -> {
+                      if (which == 0) {
+                          new File(dir, "Folder_" + (System.currentTimeMillis() % 1000)).mkdirs();
+                          Toast.makeText(this, "Created Folder", Toast.LENGTH_SHORT).show();
+                          openExplorer(dir);
+                      } else {
+                          File sel = files[which - 1];
+                          if (sel.isDirectory()) openExplorer(sel);
+                          else Toast.makeText(this, "File: " + sel.getName(), Toast.LENGTH_SHORT).show();
+                      }
+                  }).setNegativeButton("Back", null).show();
+              }
 
-    private void startAutoSetup(String gameName) {
-        ProgressDialog pd = new ProgressDialog(this);
-        pd.setTitle("GameHub Auto-Setup");
-        pd.setMessage("Detecting Hardware & Mounting PS3 Firmware v4.91...");
-        pd.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
-        pd.setMax(100);
-        pd.setProgress(30);
-        pd.setCancelable(false);
-        pd.show();
+              private void startAutoSetup(String gameName) {
+                  ProgressDialog pd = new ProgressDialog(this);
+                  pd.setTitle("GameHub Auto-Setup");
+                  pd.setMessage("Detecting Hardware & Mounting PS3 Firmware v4.91...");
+                  pd.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
+                  pd.setMax(100);
+                  pd.setProgress(30);
+                  pd.setCancelable(false);
+                  pd.show();
 
-        new Handler(Looper.getMainLooper()).postDelayed(() -> { pd.setMessage("Applying " + selectedGpu + " & Wine..."); pd.setProgress(80); }, 800);
-        new Handler(Looper.getMainLooper()).postDelayed(() -> {
-            pd.dismiss();
-            openDesktop(gameName);
-        }, 1600);
-    }
+                  new Handler(Looper.getMainLooper()).postDelayed(() -> { pd.setMessage("Applying " + selectedGpu + " & Wine..."); pd.setProgress(80); }, 800);
+                  new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                      pd.dismiss();
+                      openDesktop(gameName);
+                  }, 1600);
+              }
 
-    private void openDesktop(String name) {
-        homeScreen.setVisibility(View.GONE);
-        desktopContainer.setVisibility(View.VISIBLE);
-        txtTaskStatus.setText("Running: " + name);
-        gameControlsGroup.setVisibility(showControls ? View.VISIBLE : View.GONE);
-    }
+              private void openDesktop(String name) {
+                  homeScreen.setVisibility(View.GONE);
+                  desktopContainer.setVisibility(View.VISIBLE);
+                  txtTaskStatus.setText("Running: " + name);
+                  gameControlsGroup.setVisibility(showControls ? View.VISIBLE : View.GONE);
+              }
 
-    private void setupJoy(int cId, int kId) {
-        RelativeLayout c = findViewById(cId);
-        View k = findViewById(kId);
-        c.setOnTouchListener((v, e) -> {
-            float cx = c.getWidth() / 2f, cy = c.getHeight() / 2f, maxR = cx - k.getWidth() / 2f;
-            if (e.getAction() == MotionEvent.ACTION_DOWN || e.getAction() == MotionEvent.ACTION_MOVE) {
-                float dx = e.getX() - cx, dy = e.getY() - cy;
-                float d = (float) Math.sqrt(dx * dx + dy * dy);
-                if (d > maxR && d > 0) { dx = (dx * maxR) / d; dy = (dy * maxR) / d; }
-                k.setTranslationX(dx); k.setTranslationY(dy);
-                String dir = (dy < -20 ? "UP " : dy > 20 ? "DOWN " : "") + (dx > 20 ? "RIGHT" : dx < -20 ? "LEFT" : "");
-                txtTaskStatus.setText("Move: " + dir);
-            } else if (e.getAction() == MotionEvent.ACTION_UP || e.getAction() == MotionEvent.ACTION_CANCEL) {
-                k.animate().translationX(0).translationY(0).setDuration(80).start();
-                txtTaskStatus.setText("Move: Center");
-            }
-            return true;
-        });
-    }
+              private void setupJoy(int cId, int kId) {
+                  RelativeLayout c = findViewById(cId);
+                  View k = findViewById(kId);
+                  c.setOnTouchListener((v, e) -> {
+                      float cx = c.getWidth() / 2f, cy = c.getHeight() / 2f, maxR = cx - k.getWidth() / 2f;
+                      if (e.getAction() == MotionEvent.ACTION_DOWN || e.getAction() == MotionEvent.ACTION_MOVE) {
+                          float dx = e.getX() - cx, dy = e.getY() - cy;
+                          float d = (float) Math.sqrt(dx * dx + dy * dy);
+                          if (d > maxR && d > 0) { dx = (dx * maxR) / d; dy = (dy * maxR) / d; }
+                          k.setTranslationX(dx); k.setTranslationY(dy);
+                          String dir = (dy < -20 ? "UP " : dy > 20 ? "DOWN " : "") + (dx > 20 ? "RIGHT" : dx < -20 ? "LEFT" : "");
+                          txtTaskStatus.setText("Move: " + dir);
+                      } else if (e.getAction() == MotionEvent.ACTION_UP || e.getAction() == MotionEvent.ACTION_CANCEL) {
+                          k.animate().translationX(0).translationY(0).setDuration(80).start();
+                          txtTaskStatus.setText("Move: Center");
+                      }
+                      return true;
+                  });
+              }
 
-    @Override
-    protected void onActivityResult(int req, int res, Intent data) {
-        super.onActivityResult(req, res, data);
-        if (req == 909 && res == RESULT_OK && data != null && data.getData() != null) {
-            String game = data.getData().getLastPathSegment();
-            if (game == null) game = "Game.exe";
-            startAutoSetup(game);
-        }
-    }
-}
-EOF
+              @Override
+              protected void onActivityResult(int req, int res, Intent data) {
+                  super.onActivityResult(req, res, data);
+                  if (req == 909 && res == RESULT_OK && data != null && data.getData() != null) {
+                      String game = data.getData().getLastPathSegment();
+                      if (game == null) game = "Game.exe";
+                      startAutoSetup(game);
+                  }
+              }
+          }
+          EOF
 
           cat << 'EOF' > build.gradle
           buildscript { repositories { google(); mavenCentral() }; dependencies { classpath 'com.android.tools.build:gradle:8.2.2' } }
