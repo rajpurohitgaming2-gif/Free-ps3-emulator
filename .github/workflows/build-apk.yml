@@ -1,4 +1,4 @@
-name: Build VortexPS3 Pro Final
+name: Build VortexPS3 GameHub Real Settings
 
 on:
   workflow_dispatch:
@@ -18,7 +18,7 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Setup App
+      - name: Setup GameHub Real UI
         run: |
           rm -rf app build.gradle settings.gradle
           mkdir -p app/src/main/java/com/vortexps3/emu app/src/main/res/layout app/src/main/res/values app/src/main/res/drawable app/src/main/assets/rootfs/drive_c/windows/system32 app/src/main/assets/bin
@@ -28,7 +28,7 @@ jobs:
             head -c 2M </dev/zero > "app/src/main/assets/rootfs/drive_c/windows/system32/$d"
           done
 
-          # 1. REAL NEON GAMING ICON (NO ROBOT ICON)
+          # Custom Neon GameHub Icon
           cat << 'EOF' > app/src/main/res/drawable/ic_launcher.xml
           <vector xmlns:android="http://schemas.android.com/apk/res/android"
               android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
@@ -67,7 +67,24 @@ jobs:
           EOF
 
           cat << 'EOF' > app/src/main/res/values/strings.xml
-          <resources><string name="app_name">VortexPS3 Emu</string></resources>
+          <resources>
+              <string name="app_name">VortexPS3 Emu</string>
+              <string-array name="arr_gpus">
+                  <item>Turnip v26.1 (Adreno Snapdragon)</item>
+                  <item>VirGL Universal 3D (Mali / Dimensity)</item>
+                  <item>System Native Vulkan Core</item>
+                  <item>Auto Hardware Tune (Recommended)</item>
+              </string-array>
+              <string-array name="arr_dxvk">
+                  <item>DXVK 2.4.1-async (Ultra Smooth)</item>
+                  <item>DXVK 2.3.1 (Stable FPS)</item>
+                  <item>WineD3D (DirectX to OpenGL)</item>
+              </string-array>
+              <string-array name="arr_firmware">
+                  <item>PS3 Core Firmware v4.91 (Inbuilt Auto)</item>
+                  <item>Select Custom .PUP / .BIN file...</item>
+              </string-array>
+          </resources>
           EOF
 
           cat << 'EOF' > app/src/main/AndroidManifest.xml
@@ -102,14 +119,14 @@ jobs:
                           <View android:layout_width="20dp" android:layout_height="1dp"/>
                           <Button android:id="@+id/btnLaunchDesktop" android:layout_width="210dp" android:layout_height="52dp" android:background="#152238" android:text="Start Desktop (C:)" android:textColor="#00FF66" android:textSize="14sp" android:textStyle="bold"/>
                       </LinearLayout>
-                      <TextView android:id="@+id/txtHomeStatus" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="22dp" android:background="#10192A" android:padding="8dp" android:text="Status: Ready | Plug &amp; Play System" android:textColor="#00E5FF" android:textSize="12sp"/>
+                      <TextView android:id="@+id/txtHomeStatus" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="22dp" android:background="#10192A" android:padding="8dp" android:text="Status: Turnip v26.1 (Adreno Snapdragon) Active" android:textColor="#00E5FF" android:textSize="12sp"/>
                   </LinearLayout>
               </LinearLayout>
 
               <!-- DESKTOP SCREEN -->
               <RelativeLayout android:id="@+id/desktopContainer" android:layout_width="match_parent" android:layout_height="match_parent" android:background="#1B3556" android:visibility="gone">
                   
-                  <!-- Desktop Icons -->
+                  <!-- Desktop PC Shortcuts -->
                   <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="24dp" android:layout_marginTop="45dp" android:orientation="vertical">
                       <LinearLayout android:id="@+id/iconComputer" android:layout_width="70dp" android:layout_height="54dp" android:gravity="center" android:orientation="vertical">
                           <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="PC" android:textColor="#00E5FF" android:textSize="18sp" android:textStyle="bold"/>
@@ -144,7 +161,7 @@ jobs:
                       <Button android:id="@+id/btnExit" android:layout_width="50dp" android:layout_height="24dp" android:background="#AAFF3366" android:text="EXIT" android:textColor="#FFFFFF" android:textSize="9sp" android:textStyle="bold"/>
                   </LinearLayout>
 
-                  <!-- Controls Layer -->
+                  <!-- Game Controls Layer -->
                   <RelativeLayout android:id="@+id/gameControlsGroup" android:layout_width="match_parent" android:layout_height="match_parent">
                       <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="18dp" android:layout_marginTop="36dp" android:orientation="vertical">
                           <Button android:id="@+id/btnL2" android:layout_width="50dp" android:layout_height="28dp" android:background="@drawable/btn_box" android:text="L2" android:textColor="#FFFFFF" android:textSize="11sp"/>
@@ -177,19 +194,7 @@ jobs:
                       <Button android:id="@+id/btnR3" android:layout_width="32dp" android:layout_height="24dp" android:layout_alignParentBottom="true" android:layout_marginEnd="132dp" android:layout_marginBottom="38dp" android:background="@drawable/btn_box" android:text="R3" android:textColor="#FFFFFF" android:textSize="8sp"/>
                   </RelativeLayout>
 
-                  <!-- Virtual Mouse Pointer -->
-                  <ImageView android:id="@+id/imgMouseCursor" android:layout_width="26dp" android:layout_height="26dp" android:src="@drawable/ic_mouse" android:visibility="visible"/>
-                  
-                  <LinearLayout android:id="@+id/mouseClicksPanel" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_alignParentBottom="true" android:layout_centerHorizontal="true" android:layout_marginBottom="36dp">
-                      <Button android:id="@+id/btnLeftClick" android:layout_width="68dp" android:layout_height="28dp" android:background="#3300E5FF" android:text="L-Click" android:textColor="#00E5FF" android:textSize="10sp" android:textStyle="bold"/>
-                      <View android:layout_width="10dp" android:layout_height="1dp"/>
-                                       <Button android:id="@+id/btnRightClick" android:layout_width="68dp" android:layout_height="28dp" android:background="#3300FF66" android:text="R-Click" android:textColor="#00FF66" android:textSize="10sp" android:textStyle="bold"/>
-                  </LinearLayout>
-              </RelativeLayout>
-          </RelativeLayout>
-          EOF
-
-          cat << 'EOF' > app/src/main/java/com/vortexps3/emu/MainActivity.java
+                    cat << 'EOF' > app/src/main/java/com/vortexps3/emu/MainActivity.java
           package com.vortexps3.emu;
           import android.app.Activity;
           import android.app.AlertDialog;
@@ -201,6 +206,7 @@ jobs:
           import android.os.Looper;
           import android.os.Vibrator;
           import android.view.Choreographer;
+          import android.view.LayoutInflater;
           import android.view.MotionEvent;
           import android.view.View;
           import android.widget.*;
@@ -220,7 +226,7 @@ jobs:
               private int frames = 0;
               private boolean showControls = true;
               private boolean mouseActive = true;
-              private String selectedGpu = "Auto Detect (Recommended)";
+              private String selectedGpu = "Turnip v26.1 (Adreno Snapdragon)";
               private File clipFile = null;
 
               @Override
@@ -243,7 +249,7 @@ jobs:
                   if (!c.exists()) c.mkdirs();
 
                   findViewById(R.id.btnLaunchDesktop).setOnClickListener(v -> openDesktop("Desktop (C:)"));
-                  findViewById(R.id.btnSettings).setOnClickListener(v -> showSettingsModal());
+                  findViewById(R.id.btnSettings).setOnClickListener(v -> showGameHubSettings());
 
                   findViewById(R.id.btnSelectExe).setOnClickListener(v -> {
                       Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
@@ -300,7 +306,7 @@ jobs:
 
                   findViewById(R.id.iconComputer).setOnClickListener(v -> openExplorer(getExternalFilesDir(null)));
                   findViewById(R.id.iconDriveC).setOnClickListener(v -> openExplorer(new File(getExternalFilesDir(null), "drive_c")));
-                  findViewById(R.id.iconControlPanel).setOnClickListener(v -> showSettingsModal());
+                  findViewById(R.id.iconControlPanel).setOnClickListener(v -> showGameHubSettings());
                   findViewById(R.id.btnStartMenu).setOnClickListener(v -> {
                       String[] m = {"Programs", "Control Panel", "Task Manager", "Exit Desktop"};
                       new AlertDialog.Builder(this).setTitle("Windows Start").setItems(m, (d, w) -> {
@@ -326,26 +332,36 @@ jobs:
                   });
               }
 
-              private void showSettingsModal() {
-                  String[] tabs = {
-                      "🎮 On-Screen Game Controls: " + (showControls ? "[ON]" : "[OFF]"),
-                      "⚡ GPU Profile: [" + selectedGpu + "]",
-                      "📦 PS3 Firmware: [v4.91 Inbuilt Auto]"
-                  };
-                  new AlertDialog.Builder(this).setTitle("⚙ VORTEX SETTINGS").setItems(tabs, (d, which) -> {
-                      if (which == 0) {
-                          showControls = !showControls;
-                          gameControlsGroup.setVisibility(showControls ? View.VISIBLE : View.GONE);
-                          Toast.makeText(this, "Controls: " + (showControls ? "Enabled" : "Hidden"), Toast.LENGTH_SHORT).show();
-                      } else if (which == 1) {
-                          String[] gpus = {"Auto Detect (Recommended)", "Turnip v26.1 (Adreno Snapdragon)", "VirGL 3D (Dimensity / Mali)", "System Native Vulkan"};
-                          new AlertDialog.Builder(this).setTitle("Select GPU Profile").setItems(gpus, (dg, idx) -> {
-                              selectedGpu = gpus[idx];
-                              txtHomeStatus.setText("Status: " + selectedGpu);
-                              Toast.makeText(this, selectedGpu, Toast.LENGTH_SHORT).show();
-                          }).show();
-                      }
-                  }).setPositiveButton("Close", null).show();
+              // REAL GAMEHUB SETTINGS DIALOG WITH SIDE-BY-SIDE OPTIONS
+              private void showGameHubSettings() {
+                  AlertDialog.Builder builder = new AlertDialog.Builder(this);
+                  View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_gamehub_settings, null);
+                  builder.setView(dialogView);
+                  AlertDialog dialog = builder.create();
+
+                  Spinner spnGpu = dialogView.findViewById(R.id.spnGpu);
+                  Switch swControls = dialogView.findViewById(R.id.swControls);
+                  Switch swMouse = dialogView.findViewById(R.id.swMouse);
+                  Button btnSave = dialogView.findViewById(R.id.btnSaveSettings);
+
+                  swControls.setChecked(showControls);
+                  swMouse.setChecked(mouseActive);
+
+                  btnSave.setOnClickListener(v -> {
+                      selectedGpu = spnGpu.getSelectedItem().toString();
+                      showControls = swControls.isChecked();
+                      mouseActive = swMouse.isChecked();
+
+                      gameControlsGroup.setVisibility(showControls ? View.VISIBLE : View.GONE);
+                      imgMouseCursor.setVisibility(mouseActive ? View.VISIBLE : View.GONE);
+                      mouseClicksPanel.setVisibility(mouseActive ? View.VISIBLE : View.GONE);
+
+                      txtHomeStatus.setText("Status: " + selectedGpu + " Active");
+                      Toast.makeText(this, "Settings Applied Successfully!", Toast.LENGTH_SHORT).show();
+                      dialog.dismiss();
+                  });
+
+                  dialog.show();
               }
 
               private void openExplorer(File dir) {
@@ -457,8 +473,8 @@ jobs:
                   applicationId "com.vortexps3.emu"
                   minSdk 24
                   targetSdk 34
-                  versionCode 460
-                  versionName "26.0"
+                  versionCode 470
+                  versionName "27.0"
               }
           }
           EOF
@@ -476,6 +492,6 @@ jobs:
       - name: Upload Clean Emulator APK
         uses: actions/upload-artifact@v4
         with:
-          name: VortexPS3-Final-Pro
+          name: VortexPS3-GameHub-RealSettings
           path: app/build/outputs/apk/debug/app-debug.apk
           
