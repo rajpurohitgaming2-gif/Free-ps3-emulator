@@ -1,4 +1,4 @@
-name: Build VortexPS3 GameHub Full Engine
+name: Build VortexPS3 GameHub 3Part
 
 on:
   workflow_dispatch:
@@ -15,27 +15,23 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Build Resources
+      - name: Setup Folders and Resources
         run: |
           rm -rf app build.gradle settings.gradle
           mkdir -p app/src/main/java/com/vortexps3/emu app/src/main/res/layout app/src/main/res/values app/src/main/res/drawable app/src/main/assets/rootfs/drive_c/windows/system32 app/src/main/assets/bin
 
-          head -c 4M </dev/zero > app/src/main/assets/bin/box64
-          for d in kernel32.dll user32.dll d3d11.dll; do
-            head -c 2M </dev/zero > "app/src/main/assets/rootfs/drive_c/windows/system32/$d"
-          done
+          head -c 2M </dev/zero > app/src/main/assets/bin/box64
+          for d in kernel32.dll user32.dll d3d11.dll; do head -c 1M </dev/zero > "app/src/main/assets/rootfs/drive_c/windows/system32/$d"; done
 
-          # Custom Neon Gaming Icon
           cat << 'EOF' > app/src/main/res/drawable/ic_launcher.xml
           <vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
               <path android:fillColor="#0A0E17" android:pathData="M0,0h108v108h-108z"/>
-              <path android:strokeColor="#00E5FF" android:strokeWidth="7" android:pathData="M54,20 A34,34 0 1,0 88,54" android:strokeLineCap="round"/>
-              <path android:strokeColor="#7928CA" android:strokeWidth="7" android:pathData="M54,88 A34,34 0 1,0 20,54" android:strokeLineCap="round"/>
+              <path android:strokeColor="#00E5FF" android:strokeWidth="7" android:pathData="M54,20 A34,34 0 1,0 88,54"/>
+              <path android:strokeColor="#7928CA" android:strokeWidth="7" android:pathData="M54,88 A34,34 0 1,0 20,54"/>
               <path android:fillColor="#00FF66" android:pathData="M44,36 L72,54 L44,72 Z"/>
           </vector>
           EOF
 
-          # Mouse Cursor
           cat << 'EOF' > app/src/main/res/drawable/ic_mouse.xml
           <vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24">
               <path android:fillColor="#FFFFFF" android:strokeColor="#000000" android:strokeWidth="1.5" android:pathData="M3,2 L3,21 L8,16 L13,22 L16,20 L11,14 L18,14 Z"/>
@@ -43,51 +39,29 @@ jobs:
           EOF
 
           cat << 'EOF' > app/src/main/res/drawable/btn_box.xml
-          <shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle"><stroke android:width="2dp" android:color="#CCFFFFFF"/><solid android:color="#22000000"/><corners android:radius="6dp"/></shape>
+          <shape xmlns:android="http://schemas.android.com/apk/res/android"><stroke android:width="2dp" android:color="#CCFFFFFF"/><solid android:color="#22000000"/><corners android:radius="6dp"/></shape>
           EOF
           cat << 'EOF' > app/src/main/res/drawable/btn_round.xml
-          <shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="oval"><stroke android:width="2dp" android:color="#CCFFFFFF"/><solid android:color="#22000000"/></shape>
+          <shape xmlns:android="http://schemas.android.com/apk/res/android"><stroke android:width="2dp" android:color="#CCFFFFFF"/><solid android:color="#22000000"/></shape>
           EOF
           cat << 'EOF' > app/src/main/res/drawable/joy_knob.xml
-          <shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="oval"><stroke android:width="2dp" android:color="#00E5FF"/><solid android:color="#AA00E5FF"/></shape>
+          <shape xmlns:android="http://schemas.android.com/apk/res/android"><stroke android:width="2dp" android:color="#00E5FF"/><solid android:color="#AA00E5FF"/></shape>
           EOF
 
-          # Full Lists for All Core Engines
           cat << 'EOF' > app/src/main/res/values/strings.xml
           <resources>
               <string name="app_name">VortexPS3 Emu</string>
-              <string-array name="arr_gpus">
-                  <item>Turnip v26.1 (Adreno Snapdragon)</item>
-                  <item>VirGL Universal 3D (Mali / Dimensity)</item>
-                  <item>System Native Vulkan Core</item>
-                  <item>Auto Hardware Tune (Recommended)</item>
-              </string-array>
-              <string-array name="arr_dxvk">
-                  <item>DXVK 2.4.1-async (Ultra Smooth)</item>
-                  <item>DXVK 2.3.1 (Stable FPS)</item>
-                  <item>WineD3D (OpenGL Core)</item>
-              </string-array>
-              <string-array name="arr_proton">
-                  <item>Proton 9.0-x86_64 (Steam Core)</item>
-                  <item>Wine 9.3 GE Custom (Gaming Edition)</item>
-                  <item>Wine 8.0 Vanilla Stable</item>
-              </string-array>
-              <string-array name="arr_armx">
-                  <item>Box64 v0.3.1 (Dynarec Fast)</item>
-                  <item>Proton-ARMx Hybrid Core</item>
-                  <item>FEX-Emu ARM64</item>
-              </string-array>
-              <string-array name="arr_ps3">
-                  <item>PS3 Firmware v4.91 (Auto Inbuilt)</item>
-                  <item>Select Custom .PUP / .BIN...</item>
-              </string-array>
+              <string-array name="arr_gpus"><item>Turnip v26.1 (Adreno)</item><item>VirGL 3D (Mali)</item><item>Native Vulkan Core</item><item>Auto Tune</item></string-array>
+              <string-array name="arr_dxvk"><item>DXVK 2.4.1-async</item><item>DXVK 2.3.1</item><item>WineD3D</item></string-array>
+              <string-array name="arr_proton"><item>Proton 9.0 Core</item><item>Wine 9.3 GE</item><item>Wine 8.0</item></string-array>
+              <string-array name="arr_armx"><item>Box64 v0.3.1 Dynarec</item><item>Proton-ARMx Hybrid</item><item>FEX ARM64</item></string-array>
+              <string-array name="arr_ps3"><item>PS3 Firmware v4.91 Inbuilt</item><item>Custom .PUP File</item></string-array>
           </resources>
           EOF
 
           cat << 'EOF' > app/src/main/AndroidManifest.xml
           <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-              <uses-permission android:name="android.permission.INTERNET"/>
-              <uses-permission android:name="android.permission.VIBRATE"/>
+              <uses-permission android:name="android.permission.INTERNET"/><uses-permission android:name="android.permission.VIBRATE"/>
               <application android:label="@string/app_name" android:icon="@drawable/ic_launcher" android:roundIcon="@drawable/ic_launcher" android:theme="@android:style/Theme.NoTitleBar.Fullscreen">
                   <activity android:name="com.vortexps3.emu.MainActivity" android:exported="true" android:screenOrientation="sensorLandscape">
                       <intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter>
@@ -96,106 +70,60 @@ jobs:
           </manifest>
           EOF
 
-          # Complete Settings Dialog with Proton, ARMx & PS3 Firmware
           cat << 'EOF' > app/src/main/res/layout/dialog_settings.xml
           <ScrollView xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="wrap_content" android:background="#0F1726" android:padding="16dp">
               <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
-                  <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="⚙ GAMEHUB ADVANCED ENGINES" android:textColor="#00E5FF" android:textSize="15sp" android:textStyle="bold" android:layout_marginBottom="12dp"/>
-                  
-                  <!-- 1. GPU Driver -->
-                  <LinearLayout android:layout_width="match_parent" android:layout_height="38dp" android:gravity="center_vertical" android:orientation="horizontal">
-                      <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="⚡ GPU Driver:" android:textColor="#FFFFFF" android:textSize="11sp" android:textStyle="bold"/>
-                      <Spinner android:id="@+id/spnGpu" android:layout_width="0dp" android:layout_height="34dp" android:layout_weight="1.6" android:background="#1B283E" android:entries="@array/arr_gpus"/>
-                  </LinearLayout>
-
-                  <!-- 2. DXVK Version -->
-                  <LinearLayout android:layout_width="match_parent" android:layout_height="38dp" android:gravity="center_vertical" android:orientation="horizontal" android:layout_marginTop="6dp">
-                      <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="🖥 DXVK Engine:" android:textColor="#FFFFFF" android:textSize="11sp" android:textStyle="bold"/>
-                      <Spinner android:id="@+id/spnDxvk" android:layout_width="0dp" android:layout_height="34dp" android:layout_weight="1.6" android:background="#1B283E" android:entries="@array/arr_dxvk"/>
-                  </LinearLayout>
-
-                  <!-- 3. Proton / Wine Engine -->
-                  <LinearLayout android:layout_width="match_parent" android:layout_height="38dp" android:gravity="center_vertical" android:orientation="horizontal" android:layout_marginTop="6dp">
-                      <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="🍷 Proton / Wine:" android:textColor="#FFFFFF" android:textSize="11sp" android:textStyle="bold"/>
-                      <Spinner android:id="@+id/spnProton" android:layout_width="0dp" android:layout_height="34dp" android:layout_weight="1.6" android:background="#1B283E" android:entries="@array/arr_proton"/>
-                  </LinearLayout>
-
-                  <!-- 4. CPU ARMx Translator -->
-                  <LinearLayout android:layout_width="match_parent" android:layout_height="38dp" android:gravity="center_vertical" android:orientation="horizontal" android:layout_marginTop="6dp">
-                      <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="⚙ CPU (ARMx):" android:textColor="#FFFFFF" android:textSize="11sp" android:textStyle="bold"/>
-                      <Spinner android:id="@+id/spnArmx" android:layout_width="0dp" android:layout_height="34dp" android:layout_weight="1.6" android:background="#1B283E" android:entries="@array/arr_armx"/>
-                  </LinearLayout>
-
-                  <!-- 5. PS3 Core Firmware -->
-                  <LinearLayout android:layout_width="match_parent" android:layout_height="38dp" android:gravity="center_vertical" android:orientation="horizontal" android:layout_marginTop="6dp">
-                      <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="📦 PS3 Core:" android:textColor="#FFFFFF" android:textSize="11sp" android:textStyle="bold"/>
-                      <Spinner android:id="@+id/spnPs3" android:layout_width="0dp" android:layout_height="34dp" android:layout_weight="1.6" android:background="#1B283E" android:entries="@array/arr_ps3"/>
-                  </LinearLayout>
-
-                  <!-- 6. Controls Toggle -->
-                  <LinearLayout android:layout_width="match_parent" android:layout_height="38dp" android:gravity="center_vertical" android:orientation="horizontal" android:layout_marginTop="6dp">
-                      <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="🎮 Game Controls:" android:textColor="#FFFFFF" android:textSize="11sp" android:textStyle="bold"/>
-                      <Button android:id="@+id/btnToggleControls" android:layout_width="wrap_content" android:layout_height="28dp" android:background="#00FF66" android:text="ON" android:textColor="#000000" android:textSize="10sp" android:textStyle="bold"/>
-                  </LinearLayout>
-
-                  <!-- 7. Virtual Mouse Toggle -->
-                  <LinearLayout android:layout_width="match_parent" android:layout_height="38dp" android:gravity="center_vertical" android:orientation="horizontal" android:layout_marginTop="6dp">
-                      <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="🖱 Virtual Mouse:" android:textColor="#FFFFFF" android:textSize="11sp" android:textStyle="bold"/>
-                      <Button android:id="@+id/btnToggleMouse" android:layout_width="wrap_content" android:layout_height="28dp" android:background="#00FF66" android:text="ON" android:textColor="#000000" android:textSize="10sp" android:textStyle="bold"/>
-                  </LinearLayout>
-
-                  <Button android:id="@+id/btnSaveSettings" android:layout_width="match_parent" android:layout_height="38dp" android:layout_marginTop="12dp" android:background="#00E5FF" android:text="✓ SAVE &amp; APPLY ENGINES" android:textColor="#000000" android:textSize="11sp" android:textStyle="bold"/>
+                  <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="⚙ GAMEHUB ADVANCED ENGINES" android:textColor="#00E5FF" android:textSize="14sp" android:textStyle="bold" android:layout_marginBottom="10dp"/>
+                  <LinearLayout android:layout_width="match_parent" android:layout_height="36dp" android:gravity="center_vertical"><TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="⚡ GPU Driver:" android:textColor="#FFF" android:textSize="11sp" android:textStyle="bold"/><Spinner android:id="@+id/spnGpu" android:layout_width="0dp" android:layout_height="32dp" android:layout_weight="1.6" android:background="#1B283E" android:entries="@array/arr_gpus"/></LinearLayout>
+                  <LinearLayout android:layout_width="match_parent" android:layout_height="36dp" android:gravity="center_vertical" android:layout_marginTop="4dp"><TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="🖥 DXVK Engine:" android:textColor="#FFF" android:textSize="11sp" android:textStyle="bold"/><Spinner android:id="@+id/spnDxvk" android:layout_width="0dp" android:layout_height="32dp" android:layout_weight="1.6" android:background="#1B283E" android:entries="@array/arr_dxvk"/></LinearLayout>
+                  <LinearLayout android:layout_width="match_parent" android:layout_height="36dp" android:gravity="center_vertical" android:layout_marginTop="4dp"><TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="🍷 Proton / Wine:" android:textColor="#FFF" android:textSize="11sp" android:textStyle="bold"/><Spinner android:id="@+id/spnProton" android:layout_width="0dp" android:layout_height="32dp" android:layout_weight="1.6" android:background="#1B283E" android:entries="@array/arr_proton"/></LinearLayout>
+                  <LinearLayout android:layout_width="match_parent" android:layout_height="36dp" android:gravity="center_vertical" android:layout_marginTop="4dp"><TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="⚙ CPU (ARMx):" android:textColor="#FFF" android:textSize="11sp" android:textStyle="bold"/><Spinner android:id="@+id/spnArmx" android:layout_width="0dp" android:layout_height="32dp" android:layout_weight="1.6" android:background="#1B283E" android:entries="@array/arr_armx"/></LinearLayout>
+                  <LinearLayout android:layout_width="match_parent" android:layout_height="36dp" android:gravity="center_vertical" android:layout_marginTop="4dp"><TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="📦 PS3 Core:" android:textColor="#FFF" android:textSize="11sp" android:textStyle="bold"/><Spinner android:id="@+id/spnPs3" android:layout_width="0dp" android:layout_height="32dp" android:layout_weight="1.6" android:background="#1B283E" android:entries="@array/arr_ps3"/></LinearLayout>
+                  <LinearLayout android:layout_width="match_parent" android:layout_height="36dp" android:gravity="center_vertical" android:layout_marginTop="4dp"><TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="🎮 Game Controls:" android:textColor="#FFF" android:textSize="11sp" android:textStyle="bold"/><Button android:id="@+id/btnToggleControls" android:layout_width="wrap_content" android:layout_height="26dp" android:background="#00FF66" android:text="ON" android:textColor="#000" android:textSize="10sp" android:textStyle="bold"/></LinearLayout>
+                  <LinearLayout android:layout_width="match_parent" android:layout_height="36dp" android:gravity="center_vertical" android:layout_marginTop="4dp"><TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="🖱 Virtual Mouse:" android:textColor="#FFF" android:textSize="11sp" android:textStyle="bold"/><Button android:id="@+id/btnToggleMouse" android:layout_width="wrap_content" android:layout_height="26dp" android:background="#00FF66" android:text="ON" android:textColor="#000" android:textSize="10sp" android:textStyle="bold"/></LinearLayout>
+                  <Button android:id="@+id/btnSaveSettings" android:layout_width="match_parent" android:layout_height="36dp" android:layout_marginTop="10dp" android:background="#00E5FF" android:text="✓ SAVE &amp; APPLY ENGINES" android:textColor="#000" android:textSize="11sp" android:textStyle="bold"/>
               </LinearLayout>
           </ScrollView>
           EOF
-
-          # Main Activity Layout
-          cat << 'EOF' > app/src/main/res/layout/activity_main.xml
+                    cat << 'EOF' > app/src/main/res/layout/activity_main.xml
           <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent" android:background="#090D16">
               <LinearLayout android:id="@+id/homeScreen" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical">
                   <LinearLayout android:layout_width="match_parent" android:layout_height="48dp" android:background="#0F1726" android:gravity="center_vertical" android:paddingStart="16dp" android:paddingEnd="16dp">
-                      <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="VORTEX-PS3 GAMEHUB" android:textColor="#00E5FF" android:textSize="17sp" android:textStyle="bold"/>
-                      <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="8dp" android:text="| AI VIDEO HUB" android:textColor="#52647E" android:textSize="11sp"/>
-                      <View android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="1"/>
-                      <Button android:id="@+id/btnSettings" android:layout_width="wrap_content" android:layout_height="32dp" android:background="#1B283E" android:paddingStart="12dp" android:paddingEnd="12dp" android:text="⚙ Settings" android:textColor="#00E5FF" android:textSize="11sp" android:textStyle="bold"/>
+                      <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="VORTEX-PS3 GAMEHUB" android:textColor="#00E5FF" android:textSize="17sp" android:textStyle="bold"/><TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="8dp" android:text="| AI VIDEO HUB" android:textColor="#52647E" android:textSize="11sp"/><View android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="1"/><Button android:id="@+id/btnSettings" android:layout_width="wrap_content" android:layout_height="32dp" android:background="#1B283E" android:paddingStart="12dp" android:paddingEnd="12dp" android:text="⚙ Settings" android:textColor="#00E5FF" android:textSize="11sp" android:textStyle="bold"/>
                   </LinearLayout>
-                  <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent" android:gravity="center" android:orientation="vertical" android:padding="20dp">
-                      <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="WINLATOR PRO &amp; PS3 ENVIRONMENT" android:textColor="#FFFFFF" android:textSize="19sp" android:textStyle="bold"/>
-                      <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:text="Proton 9.0 • ARMx Translation • Complete File Explorer" android:textColor="#7A8CA5" android:textSize="12sp"/>
-                      <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="24dp" android:orientation="horizontal">
-                          <Button android:id="@+id/btnSelectExe" android:layout_width="200dp" android:layout_height="50dp" android:background="#00E5FF" android:text="⚡ Run .EXE (Auto Setup)" android:textColor="#000000" android:textSize="13sp" android:textStyle="bold"/>
-                          <View android:layout_width="16dp" android:layout_height="1dp"/>
-                          <Button android:id="@+id/btnLaunchDesktop" android:layout_width="200dp" android:layout_height="50dp" android:background="#152238" android:text="Start Desktop (C:)" android:textColor="#00FF66" android:textSize="13sp" android:textStyle="bold"/>
-                      </LinearLayout>
-                      <TextView android:id="@+id/txtHomeStatus" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="20dp" android:background="#10192A" android:padding="8dp" android:text="Status: Turnip v26.1 | Proton 9.0 | Box64 Active" android:textColor="#00E5FF" android:textSize="11sp"/>
+                  <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent" android:gravity="center" android:orientation="vertical" android:padding="16dp">
+                      <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="WINLATOR PRO &amp; PS3 ENVIRONMENT" android:textColor="#FFFFFF" android:textSize="18sp" android:textStyle="bold"/><TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:text="Proton 9.0 • ARMx Translation • Complete File Explorer" android:textColor="#7A8CA5" android:textSize="11sp"/>
+                      <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="20dp"><Button android:id="@+id/btnSelectExe" android:layout_width="190dp" android:layout_height="48dp" android:background="#00E5FF" android:text="⚡ Run .EXE (Auto Setup)" android:textColor="#000" android:textSize="12sp" android:textStyle="bold"/><View android:layout_width="14dp" android:layout_height="1dp"/><Button android:id="@+id/btnLaunchDesktop" android:layout_width="190dp" android:layout_height="48dp" android:background="#152238" android:text="Start Desktop (C:)" android:textColor="#00FF66" android:textSize="12sp" android:textStyle="bold"/></LinearLayout>
+                      <TextView android:id="@+id/txtHomeStatus" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="16dp" android:background="#10192A" android:padding="8dp" android:text="Status: Turnip v26.1 | Proton 9.0 Active" android:textColor="#00E5FF" android:textSize="11sp"/>
                   </LinearLayout>
               </LinearLayout>
               <RelativeLayout android:id="@+id/desktopContainer" android:layout_width="match_parent" android:layout_height="match_parent" android:background="#1B3556" android:visibility="gone">
                   <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="20dp" android:layout_marginTop="40dp" android:orientation="vertical">
-                      <LinearLayout android:id="@+id/iconComputer" android:layout_width="66dp" android:layout_height="50dp" android:gravity="center" android:orientation="vertical">
-                          <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="PC" android:textColor="#00E5FF" android:textSize="16sp" android:textStyle="bold"/>
-                          <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Computer" android:textColor="#FFFFFF" android:textSize="9sp"/>
-                      </LinearLayout>
-                      <LinearLayout android:id="@+id/iconDriveC" android:layout_width="66dp" android:layout_height="50dp" android:layout_marginTop="10dp" android:gravity="center" android:orientation="vertical">
-                          <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="C:" android:textColor="#00FF66" android:textSize="16sp" android:textStyle="bold"/>
-                          <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Drive (C:)" android:textColor="#FFFFFF" android:textSize="9sp"/>
-                      </LinearLayout>
+                      <LinearLayout android:id="@+id/iconComputer" android:layout_width="64dp" android:layout_height="48dp" android:gravity="center" android:orientation="vertical"><TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="PC" android:textColor="#00E5FF" android:textSize="15sp" android:textStyle="bold"/><TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Computer" android:textColor="#FFF" android:textSize="9sp"/></LinearLayout>
+                      <LinearLayout android:id="@+id/iconDriveC" android:layout_width="64dp" android:layout_height="48dp" android:layout_marginTop="10dp" android:gravity="center" android:orientation="vertical"><TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="C:" android:textColor="#00FF66" android:textSize="15sp" android:textStyle="bold"/><TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Drive (C:)" android:textColor="#FFF" android:textSize="9sp"/></LinearLayout>
                   </LinearLayout>
-                  <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_centerInParent="true" android:text="WINLATOR PC CORE\nVortexPS3 x64" android:textColor="#263E5E" android:textSize="26sp" android:textStyle="bold" android:gravity="center"/>
-                  <LinearLayout android:layout_width="match_parent" android:layout_height="30dp" android:layout_alignParentBottom="true" android:background="#0A1320" android:gravity="center_vertical" android:paddingStart="8dp" android:paddingEnd="10dp">
-                      <Button android:id="@+id/btnStartMenu" android:layout_width="60dp" android:layout_height="22dp" android:background="#00A8E8" android:text="Start" android:textColor="#000000" android:textSize="9sp" android:textStyle="bold"/>
-                      <TextView android:id="@+id/txtTaskStatus" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="12dp" android:text="System Ready" android:textColor="#88A0C0" android:textSize="9sp"/>
-                      <View android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="1"/>
-                      <TextView android:id="@+id/txtTaskClock" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="12:00 PM" android:textColor="#FFFFFF" android:textSize="9sp"/>
+                  <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_centerInParent="true" android:text="WINLATOR PC CORE\nVortexPS3 x64" android:textColor="#263E5E" android:textSize="24sp" android:textStyle="bold" android:gravity="center"/>
+                  <LinearLayout android:layout_width="match_parent" android:layout_height="28dp" android:layout_alignParentBottom="true" android:background="#0A1320" android:gravity="center_vertical" android:paddingStart="8dp" android:paddingEnd="8dp">
+                      <Button android:id="@+id/btnStartMenu" android:layout_width="56dp" android:layout_height="22dp" android:background="#00A8E8" android:text="Start" android:textColor="#000" android:textSize="9sp" android:textStyle="bold"/><TextView android:id="@+id/txtTaskStatus" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="10dp" android:text="System Ready" android:textColor="#88A0C0" android:textSize="9sp"/><View android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="1"/><TextView android:id="@+id/txtTaskClock" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="12:00 PM" android:textColor="#FFF" android:textSize="9sp"/>
                   </LinearLayout>
                   <TextView android:id="@+id/fpsCounter" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="10dp" android:layout_marginTop="6dp" android:background="#88000000" android:padding="4dp" android:text="FPS: 60.0" android:textColor="#00FF66" android:textSize="11sp" android:textStyle="bold"/>
-                  <Button android:id="@+id/btnExit" android:layout_width="48dp" android:layout_height="24dp" android:layout_alignParentTop="true" android:layout_centerHorizontal="true" android:layout_marginTop="6dp" android:background="#AAFF3366" android:text="EXIT" android:textColor="#FFFFFF" android:textSize="9sp" android:textStyle="bold"/>
+                  <Button android:id="@+id/btnExit" android:layout_width="48dp" android:layout_height="24dp" android:layout_alignParentTop="true" android:layout_centerHorizontal="true" android:layout_marginTop="6dp" android:background="#AAFF3366" android:text="EXIT" android:textColor="#FFF" android:textSize="9sp" android:textStyle="bold"/>
                   <RelativeLayout android:id="@+id/gameControlsGroup" android:layout_width="match_parent" android:layout_height="match_parent">
-                      <Button android:id="@+id/btnL1" android:layout_width="46dp" android:layout_height="26dp" android:layout_marginStart="16dp" android:layout_marginTop="36dp" android:background="@drawable/btn_box" android:text="L1" android:textColor="#FFFFFF" android:textSize="10sp"/>
-                      <RelativeLayout android:id="@+id/joyL" android:layout_width="92dp" android:layout_height="92dp" android:layout_alignParentBottom="true" android:layout_marginStart="14dp" android:layout_marginBottom="36dp" android:background="@drawable/btn_round">
-                          <View android:id="@+id/knobL" android:layout_width="40dp" android:layout_height="40dp" android:layout_centerInParent="true" android:background="@drawable/joy_knob"/>
+                      <Button android:id="@+id/btnL1" android:layout_width="44dp" android:layout_height="26dp" android:layout_marginStart="16dp" android:layout_marginTop="34dp" android:background="@drawable/btn_box" android:text="L1" android:textColor="#FFF" android:textSize="10sp"/>
+                      <RelativeLayout android:id="@+id/joyL" android:layout_width="88dp" android:layout_height="88dp" android:layout_alignParentBottom="true" android:layout_marginStart="14dp" android:layout_marginBottom="32dp" android:background="@drawable/btn_round"><View android:id="@+id/knobL" android:layout_width="38dp" android:layout_height="38dp" android:layout_centerInParent="true" android:background="@drawable/joy_knob"/></RelativeLayout>
+                      <Button android:id="@+id/btnR1" android:layout_width="44dp" android:layout_height="26dp" android:layout_alignParentEnd="true" android:layout_marginEnd="16dp" android:layout_marginTop="34dp" android:background="@drawable/btn_box" android:text="R1" android:textColor="#FFF" android:textSize="10sp"/>
+                      <RelativeLayout android:layout_width="96dp" android:layout_height="96dp" android:layout_alignParentEnd="true" android:layout_alignParentBottom="true" android:layout_marginEnd="14dp" android:layout_marginBottom="32dp">
+                          <Button android:id="@+id/btnKeyY" android:layout_width="28dp" android:layout_height="28dp" android:layout_alignParentTop="true" android:layout_centerHorizontal="true" android:background="@drawable/btn_round" android:text="Y" android:textColor="#FFF" android:textSize="10sp"/><Button android:id="@+id/btnKeyA" android:layout_width="28dp" android:layout_height="28dp" android:layout_alignParentBottom="true" android:layout_centerHorizontal="true" android:background="@drawable/btn_round" android:text="A" android:textColor="#FFF" android:textSize="10sp"/><Button android:id="@+id/btnKeyX" android:layout_width="28dp" android:layout_height="28dp" android:layout_alignParentStart="true" android:layout_centerVertical="true" android:background="@drawable/btn_round" android:text="X" android:textColor="#FFF" android:textSize="10sp"/><Button android:id="@+id/btnKeyB" android:layout_width="28dp" android:layout_height="28dp" android:layout_alignParentEnd="true" android:layout_centerVertical="true" android:background="@drawable/btn_round" android:text="B" android:textColor="#FFF" android:textSize="10sp"/>
                       </RelativeLayout>
-                      <Button android:id="@+id/btnR1" android:layout_width="46dp" android:layout_height="26dp" android:layout_alignParentEnd="true" android:layout_marginEnd="16dp" android:layout_marginTop="36dp" android:background="@drawable/bt          cat << 'EOF' > app/src/main/java/com/vortexps3/emu/MainActivity.java
+                  </RelativeLayout>
+                  <ImageView android:id="@+id/imgMouseCursor" android:layout_width="22dp" android:layout_height="22dp" android:src="@drawable/ic_mouse" android:visibility="visible"/>
+                  <LinearLayout android:id="@+id/mouseClicksPanel" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_alignParentBottom="true" android:layout_centerHorizontal="true" android:layout_marginBottom="32dp">
+                      <Button android:id="@+id/btnLeftClick" android:layout_width="60dp" android:layout_height="24dp" android:background="#3300E5FF" android:text="L-Click" android:textColor="#00E5FF" android:textSize="9sp" android:textStyle="bold"/><View android:layout_width="8dp" android:layout_height="1dp"/><Button android:id="@+id/btnRightClick" android:layout_width="60dp" android:layout_height="24dp" android:background="#3300FF66" android:text="R-Click" android:textColor="#00FF66" android:textSize="9sp" android:textStyle="bold"/>
+                  </LinearLayout>
+              </RelativeLayout>
+          </RelativeLayout>
+          EOF
+                    cat << 'EOF' > app/src/main/java/com/vortexps3/emu/MainActivity.java
           package com.vortexps3.emu;
           import android.app.*;
           import android.content.*;
@@ -216,17 +144,13 @@ jobs:
               private Vibrator vibrator;
               private long lastTime = 0;
               private int frames = 0;
-              private boolean showControls = true;
-              private boolean mouseActive = true;
-              private String selectedGpu = "Turnip v26.1 (Adreno Snapdragon)";
-              private String selectedProton = "Proton 9.0-x86_64 (Steam Core)";
-              private String selectedArmx = "Box64 v0.3.1 (Dynarec Fast)";
+              private boolean showControls = true, mouseActive = true;
+              private String selectedGpu = "Turnip v26.1", selectedProton = "Proton 9.0";
 
               @Override
               protected void onCreate(Bundle savedInstanceState) {
                   super.onCreate(savedInstanceState);
                   setContentView(R.layout.activity_main);
-
                   homeScreen = findViewById(R.id.homeScreen);
                   desktopContainer = findViewById(R.id.desktopContainer);
                   gameControlsGroup = findViewById(R.id.gameControlsGroup);
@@ -238,77 +162,50 @@ jobs:
                   txtHomeStatus = findViewById(R.id.txtHomeStatus);
                   vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
 
-                  File c = new File(getExternalFilesDir(null), "drive_c");
-                  if (!c.exists()) c.mkdirs();
-
+                  File c = new File(getExternalFilesDir(null), "drive_c"); if (!c.exists()) c.mkdirs();
                   findViewById(R.id.btnLaunchDesktop).setOnClickListener(v -> openDesktop("Desktop (C:)"));
                   findViewById(R.id.btnSettings).setOnClickListener(v -> showGameHubSettings());
-
                   findViewById(R.id.btnSelectExe).setOnClickListener(v -> {
-                      Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
-                      intent.setType("*/*");
-                      startActivityForResult(Intent.createChooser(intent, "Select Windows EXE Game"), 909);
+                      Intent intent = new Intent(Intent.ACTION_GET_CONTENT); intent.setType("*/*");
+                      startActivityForResult(Intent.createChooser(intent, "Select EXE"), 909);
                   });
+                  findViewById(R.id.btnExit).setOnClickListener(v -> { desktopContainer.setVisibility(View.GONE); homeScreen.setVisibility(View.VISIBLE); });
 
-                  findViewById(R.id.btnExit).setOnClickListener(v -> {
-                      desktopContainer.setVisibility(View.GONE);
-                      homeScreen.setVisibility(View.VISIBLE);
-                  });
-
-                  imgMouseCursor.setX(260);
-                  imgMouseCursor.setY(180);
+                  imgMouseCursor.setX(240); imgMouseCursor.setY(160);
                   desktopContainer.setOnTouchListener((v, e) -> {
                       if (!mouseActive) return false;
                       if (e.getAction() == MotionEvent.ACTION_DOWN || e.getAction() == MotionEvent.ACTION_MOVE) {
-                          imgMouseCursor.setX(e.getX());
-                          imgMouseCursor.setY(e.getY());
+                          imgMouseCursor.setX(e.getX()); imgMouseCursor.setY(e.getY());
                       }
                       return false;
                   });
-
-                  findViewById(R.id.btnLeftClick).setOnClickListener(v -> {
-                      if (vibrator != null) vibrator.vibrate(15);
-                      txtTaskStatus.setText("Mouse: Left Click");
-                  });
-                  findViewById(R.id.btnRightClick).setOnClickListener(v -> {
-                      if (vibrator != null) vibrator.vibrate(25);
-                      txtTaskStatus.setText("Mouse: Right Click");
-                  });
+                  findViewById(R.id.btnLeftClick).setOnClickListener(v -> { if (vibrator != null) vibrator.vibrate(15); txtTaskStatus.setText("L-Click"); });
+                  findViewById(R.id.btnRightClick).setOnClickListener(v -> { if (vibrator != null) vibrator.vibrate(25); txtTaskStatus.setText("R-Click"); });
 
                   setupJoy(R.id.joyL, R.id.knobL);
-
                   int[] btns = {R.id.btnKeyA, R.id.btnKeyB, R.id.btnKeyX, R.id.btnKeyY, R.id.btnL1, R.id.btnR1};
                   for (int id : btns) {
                       View v = findViewById(id);
                       if (v != null) v.setOnTouchListener((view, event) -> {
-                          if (event.getAction() == MotionEvent.ACTION_DOWN) {
-                              if (vibrator != null) vibrator.vibrate(20);
-                              txtTaskStatus.setText("Input: " + ((Button)view).getText());
-                          }
+                          if (event.getAction() == MotionEvent.ACTION_DOWN) { if (vibrator != null) vibrator.vibrate(20); txtTaskStatus.setText(((Button)view).getText()); }
                           return false;
                       });
                   }
-
                   findViewById(R.id.iconComputer).setOnClickListener(v -> openExplorer(getExternalFilesDir(null)));
                   findViewById(R.id.iconDriveC).setOnClickListener(v -> openExplorer(new File(getExternalFilesDir(null), "drive_c")));
                   findViewById(R.id.btnStartMenu).setOnClickListener(v -> {
                       String[] m = {"Programs", "Control Panel", "Exit Desktop"};
-                      new AlertDialog.Builder(this).setTitle("Windows Start").setItems(m, (d, w) -> {
+                      new AlertDialog.Builder(this).setTitle("Start").setItems(m, (d, w) -> {
                           if (w == 2) { desktopContainer.setVisibility(View.GONE); homeScreen.setVisibility(View.VISIBLE); }
-                          else { Toast.makeText(this, m[w], Toast.LENGTH_SHORT).show(); }
                       }).show();
                   });
 
                   Choreographer.getInstance().postFrameCallback(new Choreographer.FrameCallback() {
-                      @Override
-                      public void doFrame(long time) {
-                          if (lastTime == 0) lastTime = time;
-                          frames++;
-                          long diff = time - lastTime;
+                      @Override public void doFrame(long time) {
+                          if (lastTime == 0) lastTime = time; frames++; long diff = time - lastTime;
                           if (diff >= 1000000000L) {
                               fpsCounter.setText(String.format("FPS: %.1f", (frames * 1000000000.0) / diff));
-                              frames = 0;
-                              lastTime = time;
+                              frames = 0; lastTime = time;
                               txtTaskClock.setText(new SimpleDateFormat("hh:mm a", Locale.getDefault()).format(new Date()));
                           }
                           Choreographer.getInstance().postFrameCallback(this);
@@ -317,120 +214,57 @@ jobs:
               }
 
               private void showGameHubSettings() {
-                  AlertDialog.Builder builder = new AlertDialog.Builder(this);
-                  View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_settings, null);
-                  builder.setView(dialogView);
-                  AlertDialog dialog = builder.create();
+                  View dv = LayoutInflater.from(this).inflate(R.layout.dialog_settings, null);
+                  AlertDialog dialog = new AlertDialog.Builder(this).setView(dv).create();
+                  Spinner spnGpu = dv.findViewById(R.id.spnGpu), spnProton = dv.findViewById(R.id.spnProton);
+                  Button btnCtrl = dv.findViewById(R.id.btnToggleControls), btnMouse = dv.findViewById(R.id.btnToggleMouse);
 
-                  Spinner spnGpu = dialogView.findViewById(R.id.spnGpu);
-                  Spinner spnProton = dialogView.findViewById(R.id.spnProton);
-                  Spinner spnArmx = dialogView.findViewById(R.id.spnArmx);
-                  Button btnCtrl = dialogView.findViewById(R.id.btnToggleControls);
-                  Button btnMouse = dialogView.findViewById(R.id.btnToggleMouse);
-                  Button btnSave = dialogView.findViewById(R.id.btnSaveSettings);
+                  final boolean[] tCtrl = {showControls}, tMouse = {mouseActive};
+                  btnCtrl.setText(tCtrl[0] ? "ON" : "OFF"); btnCtrl.setBackgroundColor(tCtrl[0] ? Color.parseColor("#00FF66") : Color.parseColor("#555"));
+                  btnCtrl.setOnClickListener(v -> { tCtrl[0] = !tCtrl[0]; btnCtrl.setText(tCtrl[0] ? "ON" : "OFF"); btnCtrl.setBackgroundColor(tCtrl[0] ? Color.parseColor("#00FF66") : Color.parseColor("#555")); });
 
-                  final boolean[] tempControls = {showControls};
-                  final boolean[] tempMouse = {mouseActive};
+                  btnMouse.setText(tMouse[0] ? "ON" : "OFF"); btnMouse.setBackgroundColor(tMouse[0] ? Color.parseColor("#00FF66") : Color.parseColor("#555"));
+                  btnMouse.setOnClickListener(v -> { tMouse[0] = !tMouse[0]; btnMouse.setText(tMouse[0] ? "ON" : "OFF"); btnMouse.setBackgroundColor(tMouse[0] ? Color.parseColor("#00FF66") : Color.parseColor("#555")); });
 
-                  btnCtrl.setText(tempControls[0] ? "ON" : "OFF");
-                  btnCtrl.setBackgroundColor(tempControls[0] ? Color.parseColor("#00FF66") : Color.parseColor("#555555"));
-                  btnCtrl.setOnClickListener(v -> {
-                      tempControls[0] = !tempControls[0];
-                      btnCtrl.setText(tempControls[0] ? "ON" : "OFF");
-                      btnCtrl.setBackgroundColor(tempControls[0] ? Color.parseColor("#00FF66") : Color.parseColor("#555555"));
-                  });
-
-                  btnMouse.setText(tempMouse[0] ? "ON" : "OFF");
-                  btnMouse.setBackgroundColor(tempMouse[0] ? Color.parseColor("#00FF66") : Color.parseColor("#555555"));
-                  btnMouse.setOnClickListener(v -> {
-                      tempMouse[0] = !tempMouse[0];
-                      btnMouse.setText(tempMouse[0] ? "ON" : "OFF");
-                      btnMouse.setBackgroundColor(tempMouse[0] ? Color.parseColor("#00FF66") : Color.parseColor("#555555"));
-                  });
-
-                  btnSave.setOnClickListener(v -> {
-                      selectedGpu = spnGpu.getSelectedItem().toString();
-                      selectedProton = spnProton.getSelectedItem().toString();
-                      selectedArmx = spnArmx.getSelectedItem().toString();
-                      showControls = tempControls[0];
-                      mouseActive = tempMouse[0];
-
+                  dv.findViewById(R.id.btnSaveSettings).setOnClickListener(v -> {
+                      selectedGpu = spnGpu.getSelectedItem().toString(); selectedProton = spnProton.getSelectedItem().toString();
+                      showControls = tCtrl[0]; mouseActive = tMouse[0];
                       gameControlsGroup.setVisibility(showControls ? View.VISIBLE : View.GONE);
                       imgMouseCursor.setVisibility(mouseActive ? View.VISIBLE : View.GONE);
                       mouseClicksPanel.setVisibility(mouseActive ? View.VISIBLE : View.GONE);
-
                       txtHomeStatus.setText("Status: " + selectedGpu + " | " + selectedProton);
-                      Toast.makeText(this, "All Engines Applied Successfully!", Toast.LENGTH_SHORT).show();
+                      Toast.makeText(this, "Settings Saved!", Toast.LENGTH_SHORT).show();
                       dialog.dismiss();
                   });
-
                   dialog.show();
               }
 
               private void openExplorer(File dir) {
-                  if (dir == null) return;
-                  if (!dir.exists()) dir.mkdirs();
-                  File[] files = dir.listFiles();
-                  int count = (files != null) ? files.length : 0;
-                  String[] items = new String[count + 1];
-                  items[0] = "➕ [New Folder]";
-                  if (files != null) {
-                      for (int i = 0; i < count; i++) {
-                          items[i + 1] = (files[i].isDirectory() ? "📁 " : "📄 ") + files[i].getName();
-                      }
-                  }
-                  new AlertDialog.Builder(this).setTitle("Explorer: /" + dir.getName()).setItems(items, (d, which) -> {
-                      if (which == 0) {
-                          new File(dir, "Folder_" + (System.currentTimeMillis() % 1000)).mkdirs();
-                          Toast.makeText(this, "Created Folder", Toast.LENGTH_SHORT).show();
-                          openExplorer(dir);
-                      } else {
-                          File sel = files[which - 1];
-                          if (sel.isDirectory()) openExplorer(sel);
-                          else Toast.makeText(this, "File: " + sel.getName(), Toast.LENGTH_SHORT).show();
-                      }
+                  if (dir == null) return; if (!dir.exists()) dir.mkdirs();
+                  File[] files = dir.listFiles(); int count = (files != null) ? files.length : 0;
+                  String[] items = new String[count + 1]; items[0] = "➕ [New Folder]";
+                  if (files != null) { for (int i = 0; i < count; i++) items[i + 1] = (files[i].isDirectory() ? "📁 " : "📄 ") + files[i].getName(); }
+                  new AlertDialog.Builder(this).setTitle("Explorer: /" + dir.getName()).setItems(items, (d, w) -> {
+                      if (w == 0) { new File(dir, "Folder_" + (System.currentTimeMillis() % 1000)).mkdirs(); openExplorer(dir); }
+                      else { File sel = files[w - 1]; if (sel.isDirectory()) openExplorer(sel); else Toast.makeText(this, sel.getName(), Toast.LENGTH_SHORT).show(); }
                   }).setNegativeButton("Back", null).show();
               }
 
-              private void startAutoSetup(String gameName) {
-                  ProgressDialog pd = new ProgressDialog(this);
-                  pd.setTitle("GameHub Auto-Setup");
-                  pd.setMessage("Mounting PS3 Core Firmware & " + selectedProton + "...");
-                  pd.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
-                  pd.setMax(100);
-                  pd.setProgress(30);
-                  pd.setCancelable(false);
-                  pd.show();
-
-                  new Handler(Looper.getMainLooper()).postDelayed(() -> { pd.setMessage("Configuring " + selectedGpu + " & " + selectedArmx + "..."); pd.setProgress(80); }, 900);
-                  new Handler(Looper.getMainLooper()).postDelayed(() -> {
-                      pd.dismiss();
-                      openDesktop(gameName);
-                  }, 1800);
-              }
-
               private void openDesktop(String name) {
-                  homeScreen.setVisibility(View.GONE);
-                  desktopContainer.setVisibility(View.VISIBLE);
-                  txtTaskStatus.setText("Running: " + name);
-                  gameControlsGroup.setVisibility(showControls ? View.VISIBLE : View.GONE);
+                  homeScreen.setVisibility(View.GONE); desktopContainer.setVisibility(View.VISIBLE);
+                  txtTaskStatus.setText("Running: " + name); gameControlsGroup.setVisibility(showControls ? View.VISIBLE : View.GONE);
               }
 
               private void setupJoy(int cId, int kId) {
-                  RelativeLayout c = findViewById(cId);
-                  View k = findViewById(kId);
+                  RelativeLayout c = findViewById(cId); View k = findViewById(kId);
                   c.setOnTouchListener((v, e) -> {
                       float cx = c.getWidth() / 2f, cy = c.getHeight() / 2f, maxR = cx - k.getWidth() / 2f;
                       if (e.getAction() == MotionEvent.ACTION_DOWN || e.getAction() == MotionEvent.ACTION_MOVE) {
-                          float dx = e.getX() - cx, dy = e.getY() - cy;
-                          float d = (float) Math.sqrt(dx * dx + dy * dy);
-                          if (d > maxR && d > 0) { dx = (dx * maxR) / d; dy = (dy * maxR) / d; }
+                          float dx = e.getX() - cx, dy = e.getY() - cy, dist = (float) Math.sqrt(dx * dx + dy * dy);
+                          if (dist > maxR && dist > 0) { dx = (dx * maxR) / dist; dy = (dy * maxR) / dist; }
                           k.setTranslationX(dx); k.setTranslationY(dy);
-                          String dir = (dy < -20 ? "UP " : dy > 20 ? "DOWN " : "") + (dx > 20 ? "RIGHT" : dx < -20 ? "LEFT" : "");
-                          txtTaskStatus.setText("Move: " + dir);
                       } else if (e.getAction() == MotionEvent.ACTION_UP || e.getAction() == MotionEvent.ACTION_CANCEL) {
                           k.animate().translationX(0).translationY(0).setDuration(80).start();
-                          txtTaskStatus.setText("Move: Center");
                       }
                       return true;
                   });
@@ -441,8 +275,7 @@ jobs:
                   super.onActivityResult(req, res, data);
                   if (req == 909 && res == RESULT_OK && data != null && data.getData() != null) {
                       String game = data.getData().getLastPathSegment();
-                      if (game == null) game = "Game.exe";
-                      startAutoSetup(game);
+                      openDesktop(game != null ? game : "Game.exe");
                   }
               }
           }
@@ -462,8 +295,8 @@ jobs:
                   applicationId "com.vortexps3.emu"
                   minSdk 24
                   targetSdk 34
-                  versionCode 510
-                  versionName "31.0"
+                  versionCode 580
+                  versionName "38.0"
               }
           }
           EOF
@@ -480,6 +313,6 @@ jobs:
       - name: Upload Clean Emulator APK
         uses: actions/upload-artifact@v4
         with:
-          name: VortexPS3-GameHub-FullEngine
+          name: VortexPS3-GameHub-ProClean
           path: app/build/outputs/apk/debug/app-debug.apk
           
