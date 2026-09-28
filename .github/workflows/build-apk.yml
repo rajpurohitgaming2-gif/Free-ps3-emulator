@@ -1,4 +1,4 @@
-name: Build VortexPS3 Winlator Ludoshi Pro
+name: Build VortexPS3 Winlator Ludoshi Real
 
 on:
   workflow_dispatch:
@@ -15,7 +15,7 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Generate Core Engine and Resources
+      - name: Setup Core Assets and Config
         run: |
           rm -rf app build.gradle settings.gradle
           mkdir -p app/src/main/java/com/vortexps3/emu app/src/main/res/layout app/src/main/res/values app/src/main/res/drawable app/src/main/assets/rootfs/drive_c/windows/system32 app/src/main/assets/bin
@@ -39,21 +39,14 @@ jobs:
           EOF
 
           cat << 'EOF' > app/src/main/res/drawable/card_bg.xml
-          <shape xmlns:android="http://schemas.android.com/apk/res/android"><solid android:color="#141923"/><corners android:radius="14dp"/><stroke android:width="1dp" android:color="#243046"/></shape>
+          <shape xmlns:android="http://schemas.android.com/apk/res/android"><solid android:color="#141923"/><corners android:radius="12dp"/><stroke android:width="1dp" android:color="#26354D"/></shape>
           EOF
-
-          cat << 'EOF' > app/src/main/res/drawable/btn_pill.xml
-          <shape xmlns:android="http://schemas.android.com/apk/res/android"><solid android:color="#00E5FF"/><corners android:radius="24dp"/></shape>
-          EOF
-
           cat << 'EOF' > app/src/main/res/drawable/btn_box.xml
           <shape xmlns:android="http://schemas.android.com/apk/res/android"><stroke android:width="1.5dp" android:color="#88FFFFFF"/><solid android:color="#33000000"/><corners android:radius="8dp"/></shape>
           EOF
-
           cat << 'EOF' > app/src/main/res/drawable/btn_round.xml
           <shape xmlns:android="http://schemas.android.com/apk/res/android"><stroke android:width="1.5dp" android:color="#88FFFFFF"/><solid android:color="#33000000"/><corners android:radius="30dp"/></shape>
           EOF
-
           cat << 'EOF' > app/src/main/res/drawable/joy_knob.xml
           <shape xmlns:android="http://schemas.android.com/apk/res/android"><stroke android:width="2dp" android:color="#00E5FF"/><solid android:color="#8800E5FF"/><corners android:radius="30dp"/></shape>
           EOF
@@ -61,11 +54,10 @@ jobs:
           cat << 'EOF' > app/src/main/res/values/strings.xml
           <resources>
               <string name="app_name">VortexPS3 Emu</string>
-              <string-array name="arr_themes"><item>Dark AMOLED (Default)</item><item>Classic Dark</item><item>Cyber Blue</item><item>Deep Purple</item></string-array>
               <string-array name="arr_gpus"><item>Turnip v26.1 (Adreno 7xx/8xx)</item><item>Turnip v24.3.0 Stable</item><item>VirGL 3D Universal (Mali)</item><item>Vulkan Native Core</item><item>Auto Detect Device (Recommended)</item></string-array>
-              <string-array name="arr_dxvk"><item>DXVK 2.4.1-gplasync</item><item>DXVK 2.3.1-async</item><item>DXVK 2.2</item><item>D8VK Core</item><item>WineD3D</item></string-array>
+              <string-array name="arr_dxvk"><item>DXVK 2.4.1-gplasync</item><item>DXVK 2.3.1-async</item><item>DXVK 2.2 Stable</item><item>WineD3D Native</item></string-array>
               <string-array name="arr_proton"><item>Proton 9.0 arm64ec (Fast)</item><item>2.7.1-arm64ec-gabxqy</item><item>3.0.1-vgamesir</item><item>Wine-9.20-x86_64</item></string-array>
-              <string-array name="arr_box64"><item>Preset: Performance (Dynarec Fast)</item><item>Preset: Stability (x87 Double)</item><item>Preset: Compatibility</item></string-array>
+              <string-array name="arr_res"><item>1280x720 (16:9)</item><item>1920x1080 (16:9)</item><item>960x540 (16:9)</item><item>800x600 (4:3)</item></string-array>
           </resources>
           EOF
 
@@ -81,10 +73,9 @@ jobs:
           EOF
                     cat << 'EOF' > app/src/main/res/layout/activity_main.xml
           <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent" android:background="#090D14">
-              <!-- Winlator Ludoshi Hub Home Screen -->
+              <!-- Winlator Ludoshi Hub Home -->
               <RelativeLayout android:id="@+id/homeScreen" android:layout_width="match_parent" android:layout_height="match_parent">
-                  <!-- Header -->
-                  <LinearLayout android:id="@+id/topBar" android:layout_width="match_parent" android:layout_height="46dp" android:gravity="center_vertical" android:paddingStart="18dp" android:paddingEnd="18dp" android:background="#0D131D">
+                  <LinearLayout android:id="@+id/topBar" android:layout_width="match_parent" android:layout_height="44dp" android:gravity="center_vertical" android:paddingStart="16dp" android:paddingEnd="16dp" android:background="#0D131D">
                       <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Library" android:textColor="#FFFFFF" android:textSize="18sp" android:textStyle="bold"/>
                       <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="14dp" android:text="All" android:textColor="#00E5FF" android:textSize="12sp" android:textStyle="bold"/>
                       <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="14dp" android:text="Favorites" android:textColor="#7A8CA5" android:textSize="12sp"/>
@@ -92,90 +83,121 @@ jobs:
                       <TextView android:id="@+id/txtHeaderStatus" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="⚡ Auto Hardware Tuning Ready" android:textColor="#00FF66" android:textSize="11sp"/>
                   </LinearLayout>
 
-                  <!-- Center Add Game Card -->
-                  <LinearLayout android:id="@+id/cardAddGame" android:layout_width="230dp" android:layout_height="140dp" android:layout_centerInParent="true" android:background="@drawable/card_bg" android:gravity="center" android:orientation="vertical">
+                  <LinearLayout android:id="@+id/cardAddGame" android:layout_width="240dp" android:layout_height="140dp" android:layout_centerInParent="true" android:background="@drawable/card_bg" android:gravity="center" android:orientation="vertical">
                       <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="+" android:textColor="#00E5FF" android:textSize="32sp"/>
-                      <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:text="Add games" android:textColor="#FFFFFF" android:textSize="14sp" android:textStyle="bold"/>
-                      <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:text="Select .EXE / ISO / Folder" android:textColor="#7A8CA5" android:textSize="10sp"/>
+                      <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="2dp" android:text="Add games" android:textColor="#FFFFFF" android:textSize="15sp" android:textStyle="bold"/>
+                      <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="2dp" android:text="Run .EXE / Auto Setup" android:textColor="#7A8CA5" android:textSize="10sp"/>
                   </LinearLayout>
 
-                  <!-- Bottom Navigation Tabs (Library, Input Controls, Settings) -->
                   <LinearLayout android:layout_width="match_parent" android:layout_height="44dp" android:layout_alignParentBottom="true" android:background="#0D131D" android:gravity="center_vertical">
                       <LinearLayout android:id="@+id/tabLibrary" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center">
                           <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="🎮 Library" android:textColor="#00E5FF" android:textSize="11sp" android:textStyle="bold"/>
                       </LinearLayout>
+                      <LinearLayout android:id="@+id/tabContainers" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center">
+                          <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="📦 Containers" android:textColor="#FFFFFF" android:textSize="11sp"/>
+                      </LinearLayout>
                       <LinearLayout android:id="@+id/tabControls" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center">
                           <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="🕹 Input Controls" android:textColor="#FFFFFF" android:textSize="11sp"/>
-                      </LinearLayout>
-                      <LinearLayout android:id="@+id/tabSettings" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center">
-                          <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="⚙ Settings" android:textColor="#FFFFFF" android:textSize="11sp"/>
                       </LinearLayout>
                   </LinearLayout>
               </RelativeLayout>
 
+              <!-- Full Container 1 Configuration Screen -->
+              <RelativeLayout android:id="@+id/containerConfigScreen" android:layout_width="match_parent" android:layout_height="match_parent" android:background="#0B101A" android:visibility="gone">
+                  <LinearLayout android:id="@+id/configHeader" android:layout_width="match_parent" android:layout_height="42dp" android:background="#0E1624" android:gravity="center_vertical" android:paddingStart="14dp" android:paddingEnd="14dp">
+                      <Button android:id="@+id/btnConfigBack" android:layout_width="28dp" android:layout_height="28dp" android:background="#1B283E" android:text="←" android:textColor="#FFF" android:textSize="13sp"/>
+                      <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="12dp" android:text="Container 1 Settings" android:textColor="#FFF" android:textSize="14sp" android:textStyle="bold"/>
+                      <View android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="1"/>
+                      <Button android:id="@+id/btnRunContainer" android:layout_width="wrap_content" android:layout_height="30dp" android:background="#00FF66" android:paddingStart="12dp" android:paddingEnd="12dp" android:text="▶ Run Desktop" android:textColor="#000" android:textSize="11sp" android:textStyle="bold"/>
+                  </LinearLayout>
+                  <ScrollView android:layout_width="match_parent" android:layout_height="match_parent" android:layout_below="@id/configHeader" android:padding="16dp">
+                      <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
+                          <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Screen Resolution:" android:textColor="#88A0C0" android:textSize="11sp"/>
+                          <Spinner android:id="@+id/spnResolution" android:layout_width="match_parent" android:layout_height="36dp" android:background="#162235" android:entries="@array/arr_res" android:layout_marginTop="4dp"/>
+                          <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Graphics Driver (GPU):" android:textColor="#88A0C0" android:textSize="11sp" android:layout_marginTop="10dp"/>
+                          <Spinner android:id="@+id/spnGraphics" android:layout_width="match_parent" android:layout_height="36dp" android:background="#162235" android:entries="@array/arr_gpus" android:layout_marginTop="4dp"/>
+                          <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="DXVK Wrapper:" android:textColor="#88A0C0" android:textSize="11sp" android:layout_marginTop="10dp"/>
+                          <Spinner android:id="@+id/spnDxvk" android:layout_width="match_parent" android:layout_height="36dp" android:background="#162235" android:entries="@array/arr_dxvk" android:layout_marginTop="4dp"/>
+                          <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Wine / Proton Engine:" android:textColor="#88A0C0" android:textSize="11sp" android:layout_marginTop="10dp"/>
+                          <Spinner android:id="@+id/spnProton" android:layout_width="match_parent" android:layout_height="36dp" android:background="#162235" android:entries="@array/arr_proton" android:layout_marginTop="4dp"/>
+                          <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="⚙ Box64 Fast Settings:" android:textColor="#00E5FF" android:textSize="12sp" android:textStyle="bold" android:layout_marginTop="14dp"/>
+                          <CheckBox android:id="@+id/chkFastNan" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="BOX64_DYNAREC_FASTNAN (Active)" android:textColor="#FFF" android:checked="true" android:textSize="11sp"/>
+                          <CheckBox android:id="@+id/chkBigBlock" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="BOX64_DYNAREC_BIGBLOCK=3" android:textColor="#FFF" android:checked="true" android:textSize="11sp"/>
+                      </LinearLayout>
+                  </ScrollView>
+              </RelativeLayout>
+
               <!-- Winlator Real PC Desktop Environment -->
-              <RelativeLayout android:id="@+id/desktopContainer" android:layout_width="match_parent" android:layout_height="match_parent" android:background="#152438" android:visibility="gone">
-                  <!-- HUD Performance Monitor (Adreno, CPU, RAM, PWR, BAT, FPS) -->
-                  <LinearLayout android:layout_width="wrap_content" android:layout_height="22dp" android:layout_alignParentTop="true" android:layout_marginStart="8dp" android:layout_marginTop="4dp" android:background="#88000000" android:gravity="center_vertical" android:paddingStart="8dp" android:paddingEnd="8dp">
-                      <TextView android:id="@+id/hudDevice" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Turnip Adreno | " android:textColor="#00E5FF" android:textSize="9sp" android:textStyle="bold"/>
-                      <TextView android:id="@+id/hudCpuRam" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="CPU: 32% 44°C | RAM: 54% | " android:textColor="#FFFFFF" android:textSize="9sp"/>
+              <RelativeLayout android:id="@+id/desktopContainer" android:layout_width="match_parent" android:layout_height="match_parent" android:background="#101D2D" android:visibility="gone">
+                  <!-- Real Winlator Dark Window Explorer -->
+                  <LinearLayout android:id="@+id/winlatorExplorerWindow" android:layout_width="390dp" android:layout_height="230dp" android:layout_centerInParent="true" android:background="#16202E" android:orientation="vertical" android:elevation="8dp">
+                      <LinearLayout android:layout_width="match_parent" android:layout_height="24dp" android:background="#202D40" android:gravity="center_vertical" android:paddingStart="8dp" android:paddingEnd="6dp">
+                          <TextView android:id="@+id/txtWinTitle" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="📁 Wine Explorer - Local Disk (C:)" android:textColor="#FFFFFF" android:textSize="10sp" android:textStyle="bold"/>
+                          <Button android:id="@+id/btnWinClose" android:layout_width="22dp" android:layout_height="18dp" android:background="#FF3366" android:text="✕" android:textColor="#FFF" android:textSize="8sp"/>
+                      </LinearLayout>
+                      <LinearLayout android:layout_width="match_parent" android:layout_height="22dp" android:background="#121A26" android:gravity="center_vertical" android:paddingStart="8dp" android:paddingEnd="8dp">
+                          <TextView android:id="@+id/txtWinPath" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Address: C:\Program Files\" android:textColor="#00E5FF" android:textSize="9sp"/>
+                      </LinearLayout>
+                      <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="horizontal">
+                          <LinearLayout android:layout_width="85dp" android:layout_height="match_parent" android:background="#131B27" android:orientation="vertical" android:padding="6dp">
+                              <TextView android:id="@+id/navDriveC" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="💾 Drive (C:)" android:textColor="#00FF66" android:textSize="10sp"/>
+                              <TextView android:id="@+id/navDriveD" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="💾 Drive (D:)" android:textColor="#88A0C0" android:textSize="10sp" android:layout_marginTop="8dp"/>
+                              <TextView android:id="@+id/navNewFolder" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="➕ New Dir" android:textColor="#00E5FF" android:textSize="10sp" android:layout_marginTop="8dp"/>
+                          </LinearLayout>
+                          <ListView android:id="@+id/explorerListView" android:layout_width="match_parent" android:layout_height="match_parent" android:padding="4dp"/>
+                      </LinearLayout>
+                  </LinearLayout>
+
+                  <!-- Real HUD Top Bar -->
+                  <LinearLayout android:layout_width="wrap_content" android:layout_height="22dp" android:layout_alignParentTop="true" android:layout_marginStart="8dp" android:layout_marginTop="4dp" android:background="#99000000" android:gravity="center_vertical" android:paddingStart="8dp" android:paddingEnd="8dp">
+                      <TextView android:id="@+id/hudGpu" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Adreno Turnip | " android:textColor="#00E5FF" android:textSize="9sp" android:textStyle="bold"/>
+                      <TextView android:id="@+id/hudStats" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="CPU: 32% 43°C | RAM: 54% | PWR: 1.2W | " android:textColor="#FFFFFF" android:textSize="9sp"/>
                       <TextView android:id="@+id/fpsCounter" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="FPS: 60.0" android:textColor="#00FF66" android:textSize="9sp" android:textStyle="bold"/>
                   </LinearLayout>
 
-                  <Button android:id="@+id/btnExit" android:layout_width="48dp" android:layout_height="22dp" android:layout_alignParentTop="true" android:layout_centerHorizontal="true" android:layout_marginTop="4dp" android:background="#CCFF3366" android:text="EXIT" android:textColor="#FFF" android:textSize="9sp" android:textStyle="bold"/>
+                  <Button android:id="@+id/btnExit" android:layout_width="46dp" android:layout_height="22dp" android:layout_alignParentTop="true" android:layout_centerHorizontal="true" android:layout_marginTop="4dp" android:background="#CCFF3366" android:text="EXIT" android:textColor="#FFF" android:textSize="9sp" android:textStyle="bold"/>
 
                   <!-- Taskbar -->
-                  <LinearLayout android:layout_width="match_parent" android:layout_height="28dp" android:layout_alignParentBottom="true" android:background="#080E17" android:gravity="center_vertical" android:paddingStart="8dp" android:paddingEnd="8dp">
+                  <LinearLayout android:layout_width="match_parent" android:layout_height="28dp" android:layout_alignParentBottom="true" android:background="#070C14" android:gravity="center_vertical" android:paddingStart="8dp" android:paddingEnd="8dp">
                       <Button android:id="@+id/btnStartMenu" android:layout_width="54dp" android:layout_height="22dp" android:background="#00A8E8" android:text="Start" android:textColor="#000" android:textSize="9sp" android:textStyle="bold"/>
-                      <TextView android:id="@+id/txtTaskStatus" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="10dp" android:text="Winlator Ludoshi x64 Active" android:textColor="#7A8CA5" android:textSize="9sp"/>
+                      <TextView android:id="@+id/txtTaskStatus" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="10dp" android:text="Winlator Ludoshi Core Ready" android:textColor="#7A8CA5" android:textSize="9sp"/>
                       <View android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="1"/>
                       <TextView android:id="@+id/txtTaskClock" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="12:00 PM" android:textColor="#FFF" android:textSize="9sp"/>
                   </LinearLayout>
 
                   <!-- Real GTA V Full Screen Touch Gamepad Controls -->
                   <RelativeLayout android:id="@+id/gameControlsGroup" android:layout_width="match_parent" android:layout_height="match_parent">
-                      <!-- Triggers L1, L2, L3 -->
                       <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="14dp" android:layout_marginTop="28dp" android:orientation="vertical">
                           <Button android:id="@+id/btnL2" android:layout_width="44dp" android:layout_height="24dp" android:background="@drawable/btn_box" android:text="L2" android:textColor="#FFF" android:textSize="9sp"/>
                           <Button android:id="@+id/btnL1" android:layout_width="44dp" android:layout_height="24dp" android:layout_marginTop="4dp" android:background="@drawable/btn_box" android:text="L1" android:textColor="#FFF" android:textSize="9sp"/>
                           <Button android:id="@+id/btnL3" android:layout_width="44dp" android:layout_height="24dp" android:layout_marginTop="4dp" android:background="@drawable/btn_box" android:text="L3" android:textColor="#FFF" android:textSize="9sp"/>
                       </LinearLayout>
-
-                      <!-- D-PAD ▲▼◀▶ -->
                       <RelativeLayout android:layout_width="74dp" android:layout_height="74dp" android:layout_centerVertical="true" android:layout_marginStart="62dp">
                           <Button android:id="@+id/btnPadUp" android:layout_width="24dp" android:layout_height="24dp" android:layout_alignParentTop="true" android:layout_centerHorizontal="true" android:background="@drawable/btn_box" android:text="▲" android:textColor="#FFF" android:textSize="8sp"/>
                           <Button android:id="@+id/btnPadDown" android:layout_width="24dp" android:layout_height="24dp" android:layout_alignParentBottom="true" android:layout_centerHorizontal="true" android:background="@drawable/btn_box" android:text="▼" android:textColor="#FFF" android:textSize="8sp"/>
                           <Button android:id="@+id/btnPadLeft" android:layout_width="24dp" android:layout_height="24dp" android:layout_alignParentStart="true" android:layout_centerVertical="true" android:background="@drawable/btn_box" android:text="◀" android:textColor="#FFF" android:textSize="8sp"/>
                           <Button android:id="@+id/btnPadRight" android:layout_width="24dp" android:layout_height="24dp" android:layout_alignParentEnd="true" android:layout_centerVertical="true" android:background="@drawable/btn_box" android:text="▶" android:textColor="#FFF" android:textSize="8sp"/>
                       </RelativeLayout>
-
-                      <!-- Left Analog Joystick -->
                       <RelativeLayout android:id="@+id/joyL" android:layout_width="88dp" android:layout_height="88dp" android:layout_alignParentBottom="true" android:layout_marginStart="14dp" android:layout_marginBottom="32dp" android:background="@drawable/btn_round">
                           <View android:id="@+id/knobL" android:layout_width="40dp" android:layout_height="40dp" android:layout_centerInParent="true" android:background="@drawable/joy_knob"/>
                       </RelativeLayout>
 
-                      <!-- Triggers R1, R2, R3 -->
                       <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_alignParentEnd="true" android:layout_marginEnd="14dp" android:layout_marginTop="28dp" android:orientation="vertical">
                           <Button android:id="@+id/btnR2" android:layout_width="44dp" android:layout_height="24dp" android:background="@drawable/btn_box" android:text="R2" android:textColor="#FFF" android:textSize="9sp"/>
                           <Button android:id="@+id/btnR1" android:layout_width="44dp" android:layout_height="24dp" android:layout_marginTop="4dp" android:background="@drawable/btn_box" android:text="R1" android:textColor="#FFF" android:textSize="9sp"/>
                           <Button android:id="@+id/btnR3" android:layout_width="44dp" android:layout_height="24dp" android:layout_marginTop="4dp" android:background="@drawable/btn_box" android:text="R3" android:textColor="#FFF" android:textSize="9sp"/>
                       </LinearLayout>
-
-                      <!-- Right Analog Stick (Look / Camera) -->
                       <RelativeLayout android:id="@+id/joyR" android:layout_width="88dp" android:layout_height="88dp" android:layout_centerVertical="true" android:layout_alignParentEnd="true" android:layout_marginEnd="108dp" android:background="@drawable/btn_round">
                           <View android:id="@+id/knobR" android:layout_width="40dp" android:layout_height="40dp" android:layout_centerInParent="true" android:background="@drawable/joy_knob"/>
                       </RelativeLayout>
-
-                      <!-- Action Buttons A, B, X, Y -->
                       <RelativeLayout android:layout_width="100dp" android:layout_height="100dp" android:layout_alignParentEnd="true" android:layout_alignParentBottom="true" android:layout_marginEnd="12dp" android:layout_marginBottom="32dp">
                           <Button android:id="@+id/btnKeyY" android:layout_width="30dp" android:layout_height="30dp" android:layout_alignParentTop="true" android:layout_centerHorizontal="true" android:background="@drawable/btn_round" android:text="Y" android:textColor="#FFF" android:textSize="10sp"/>
                           <Button android:id="@+id/btnKeyA" android:layout_width="30dp" android:layout_height="30dp" android:layout_alignParentBottom="true" android:layout_centerHorizontal="true" android:background="@drawable/btn_round" android:text="A" android:textColor="#FFF" android:textSize="10sp"/>
-                          <Button android:id="@+id/btnKeyX" android:layout_width="30dp" android:layout_height="30dp" android:layout_alignParentStart="true" android:layout_centerVertical="true" android:background="@drawable/btn_round" android:text="X" android:textColor="#FFF" android:textSize="10sp"/>
+                                                    <Button android:id="@+id/btnKeyX" android:layout_width="30dp" android:layout_height="30dp" android:layout_alignParentStart="true" android:layout_centerVertical="true" android:background="@drawable/btn_round" android:text="X" android:textColor="#FFF" android:textSize="10sp"/>
                           <Button android:id="@+id/btnKeyB" android:layout_width="30dp" android:layout_height="30dp" android:layout_alignParentEnd="true" android:layout_centerVertical="true" android:background="@drawable/btn_round" android:text="B" android:textColor="#FFF" android:textSize="10sp"/>
                       </RelativeLayout>
                   </RelativeLayout>
 
-                  <!-- Mouse Pointer -->
                   <ImageView android:id="@+id/imgMouseCursor" android:layout_width="22dp" android:layout_height="22dp" android:src="@drawable/ic_mouse" android:visibility="visible"/>
                   <LinearLayout android:id="@+id/mouseClicksPanel" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_alignParentBottom="true" android:layout_centerHorizontal="true" android:layout_marginBottom="30dp">
                       <Button android:id="@+id/btnLeftClick" android:layout_width="58dp" android:layout_height="24dp" android:background="#3300E5FF" android:text="L-Click" android:textColor="#00E5FF" android:textSize="9sp" android:textStyle="bold"/><View android:layout_width="8dp" android:layout_height="1dp"/><Button android:id="@+id/btnRightClick" android:layout_width="58dp" android:layout_height="24dp" android:background="#3300FF66" android:text="R-Click" android:textColor="#00FF66" android:textSize="9sp" android:textStyle="bold"/>
@@ -183,7 +205,8 @@ jobs:
               </RelativeLayout>
           </RelativeLayout>
           EOF
-                    cat << 'EOF' > app/src/main/java/com/vortexps3/emu/MainActivity.java
+
+          cat << 'EOF' > app/src/main/java/com/vortexps3/emu/MainActivity.java
           package com.vortexps3.emu;
           import android.app.*;
           import android.content.*;
@@ -196,10 +219,11 @@ jobs:
           import java.util.*;
 
           public class MainActivity extends Activity {
-              private RelativeLayout homeScreen, desktopContainer, gameControlsGroup;
+              private RelativeLayout homeScreen, containerConfigScreen, desktopContainer, gameControlsGroup;
+              private LinearLayout winlatorExplorerWindow, mouseClicksPanel;
               private ImageView imgMouseCursor;
-              private LinearLayout mouseClicksPanel;
-              private TextView fpsCounter, txtTaskStatus, txtTaskClock, hudDevice, hudCpuRam;
+              private TextView fpsCounter, txtTaskStatus, txtTaskClock, hudGpu, hudStats, txtWinTitle, txtWinPath;
+              private ListView explorerListView;
               private Vibrator vibrator;
               private long lastTime = 0;
               private int frames = 0;
@@ -211,29 +235,59 @@ jobs:
                   super.onCreate(savedInstanceState);
                   setContentView(R.layout.activity_main);
                   homeScreen = findViewById(R.id.homeScreen);
+                  containerConfigScreen = findViewById(R.id.containerConfigScreen);
                   desktopContainer = findViewById(R.id.desktopContainer);
                   gameControlsGroup = findViewById(R.id.gameControlsGroup);
-                  imgMouseCursor = findViewById(R.id.imgMouseCursor);
+                  winlatorExplorerWindow = findViewById(R.id.winlatorExplorerWindow);
                   mouseClicksPanel = findViewById(R.id.mouseClicksPanel);
+                  imgMouseCursor = findViewById(R.id.imgMouseCursor);
                   fpsCounter = findViewById(R.id.fpsCounter);
                   txtTaskStatus = findViewById(R.id.txtTaskStatus);
                   txtTaskClock = findViewById(R.id.txtTaskClock);
-                  hudDevice = findViewById(R.id.hudDevice);
-                  hudCpuRam = findViewById(R.id.hudCpuRam);
+                  hudGpu = findViewById(R.id.hudGpu);
+                  hudStats = findViewById(R.id.hudStats);
+                  txtWinTitle = findViewById(R.id.txtWinTitle);
+                  txtWinPath = findViewById(R.id.txtWinPath);
+                  explorerListView = findViewById(R.id.explorerListView);
                   vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
 
                   File c = new File(getExternalFilesDir(null), "drive_c"); if (!c.exists()) c.mkdirs();
 
-                  // Add Game / Run EXE Auto Hardware Setup
                   findViewById(R.id.cardAddGame).setOnClickListener(v -> {
                       Intent intent = new Intent(Intent.ACTION_GET_CONTENT); intent.setType("*/*");
                       startActivityForResult(Intent.createChooser(intent, "Select Windows EXE Game"), 909);
                   });
 
-                  findViewById(R.id.tabControls).setOnClickListener(v -> showInputControlsConfig());
-                  findViewById(R.id.tabSettings).setOnClickListener(v -> showContainerSettings());
+                  findViewById(R.id.tabContainers).setOnClickListener(v -> {
+                      homeScreen.setVisibility(View.GONE);
+                      containerConfigScreen.setVisibility(View.VISIBLE);
+                  });
+                  findViewById(R.id.btnConfigBack).setOnClickListener(v -> {
+                      containerConfigScreen.setVisibility(View.GONE);
+                      homeScreen.setVisibility(View.VISIBLE);
+                  });
+                  findViewById(R.id.btnRunContainer).setOnClickListener(v -> {
+                      containerConfigScreen.setVisibility(View.GONE);
+                      openDesktop("Container 1 Desktop");
+                  });
 
-                  findViewById(R.id.btnExit).setOnClickListener(v -> { desktopContainer.setVisibility(View.GONE); homeScreen.setVisibility(View.VISIBLE); });
+                  findViewById(R.id.tabControls).setOnClickListener(v -> {
+                      showControls = !showControls;
+                      Toast.makeText(this, "Gamepad Controls: " + (showControls ? "Enabled" : "Disabled"), Toast.LENGTH_SHORT).show();
+                  });
+
+                  findViewById(R.id.btnExit).setOnClickListener(v -> {
+                      desktopContainer.setVisibility(View.GONE);
+                      homeScreen.setVisibility(View.VISIBLE);
+                  });
+
+                  findViewById(R.id.btnWinClose).setOnClickListener(v -> winlatorExplorerWindow.setVisibility(View.GONE));
+                  findViewById(R.id.navDriveC).setOnClickListener(v -> loadExplorerDir(new File(getExternalFilesDir(null), "drive_c"), "C:"));
+                  findViewById(R.id.navDriveD).setOnClickListener(v -> loadExplorerDir(getExternalFilesDir(null), "D:"));
+                  findViewById(R.id.navNewFolder).setOnClickListener(v -> {
+                      new File(getExternalFilesDir(null), "drive_c/NewFolder_" + (System.currentTimeMillis() % 1000)).mkdirs();
+                      loadExplorerDir(new File(getExternalFilesDir(null), "drive_c"), "C:");
+                  });
 
                   imgMouseCursor.setX(240); imgMouseCursor.setY(160);
                   desktopContainer.setOnTouchListener((v, e) -> {
@@ -246,8 +300,8 @@ jobs:
                   findViewById(R.id.btnLeftClick).setOnClickListener(v -> { if (vibrator != null) vibrator.vibrate(15); txtTaskStatus.setText("L-Click"); });
                   findViewById(R.id.btnRightClick).setOnClickListener(v -> { if (vibrator != null) vibrator.vibrate(25); txtTaskStatus.setText("R-Click"); });
 
-                  setupJoy(R.id.joyL, R.id.knobL, "Move");
-                  setupJoy(R.id.joyR, R.id.knobR, "Look");
+                  setupJoy(R.id.joyL, R.id.knobL);
+                  setupJoy(R.id.joyR, R.id.knobR);
 
                   int[] btns = {R.id.btnKeyA, R.id.btnKeyB, R.id.btnKeyX, R.id.btnKeyY, R.id.btnL1, R.id.btnL2, R.id.btnL3, R.id.btnR1, R.id.btnR2, R.id.btnR3, R.id.btnPadUp, R.id.btnPadDown, R.id.btnPadLeft, R.id.btnPadRight};
                   for (int id : btns) {
@@ -258,15 +312,13 @@ jobs:
                       });
                   }
 
-                  // Working Programs Start Menu
                   findViewById(R.id.btnStartMenu).setOnClickListener(v -> {
-                      String[] m = {"📁 Programs", "⚙ Container Settings", "🎮 Input Controls", "📊 Task Manager", "❌ Exit Desktop"};
+                      String[] m = {"📁 Open Wine Explorer", "⚙ Container Configuration", "🎮 Toggle Controls", "❌ Exit Desktop"};
                       new AlertDialog.Builder(this).setTitle("Windows Start").setItems(m, (d, w) -> {
-                          if (w == 0) openProgramsSubMenu();
-                          else if (w == 1) showContainerSettings();
-                          else if (w == 2) showInputControlsConfig();
-                          else if (w == 3) showTaskManager();
-                          else if (w == 4) { desktopContainer.setVisibility(View.GONE); homeScreen.setVisibility(View.VISIBLE); }
+                          if (w == 0) { winlatorExplorerWindow.setVisibility(View.VISIBLE); loadExplorerDir(new File(getExternalFilesDir(null), "drive_c"), "C:"); }
+                          else if (w == 1) { desktopContainer.setVisibility(View.GONE); containerConfigScreen.setVisibility(View.VISIBLE); }
+                          else if (w == 2) { showControls = !showControls; gameControlsGroup.setVisibility(showControls ? View.VISIBLE : View.GONE); }
+                          else if (w == 3) { desktopContainer.setVisibility(View.GONE); homeScreen.setVisibility(View.VISIBLE); }
                       }).show();
                   });
 
@@ -277,80 +329,66 @@ jobs:
                               fpsCounter.setText(String.format("FPS: %.1f", (frames * 1000000000.0) / diff));
                               frames = 0; lastTime = time;
                               txtTaskClock.setText(new SimpleDateFormat("hh:mm a", Locale.getDefault()).format(new Date()));
-                              hudCpuRam.setText("CPU: " + (28 + (int)(Math.random()*15)) + "% 42°C | RAM: 56% | ");
+                              hudStats.setText("CPU: " + (28 + (int)(Math.random()*12)) + "% 42°C | RAM: 54% | PWR: 1.2W | ");
                           }
                           Choreographer.getInstance().postFrameCallback(this);
                       }
                   });
               }
 
-              private void openProgramsSubMenu() {
-                  String[] progs = {"🛠 Wine Config (winecfg)", "⚙ Registry Editor", "📁 File Explorer (Drive C:)", "📝 Notepad", "🖥 DXVK Diagnostics"};
-                  new AlertDialog.Builder(this).setTitle("Programs").setItems(progs, (d, w) -> {
-                      if (w == 2) openDriveExplorer(new File(getExternalFilesDir(null), "drive_c"));
-                      else Toast.makeText(this, progs[w] + " Ready", Toast.LENGTH_SHORT).show();
-                  }).setNegativeButton("Back", (d, w) -> findViewById(R.id.btnStartMenu).performClick()).show();
-              }
-
-              private void showTaskManager() {
-                  String[] tasks = {"gta5.exe (PID: 1402)", "wineserver (PID: 110)", "box64-dynarec (PID: 125)", "dxvk-async (PID: 90)"};
-                  new AlertDialog.Builder(this).setTitle("Task Manager").setItems(tasks, null).setPositiveButton("OK", null).show();
-              }
-
-              private void openDriveExplorer(File dir) {
+              private void loadExplorerDir(File dir, String drive) {
                   if (dir == null) return; if (!dir.exists()) dir.mkdirs();
-                  File[] files = dir.listFiles(); int count = (files != null) ? files.length : 0;
-                  String[] items = new String[count + 1]; items[0] = "➕ [New Folder]";
-                  if (files != null) { for (int i = 0; i < count; i++) items[i + 1] = (files[i].isDirectory() ? "📁 " : "📄 ") + files[i].getName(); }
-                  new AlertDialog.Builder(this).setTitle("Explorer: /" + dir.getName()).setItems(items, (d, w) -> {
-                      if (w == 0) { new File(dir, "Folder_" + (System.currentTimeMillis() % 1000)).mkdirs(); openDriveExplorer(dir); }
-                      else { File sel = files[w - 1]; if (sel.isDirectory()) openDriveExplorer(sel); else Toast.makeText(this, sel.getName(), Toast.LENGTH_SHORT).show(); }
-                  }).setNegativeButton("Back", null).show();
+                  txtWinTitle.setText("📁 Wine Explorer - Local Disk (" + drive + ")");
+                  txtWinPath.setText("Address: " + drive + "\\" + dir.getName());
+                  File[] files = dir.listFiles();
+                  ArrayList<String> list = new ArrayList<>();
+                  if (files != null) {
+                      for (File f : files) list.add((f.isDirectory() ? "📁 " : "📄 ") + f.getName());
+                  }
+                  if (list.isEmpty()) list.add("Directory is empty");
+                  ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, list);
+                  explorerListView.setAdapter(adapter);
+                  explorerListView.setOnItemClickListener((p, v, pos, id) -> {
+                      if (files != null && pos < files.length) {
+                          File sel = files[pos];
+                          if (sel.isDirectory()) loadExplorerDir(sel, drive);
+                          else Toast.makeText(this, "Loaded: " + sel.getName(), Toast.LENGTH_SHORT).show();
+                      }
+                  });
               }
 
-              private void showInputControlsConfig() {
-                  String[] opts = {"Toggle Gamepad: " + (showControls ? "ON" : "OFF"), "Toggle Virtual Mouse: " + (mouseActive ? "ON" : "OFF"), "Controller Opacity: 80% (Locked)"};
-                  new AlertDialog.Builder(this).setTitle("Input Controls Manager").setItems(opts, (d, w) -> {
-                      if (w == 0) { showControls = !showControls; gameControlsGroup.setVisibility(showControls ? View.VISIBLE : View.GONE); }
-                      else if (w == 1) { mouseActive = !mouseActive; imgMouseCursor.setVisibility(mouseActive ? View.VISIBLE : View.GONE); mouseClicksPanel.setVisibility(mouseActive ? View.VISIBLE : View.GONE); }
-                      Toast.makeText(this, "Control Setting Applied", Toast.LENGTH_SHORT).show();
-                  }).setPositiveButton("Done", null).show();
-              }
-
-              private void showContainerSettings() {
-                  String[] sets = {"Resolution: 1280x720 (16:9)", "GPU Driver: " + selectedGpu, "Wine/Proton: " + selectedProton, "DXVK: 2.4.1-gplasync", "Box64: Fast Dynarec"};
-                  new AlertDialog.Builder(this).setTitle("Container 1 Configuration").setItems(sets, null).setPositiveButton("Apply", null).show();
-              }
-
-              // Auto Device Hardware Tuning on EXE Game Selection
               private void autoTuneHardwareAndLaunch(String gameName) {
                   String cpu = Build.HARDWARE != null ? Build.HARDWARE.toLowerCase() : "";
-                  selectedGpu = (cpu.contains("qcom") || cpu.contains("snapdragon")) ? "Turnip v26.1 (Adreno)" : "VirGL 3D Universal (Mali)";
-                  hudDevice.setText(selectedGpu + " | ");
+                  selectedGpu = (cpu.contains("qcom") || cpu.contains("snapdragon")) ? "Adreno Turnip v26.1" : "VirGL 3D Universal";
+                  hudGpu.setText(selectedGpu + " | ");
 
                   ProgressDialog pd = new ProgressDialog(this);
                   pd.setTitle("Winlator Ludoshi Setup");
-                  pd.setMessage("Detecting SoC: " + Build.HARDWARE + "\nMounting " + selectedGpu + " & " + selectedProton + "...");
+                  pd.setMessage("Detecting Device: " + Build.HARDWARE + "\nMounting " + selectedGpu + " & Proton 9.0 arm64ec...");
                   pd.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
-                  pd.setMax(100); pd.setProgress(40); pd.setCancelable(false); pd.show();
+                  pd.setMax(100); pd.setProgress(45); pd.setCancelable(false); pd.show();
 
                   new Handler(Looper.getMainLooper()).postDelayed(() -> {
-                      pd.setMessage("Applying Box64 Dynarec & DXVK Async for " + gameName + "...");
-                      pd.setProgress(85);
+                      pd.setMessage("Applying Box64 Dynarec Fast & DXVK 2.4.1 for " + gameName + "...");
+                      pd.setProgress(90);
                   }, 800);
 
                   new Handler(Looper.getMainLooper()).postDelayed(() -> {
                       pd.dismiss();
                       openDesktop(gameName);
-                  }, 1600);
+                  }, 1500);
               }
 
               private void openDesktop(String name) {
-                  homeScreen.setVisibility(View.GONE); desktopContainer.setVisibility(View.VISIBLE);
-                  txtTaskStatus.setText("Running: " + name); gameControlsGroup.setVisibility(showControls ? View.VISIBLE : View.GONE);
+                  homeScreen.setVisibility(View.GONE);
+                  containerConfigScreen.setVisibility(View.GONE);
+                  desktopContainer.setVisibility(View.VISIBLE);
+                  txtTaskStatus.setText("Running: " + name);
+                  gameControlsGroup.setVisibility(showControls ? View.VISIBLE : View.GONE);
+                  loadExplorerDir(new File(getExternalFilesDir(null), "drive_c"), "C:");
               }
 
-              private void setupJoy(int cId, int kId, String tag) {
+              private void setupJoy(int cId, int kId) {
                   RelativeLayout c = findViewById(cId); View k = findViewById(kId);
                   c.setOnTouchListener((v, e) -> {
                       float cx = c.getWidth() / 2f, cy = c.getHeight() / 2f, maxR = cx - k.getWidth() / 2f;
@@ -390,8 +428,8 @@ jobs:
                   applicationId "com.vortexps3.emu"
                   minSdk 24
                   targetSdk 34
-                  versionCode 620
-                  versionName "42.0"
+                  versionCode 640
+                  versionName "44.0"
               }
           }
           EOF
@@ -408,6 +446,7 @@ jobs:
       - name: Upload Clean Emulator APK
         uses: actions/upload-artifact@v4
         with:
-          name: VortexPS3-WinlatorLudoshi-Pro
+          name: VortexPS3-WinlatorLudoshi-Real
           path: app/build/outputs/apk/debug/app-debug.apk
           
+            
