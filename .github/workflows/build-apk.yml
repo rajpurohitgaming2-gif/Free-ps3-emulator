@@ -110,14 +110,11 @@ jobs:
           EOF
                     cat << 'EOF' > app/src/main/res/layout/activity_main.xml
           <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent" android:background="#F5F6F8">
-              <!-- Winlator Real Containers Screen (First Photo Match) -->
               <RelativeLayout android:id="@+id/containersScreen" android:layout_width="match_parent" android:layout_height="match_parent">
                   <LinearLayout android:id="@+id/topBar" android:layout_width="match_parent" android:layout_height="48dp" android:gravity="center_vertical" android:paddingStart="16dp" android:paddingEnd="16dp">
                       <TextView android:id="@+id/btnBackHeader" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="←" android:textColor="#1F232B" android:textSize="20sp" android:textStyle="bold"/>
                       <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="14dp" android:text="Containers" android:textColor="#1F232B" android:textSize="18sp" android:textStyle="bold"/>
                   </LinearLayout>
-
-                  <!-- Container-1 White Card -->
                   <LinearLayout android:id="@+id/cardContainer1" android:layout_width="320dp" android:layout_height="wrap_content" android:layout_below="@id/topBar" android:layout_marginStart="16dp" android:layout_marginTop="10dp" android:background="@drawable/card_container_white" android:orientation="vertical" android:padding="14dp" android:elevation="3dp">
                       <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical">
                           <TextView android:layout_width="38dp" android:layout_height="38dp" android:background="#E8ECF2" android:gravity="center" android:text="🗄️" android:textSize="18sp"/>
@@ -135,12 +132,9 @@ jobs:
                           <TextView android:id="@+id/btnMore" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="⋮ More" android:textColor="#1F232B" android:textSize="12sp" android:padding="4dp"/>
                       </LinearLayout>
                   </LinearLayout>
-
-                  <!-- Floating Add Button (+) -->
                   <TextView android:id="@+id/fabAdd" android:layout_width="48dp" android:layout_height="48dp" android:layout_alignParentEnd="true" android:layout_alignParentBottom="true" android:layout_marginEnd="20dp" android:layout_marginBottom="20dp" android:background="@drawable/fab_add" android:gravity="center" android:text="+" android:textColor="#1F232B" android:textSize="24sp"/>
               </RelativeLayout>
 
-              <!-- Container Edit Settings Screen -->
               <RelativeLayout android:id="@+id/containerEditScreen" android:layout_width="match_parent" android:layout_height="match_parent" android:background="#0B101A" android:visibility="gone">
                   <LinearLayout android:id="@+id/editHeader" android:layout_width="match_parent" android:layout_height="44dp" android:background="#121A26" android:gravity="center_vertical" android:paddingStart="14dp" android:paddingEnd="14dp">
                       <Button android:id="@+id/btnEditBack" android:layout_width="28dp" android:layout_height="28dp" android:background="#1B283E" android:text="←" android:textColor="#FFF" android:textSize="13sp"/>
@@ -161,34 +155,25 @@ jobs:
                       </LinearLayout>
                   </ScrollView>
               </RelativeLayout>
-
-              <!-- Winlator PC Desktop & Real Computer Explorer (Second Photo Match) -->
-              <RelativeLayout android:id="@+id/desktopContainer" android:layout_width="match_parent" android:layout_height="match_parent" android:background="#0A2244" android:visibility="gone">
-                  <!-- Real Winlator Computer Window (Second Photo) -->
+                            <RelativeLayout android:id="@+id/desktopContainer" android:layout_width="match_parent" android:layout_height="match_parent" android:background="#0A2244" android:visibility="gone">
                   <LinearLayout android:id="@+id/pcWindowComputer" android:layout_width="480dp" android:layout_height="270dp" android:layout_centerInParent="true" android:background="#202020" android:orientation="vertical" android:elevation="8dp">
-                      <!-- Window Top Title -->
                       <LinearLayout android:layout_width="match_parent" android:layout_height="22dp" android:background="#181818" android:gravity="center_vertical" android:paddingStart="8dp" android:paddingEnd="6dp">
                           <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="Computer" android:textColor="#00E5FF" android:textSize="10sp" android:textStyle="bold"/>
                           <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="—  🗖  ✕" android:textColor="#AAAAAA" android:textSize="9sp"/>
                       </LinearLayout>
-                      <!-- Menu Bar -->
                       <LinearLayout android:layout_width="match_parent" android:layout_height="18dp" android:background="#262626" android:gravity="center_vertical" android:paddingStart="8dp">
                           <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="File   Edit   View   Help" android:textColor="#CCCCCC" android:textSize="9sp"/>
                       </LinearLayout>
-                      <!-- Tool Bar Icons (Up, Copy, Cut, Paste, Delete, New Folder) -->
                       <LinearLayout android:layout_width="match_parent" android:layout_height="22dp" android:background="#202020" android:gravity="center_vertical" android:paddingStart="8dp">
                           <TextView android:id="@+id/toolUp" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="⬆ Up  " android:textColor="#FFF" android:textSize="9sp"/>
                           <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="📄 Copy  ✂ Cut  📋 Paste  ❌ Delete  " android:textColor="#AAAAAA" android:textSize="9sp"/>
                           <TextView android:id="@+id/toolNewFolder" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="📁 New Folder" android:textColor="#00FF66" android:textSize="9sp"/>
                       </LinearLayout>
-                      <!-- Address & Search Bar -->
                       <LinearLayout android:layout_width="match_parent" android:layout_height="22dp" android:background="#181818" android:gravity="center_vertical" android:paddingStart="8dp" android:paddingEnd="8dp">
                           <TextView android:id="@+id/txtAddressPath" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="Computer > " android:textColor="#FFFFFF" android:textSize="9sp"/>
                           <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="🔍 Search Computer" android:textColor="#666666" android:textSize="9sp"/>
                       </LinearLayout>
-                      <!-- Explorer Split (Left Tree + Right Drives List) -->
                       <LinearLayout android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:orientation="horizontal">
-                          <!-- Left Tree View -->
                           <LinearLayout android:layout_width="95dp" android:layout_height="match_parent" android:background="#1C1C1C" android:orientation="vertical" android:padding="6dp">
                               <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="💻 Desktop" android:textColor="#88A0C0" android:textSize="9sp"/>
                               <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:text="📂 Documents" android:textColor="#88A0C0" android:textSize="9sp"/>
@@ -197,7 +182,6 @@ jobs:
                               <TextView android:id="@+id/treeDriveD" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="8dp" android:layout_marginTop="2dp" android:text="  └ D:" android:textColor="#88A0C0" android:textSize="9sp"/>
                               <TextView android:id="@+id/treeDriveZ" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="8dp" android:layout_marginTop="2dp" android:text="  └ Z:" android:textColor="#88A0C0" android:textSize="9sp"/>
                           </LinearLayout>
-                          <!-- Right List (Table Header + Items) -->
                           <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent" android:background="#222222" android:orientation="vertical">
                               <LinearLayout android:layout_width="match_parent" android:layout_height="18dp" android:background="#2A2A2A" android:gravity="center_vertical" android:paddingStart="8dp">
                                   <TextView android:layout_width="120dp" android:layout_height="wrap_content" android:text="Name" android:textColor="#AAAAAA" android:textSize="8sp"/>
@@ -208,13 +192,11 @@ jobs:
                               <ListView android:id="@+id/pcListView" android:layout_width="match_parent" android:layout_height="match_parent" android:padding="4dp"/>
                           </LinearLayout>
                       </LinearLayout>
-                      <!-- Status Bar -->
                       <LinearLayout android:layout_width="match_parent" android:layout_height="16dp" android:background="#181818" android:gravity="center_vertical" android:paddingStart="8dp">
                           <TextView android:id="@+id/txtStatusBar" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="4 Items" android:textColor="#AAAAAA" android:textSize="8sp"/>
                       </LinearLayout>
                   </LinearLayout>
 
-                  <!-- Taskbar -->
                   <LinearLayout android:layout_width="match_parent" android:layout_height="26dp" android:layout_alignParentBottom="true" android:background="#111111" android:gravity="center_vertical" android:paddingStart="6dp" android:paddingEnd="8dp">
                       <Button android:id="@+id/btnStartMenu" android:layout_width="48dp" android:layout_height="20dp" android:background="#0078D7" android:text="Start" android:textColor="#FFF" android:textSize="8sp" android:textStyle="bold"/>
                       <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="8dp" android:background="#222" android:padding="3dp" android:text="Computer" android:textColor="#FFF" android:textSize="8sp"/>
@@ -222,7 +204,6 @@ jobs:
                       <TextView android:id="@+id/txtTaskClock" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="12:00 PM" android:textColor="#FFF" android:textSize="8sp"/>
                   </LinearLayout>
 
-                  <!-- HUD Bar -->
                   <LinearLayout android:layout_width="wrap_content" android:layout_height="20dp" android:layout_alignParentTop="true" android:layout_marginStart="8dp" android:layout_marginTop="4dp" android:background="#99000000" android:gravity="center_vertical" android:paddingStart="6dp" android:paddingEnd="6dp">
                       <TextView android:id="@+id/hudDevice" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Turnip Adreno | CPU: 36% 42°C | RAM: 54% | " android:textColor="#00E5FF" android:textSize="8sp"/>
                       <TextView android:id="@+id/fpsCounter" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="FPS: 60.0" android:textColor="#00FF66" android:textSize="8sp" android:textStyle="bold"/>
@@ -230,7 +211,6 @@ jobs:
 
                   <Button android:id="@+id/btnExit" android:layout_width="44dp" android:layout_height="20dp" android:layout_alignParentTop="true" android:layout_centerHorizontal="true" android:layout_marginTop="4dp" android:background="#CCFF3366" android:text="EXIT" android:textColor="#FFF" android:textSize="8sp" android:textStyle="bold"/>
 
-                  <!-- Touch Gamepad Controls -->
                   <RelativeLayout android:id="@+id/gameControlsGroup" android:layout_width="match_parent" android:layout_height="match_parent">
                       <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="14dp" android:layout_marginTop="28dp" android:orientation="vertical">
                           <Button android:id="@+id/btnL2" android:layout_width="42dp" android:layout_height="22dp" android:background="@drawable/btn_box" android:text="L2" android:textColor="#FFF" android:textSize="8sp"/>
@@ -241,8 +221,28 @@ jobs:
                       </RelativeLayout>
 
                       <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_alignParentEnd="true" android:layout_marginEnd="14dp" android:layout_marginTop="28dp" android:orientation="vertical">
-                          <Button android:id="@+id/btnR2" android:layout_width="42dp" android:layout_height
-                                    cat << 'EOF' > app/src/main/java/com/vortexps3/emu/MainActivity.java
+                          <Button android:id="@+id/btnR2" android:layout_width="42dp" android:layout_height="22dp" android:background="@drawable/btn_box" android:text="R2" android:textColor="#FFF" android:textSize="8sp"/>
+                          <Button android:id="@+id/btnR1" android:layout_width="42dp" android:layout_height="22dp" android:layout_marginTop="3dp" android:background="@drawable/btn_box" android:text="R1" android:textColor="#FFF" android:textSize="8sp"/>
+                      </LinearLayout>
+                      <RelativeLayout android:id="@+id/joyR" android:layout_width="84dp" android:layout_height="84dp" android:layout_centerVertical="true" android:layout_alignParentEnd="true" android:layout_marginEnd="100dp" android:background="@drawable/btn_round">
+                          <View android:id="@+id/knobR" android:layout_width="38dp" android:layout_height="38dp" android:layout_centerInParent="true" android:background="@drawable/joy_knob"/>
+                      </RelativeLayout>
+                      <RelativeLayout android:layout_width="96dp" android:layout_height="96dp" android:layout_alignParentEnd="true" android:layout_alignParentBottom="true" android:layout_marginEnd="10dp" android:layout_marginBottom="30dp">
+                          <Button android:id="@+id/btnKeyY" android:layout_width="28dp" android:layout_height="28dp" android:layout_alignParentTop="true" android:layout_centerHorizontal="true" android:background="@drawable/btn_round" android:text="Y" android:textColor="#FFF" android:textSize="9sp"/>
+                          <Button android:id="@+id/btnKeyA" android:layout_width="28dp" android:layout_height="28dp" android:layout_alignParentBottom="true" android:layout_centerHorizontal="true" android:background="@drawable/btn_round" android:text="A" android:textColor="#FFF" android:textSize="9sp"/>
+                          <Button android:id="@+id/btnKeyX" android:layout_width="28dp" android:layout_height="28dp" android:layout_alignParentStart="true" android:layout_centerVertical="true" android:background="@drawable/btn_round" android:text="X" android:textColor="#FFF" android:textSize="9sp"/>
+                          <Button android:id="@+id/btnKeyB" android:layout_width="28dp" android:layout_height="28dp" android:layout_alignParentEnd="true" android:layout_centerVertical="true" android:background="@drawable/btn_round" android:text="B" android:textColor="#FFF" android:textSize="9sp"/>
+                      </RelativeLayout>
+                  </RelativeLayout>
+
+                  <ImageView android:id="@+id/imgMouseCursor" android:layout_width="22dp" android:layout_height="22dp" android:src="@drawable/ic_mouse" android:visibility="visible"/>
+                  <LinearLayout android:id="@+id/mouseClicksPanel" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_alignParentBottom="true" android:layout_centerHorizontal="true" android:layout_marginBottom="30dp">
+                      <Button android:id="@+id/btnLeftClick" android:layout_width="54dp" android:layout_height="22dp" android:background="#3300E5FF" android:text="L-Click" android:textColor="#00E5FF" android:textSize="8sp" android:textStyle="bold"/><View android:layout_width="8dp" android:layout_height="1dp"/><Button android:id="@+id/btnRightClick" android:layout_width="54dp" android:layout_height="22dp" android:background="#3300FF66" android:text="R-Click" android:textColor="#00FF66" android:textSize="8sp" android:textStyle="bold"/>
+                  </LinearLayout>
+              </RelativeLayout>
+          </RelativeLayout>
+          EOF
+                    cat << 'EOF' > app/src/main/java/com/vortexps3/emu/MainActivity.java
           package com.vortexps3.emu;
           import android.app.*;
           import android.content.*;
@@ -289,10 +289,8 @@ jobs:
 
                   initDriveFileSystem();
 
-                  // Run Button (▶) on Card
                   findViewById(R.id.btnRunDesktop).setOnClickListener(v -> openDesktop());
 
-                  // Edit Button (✏) on Card
                   findViewById(R.id.btnEditContainer).setOnClickListener(v -> {
                       containersScreen.setVisibility(View.GONE);
                       containerEditScreen.setVisibility(View.VISIBLE);
@@ -321,7 +319,6 @@ jobs:
                       containersScreen.setVisibility(View.VISIBLE);
                   });
 
-                  // Desktop Navigation & Tree View
                   findViewById(R.id.treeComputer).setOnClickListener(v -> loadComputerRoot());
                   findViewById(R.id.treeDriveC).setOnClickListener(v -> loadDir(new File(getExternalFilesDir(null), "drive_c"), "Computer > C:"));
                   findViewById(R.id.treeDriveD).setOnClickListener(v -> loadDir(new File(getExternalFilesDir(null), "drive_c/windows"), "Computer > D:"));
@@ -517,8 +514,8 @@ jobs:
                   applicationId "com.vortexps3.emu"
                   minSdk 24
                   targetSdk 34
-                  versionCode 670
-                  versionName "47.0"
+                  versionCode 740
+                  versionName "54.0"
               }
           }
           EOF
