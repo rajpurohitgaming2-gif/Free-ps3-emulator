@@ -66,34 +66,23 @@ jobs:
               <string-array name="arr_gpus">
                   <item>Turnip v26.1 (Adreno 7xx/8xx)</item>
                   <item>Turnip v25.0 Stable</item>
-                  <item>Turnip v24.3.0</item>
                   <item>VirGL 3D Universal (Mali)</item>
-                  <item>Panfrost Open Source</item>
-                  <item>Qualcomm Proprietary</item>
                   <item>Vulkan Native Core</item>
-                  <item>Auto Detect Device (Recommended)</item>
               </string-array>
               <string-array name="arr_dxvk">
                   <item>DXVK 2.4.1-gplasync (Smooth FPS)</item>
-                  <item>DXVK 2.4-async</item>
                   <item>DXVK 2.3.1-gplasync</item>
-                  <item>DXVK 2.2</item>
-                  <item>D8VK Core</item>
                   <item>WineD3D Native</item>
               </string-array>
               <string-array name="arr_proton">
                   <item>Proton 9.0 arm64ec (Steam Fast Core)</item>
                   <item>Proton 8.0-4 GE</item>
-                  <item>2.7.1-arm64ec-gabxqy</item>
-                  <item>3.0.1-vgamesir</item>
                   <item>Wine-9.20-x86_64</item>
-                  <item>Wine-9.3 GE Custom</item>
               </string-array>
               <string-array name="arr_res">
                   <item>1280x720 (16:9)</item>
                   <item>1920x1080 (16:9)</item>
                   <item>960x540 (16:9)</item>
-                  <item>800x600 (4:3)</item>
               </string-array>
           </resources>
           EOF
@@ -156,41 +145,26 @@ jobs:
                   </ScrollView>
               </RelativeLayout>
                             <RelativeLayout android:id="@+id/desktopContainer" android:layout_width="match_parent" android:layout_height="match_parent" android:background="#0A2244" android:visibility="gone">
-                  <LinearLayout android:id="@+id/pcWindowComputer" android:layout_width="480dp" android:layout_height="270dp" android:layout_centerInParent="true" android:background="#202020" android:orientation="vertical" android:elevation="8dp">
-                      <LinearLayout android:layout_width="match_parent" android:layout_height="22dp" android:background="#181818" android:gravity="center_vertical" android:paddingStart="8dp" android:paddingEnd="6dp">
-                          <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="Computer" android:textColor="#00E5FF" android:textSize="10sp" android:textStyle="bold"/>
+                  <LinearLayout android:id="@+id/pcWindowComputer" android:layout_width="500dp" android:layout_height="270dp" android:layout_centerInParent="true" android:background="#202020" android:orientation="vertical" android:elevation="8dp">
+                      <LinearLayout android:layout_width="match_parent" android:layout_height="24dp" android:background="#181818" android:gravity="center_vertical" android:paddingStart="8dp" android:paddingEnd="6dp">
+                          <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="Computer" android:textColor="#00E5FF" android:textSize="11sp" android:textStyle="bold"/>
                           <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="—  🗖  ✕" android:textColor="#AAAAAA" android:textSize="9sp"/>
                       </LinearLayout>
-                      <LinearLayout android:layout_width="match_parent" android:layout_height="18dp" android:background="#262626" android:gravity="center_vertical" android:paddingStart="8dp">
-                          <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="File   Edit   View   Help" android:textColor="#CCCCCC" android:textSize="9sp"/>
-                      </LinearLayout>
-                      <LinearLayout android:layout_width="match_parent" android:layout_height="22dp" android:background="#202020" android:gravity="center_vertical" android:paddingStart="8dp">
+                      <LinearLayout android:layout_width="match_parent" android:layout_height="20dp" android:background="#262626" android:gravity="center_vertical" android:paddingStart="8dp">
                           <TextView android:id="@+id/toolUp" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="⬆ Up  " android:textColor="#FFF" android:textSize="9sp"/>
-                          <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="📄 Copy  ✂ Cut  📋 Paste  ❌ Delete  " android:textColor="#AAAAAA" android:textSize="9sp"/>
-                          <TextView android:id="@+id/toolNewFolder" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="📁 New Folder" android:textColor="#00FF66" android:textSize="9sp"/>
+                          <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="File   Edit   View   Help" android:textColor="#CCCCCC" android:textSize="9sp"/>
                       </LinearLayout>
                       <LinearLayout android:layout_width="match_parent" android:layout_height="22dp" android:background="#181818" android:gravity="center_vertical" android:paddingStart="8dp" android:paddingEnd="8dp">
                           <TextView android:id="@+id/txtAddressPath" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="Computer > " android:textColor="#FFFFFF" android:textSize="9sp"/>
-                          <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="🔍 Search Computer" android:textColor="#666666" android:textSize="9sp"/>
                       </LinearLayout>
                       <LinearLayout android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:orientation="horizontal">
-                          <LinearLayout android:layout_width="95dp" android:layout_height="match_parent" android:background="#1C1C1C" android:orientation="vertical" android:padding="6dp">
-                              <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="💻 Desktop" android:textColor="#88A0C0" android:textSize="9sp"/>
-                              <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:text="📂 Documents" android:textColor="#88A0C0" android:textSize="9sp"/>
-                              <TextView android:id="@+id/treeComputer" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:text="▼ Computer" android:textColor="#FFFFFF" android:textSize="9sp" android:textStyle="bold"/>
-                              <TextView android:id="@+id/treeDriveC" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="8dp" android:layout_marginTop="2dp" android:text="  └ C:" android:textColor="#00FF66" android:textSize="9sp"/>
-                              <TextView android:id="@+id/treeDriveD" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="8dp" android:layout_marginTop="2dp" android:text="  └ D:" android:textColor="#88A0C0" android:textSize="9sp"/>
-                              <TextView android:id="@+id/treeDriveZ" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="8dp" android:layout_marginTop="2dp" android:text="  └ Z:" android:textColor="#88A0C0" android:textSize="9sp"/>
+                          <LinearLayout android:layout_width="100dp" android:layout_height="match_parent" android:background="#1C1C1C" android:orientation="vertical" android:padding="6dp">
+                              <TextView android:id="@+id/treeComputer" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="▼ Computer" android:textColor="#FFFFFF" android:textSize="9sp" android:textStyle="bold"/>
+                              <TextView android:id="@+id/treeDriveC" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="8dp" android:layout_marginTop="3dp" android:text="  └ C: Drive" android:textColor="#00FF66" android:textSize="9sp"/>
+                              <TextView android:id="@+id/treeDriveD" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="8dp" android:layout_marginTop="3dp" android:text="  └ D: Drive" android:textColor="#88A0C0" android:textSize="9sp"/>
+                              <TextView android:id="@+id/treeDriveZ" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="8dp" android:layout_marginTop="3dp" android:text="  └ Z: Root" android:textColor="#88A0C0" android:textSize="9sp"/>
                           </LinearLayout>
-                          <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent" android:background="#222222" android:orientation="vertical">
-                              <LinearLayout android:layout_width="match_parent" android:layout_height="18dp" android:background="#2A2A2A" android:gravity="center_vertical" android:paddingStart="8dp">
-                                  <TextView android:layout_width="120dp" android:layout_height="wrap_content" android:text="Name" android:textColor="#AAAAAA" android:textSize="8sp"/>
-                                  <TextView android:layout_width="70dp" android:layout_height="wrap_content" android:text="Type" android:textColor="#AAAAAA" android:textSize="8sp"/>
-                                  <TextView android:layout_width="50dp" android:layout_height="wrap_content" android:text="Size" android:textColor="#AAAAAA" android:textSize="8sp"/>
-                                  <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Date" android:textColor="#AAAAAA" android:textSize="8sp"/>
-                              </LinearLayout>
-                              <ListView android:id="@+id/pcListView" android:layout_width="match_parent" android:layout_height="match_parent" android:padding="4dp"/>
-                          </LinearLayout>
+                          <ListView android:id="@+id/pcListView" android:layout_width="match_parent" android:layout_height="match_parent" android:background="#222222" android:padding="4dp"/>
                       </LinearLayout>
                       <LinearLayout android:layout_width="match_parent" android:layout_height="16dp" android:background="#181818" android:gravity="center_vertical" android:paddingStart="8dp">
                           <TextView android:id="@+id/txtStatusBar" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="4 Items" android:textColor="#AAAAAA" android:textSize="8sp"/>
@@ -199,13 +173,11 @@ jobs:
 
                   <LinearLayout android:layout_width="match_parent" android:layout_height="26dp" android:layout_alignParentBottom="true" android:background="#111111" android:gravity="center_vertical" android:paddingStart="6dp" android:paddingEnd="8dp">
                       <Button android:id="@+id/btnStartMenu" android:layout_width="48dp" android:layout_height="20dp" android:background="#0078D7" android:text="Start" android:textColor="#FFF" android:textSize="8sp" android:textStyle="bold"/>
-                      <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="8dp" android:background="#222" android:padding="3dp" android:text="Computer" android:textColor="#FFF" android:textSize="8sp"/>
                       <View android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="1"/>
                       <TextView android:id="@+id/txtTaskClock" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="12:00 PM" android:textColor="#FFF" android:textSize="8sp"/>
                   </LinearLayout>
 
                   <LinearLayout android:layout_width="wrap_content" android:layout_height="20dp" android:layout_alignParentTop="true" android:layout_marginStart="8dp" android:layout_marginTop="4dp" android:background="#99000000" android:gravity="center_vertical" android:paddingStart="6dp" android:paddingEnd="6dp">
-                      <TextView android:id="@+id/hudDevice" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Turnip Adreno | CPU: 36% 42°C | RAM: 54% | " android:textColor="#00E5FF" android:textSize="8sp"/>
                       <TextView android:id="@+id/fpsCounter" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="FPS: 60.0" android:textColor="#00FF66" android:textSize="8sp" android:textStyle="bold"/>
                   </LinearLayout>
 
@@ -213,39 +185,24 @@ jobs:
 
                   <RelativeLayout android:id="@+id/gameControlsGroup" android:layout_width="match_parent" android:layout_height="match_parent">
                       <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="14dp" android:layout_marginTop="28dp" android:orientation="vertical">
-                          <Button android:id="@+id/btnL2" android:layout_width="42dp" android:layout_height="22dp" android:background="@drawable/btn_box" android:text="L2" android:textColor="#FFF" android:textSize="8sp"/>
-                          <Button android:id="@+id/btnL1" android:layout_width="42dp" android:layout_height="22dp" android:layout_marginTop="3dp" android:background="@drawable/btn_box" android:text="L1" android:textColor="#FFF" android:textSize="8sp"/>
+                          <Button android:id="@+id/btnL1" android:layout_width="42dp" android:layout_height="22dp" android:background="@drawable/btn_box" android:text="L1" android:textColor="#FFF" android:textSize="8sp"/>
                       </LinearLayout>
                       <RelativeLayout android:id="@+id/joyL" android:layout_width="84dp" android:layout_height="84dp" android:layout_alignParentBottom="true" android:layout_marginStart="14dp" android:layout_marginBottom="30dp" android:background="@drawable/btn_round">
                           <View android:id="@+id/knobL" android:layout_width="38dp" android:layout_height="38dp" android:layout_centerInParent="true" android:background="@drawable/joy_knob"/>
                       </RelativeLayout>
-
-                      <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_alignParentEnd="true" android:layout_marginEnd="14dp" android:layout_marginTop="28dp" android:orientation="vertical">
-                          <Button android:id="@+id/btnR2" android:layout_width="42dp" android:layout_height="22dp" android:background="@drawable/btn_box" android:text="R2" android:textColor="#FFF" android:textSize="8sp"/>
-                          <Button android:id="@+id/btnR1" android:layout_width="42dp" android:layout_height="22dp" android:layout_marginTop="3dp" android:background="@drawable/btn_box" android:text="R1" android:textColor="#FFF" android:textSize="8sp"/>
-                      </LinearLayout>
-                      <RelativeLayout android:id="@+id/joyR" android:layout_width="84dp" android:layout_height="84dp" android:layout_centerVertical="true" android:layout_alignParentEnd="true" android:layout_marginEnd="100dp" android:background="@drawable/btn_round">
-                          <View android:id="@+id/knobR" android:layout_width="38dp" android:layout_height="38dp" android:layout_centerInParent="true" android:background="@drawable/joy_knob"/>
-                      </RelativeLayout>
                       <RelativeLayout android:layout_width="96dp" android:layout_height="96dp" android:layout_alignParentEnd="true" android:layout_alignParentBottom="true" android:layout_marginEnd="10dp" android:layout_marginBottom="30dp">
                           <Button android:id="@+id/btnKeyY" android:layout_width="28dp" android:layout_height="28dp" android:layout_alignParentTop="true" android:layout_centerHorizontal="true" android:background="@drawable/btn_round" android:text="Y" android:textColor="#FFF" android:textSize="9sp"/>
                           <Button android:id="@+id/btnKeyA" android:layout_width="28dp" android:layout_height="28dp" android:layout_alignParentBottom="true" android:layout_centerHorizontal="true" android:background="@drawable/btn_round" android:text="A" android:textColor="#FFF" android:textSize="9sp"/>
-                          <Button android:id="@+id/btnKeyX" android:layout_width="28dp" android:layout_height="28dp" android:layout_alignParentStart="true" android:layout_centerVertical="true" android:background="@drawable/btn_round" android:text="X" android:textColor="#FFF" android:textSize="9sp"/>
-                          <Button android:id="@+id/btnKeyB" android:layout_width="28dp" android:layout_height="28dp" android:layout_alignParentEnd="true" android:layout_centerVertical="true" android:background="@drawable/btn_round" android:text="B" android:textColor="#FFF" android:textSize="9sp"/>
                       </RelativeLayout>
                   </RelativeLayout>
 
                   <ImageView android:id="@+id/imgMouseCursor" android:layout_width="22dp" android:layout_height="22dp" android:src="@drawable/ic_mouse" android:visibility="visible"/>
-                  <LinearLayout android:id="@+id/mouseClicksPanel" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_alignParentBottom="true" android:layout_centerHorizontal="true" android:layout_marginBottom="30dp">
-                      <Button android:id="@+id/btnLeftClick" android:layout_width="54dp" android:layout_height="22dp" android:background="#3300E5FF" android:text="L-Click" android:textColor="#00E5FF" android:textSize="8sp" android:textStyle="bold"/><View android:layout_width="8dp" android:layout_height="1dp"/><Button android:id="@+id/btnRightClick" android:layout_width="54dp" android:layout_height="22dp" android:background="#3300FF66" android:text="R-Click" android:textColor="#00FF66" android:textSize="8sp" android:textStyle="bold"/>
-                  </LinearLayout>
               </RelativeLayout>
           </RelativeLayout>
           EOF
                     cat << 'EOF' > app/src/main/java/com/vortexps3/emu/MainActivity.java
           package com.vortexps3.emu;
           import android.app.*;
-          import android.content.*;
           import android.graphics.Color;
           import android.os.*;
           import android.view.*;
@@ -255,16 +212,12 @@ jobs:
           import java.util.*;
 
           public class MainActivity extends Activity {
-              private RelativeLayout containersScreen, containerEditScreen, desktopContainer, gameControlsGroup;
-              private LinearLayout pcWindowComputer, mouseClicksPanel;
-              private ImageView imgMouseCursor;
-              private TextView fpsCounter, txtTaskClock, hudDevice, txtAddressPath, txtStatusBar, txtCardSub;
+              private RelativeLayout containersScreen, containerEditScreen, desktopContainer;
+              private TextView fpsCounter, txtTaskClock, txtAddressPath, txtStatusBar, txtCardSub;
               private ListView pcListView;
-              private Vibrator vibrator;
+              private ImageView imgMouseCursor;
               private long lastTime = 0;
               private int frames = 0;
-              private boolean showControls = true, mouseActive = true;
-              private String selectedGpu = "Turnip v26.1 (Adreno)", selectedProton = "proton-9.0-arm64ec";
               private File currentDir = null;
 
               @Override
@@ -275,21 +228,22 @@ jobs:
                   containersScreen = findViewById(R.id.containersScreen);
                   containerEditScreen = findViewById(R.id.containerEditScreen);
                   desktopContainer = findViewById(R.id.desktopContainer);
-                  gameControlsGroup = findViewById(R.id.gameControlsGroup);
-                  pcWindowComputer = findViewById(R.id.pcWindowComputer);
-                  mouseClicksPanel = findViewById(R.id.mouseClicksPanel);
-                  imgMouseCursor = findViewById(R.id.imgMouseCursor);
                   fpsCounter = findViewById(R.id.fpsCounter);
                   txtTaskClock = findViewById(R.id.txtTaskClock);
-                  hudDevice = findViewById(R.id.hudDevice);
                   txtAddressPath = findViewById(R.id.txtAddressPath);
                   txtStatusBar = findViewById(R.id.txtStatusBar);
                   txtCardSub = findViewById(R.id.txtCardSub);
-                  vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+                  pcListView = findViewById(R.id.pcListView);
+                  imgMouseCursor = findViewById(R.id.imgMouseCursor);
 
                   initDriveFileSystem();
 
-                  findViewById(R.id.btnRunDesktop).setOnClickListener(v -> openDesktop());
+                  findViewById(R.id.btnRunDesktop).setOnClickListener(v -> {
+                      containersScreen.setVisibility(View.GONE);
+                      containerEditScreen.setVisibility(View.GONE);
+                      desktopContainer.setVisibility(View.VISIBLE);
+                      loadComputerRoot();
+                  });
 
                   findViewById(R.id.btnEditContainer).setOnClickListener(v -> {
                       containersScreen.setVisibility(View.GONE);
@@ -300,19 +254,12 @@ jobs:
                       containersScreen.setVisibility(View.VISIBLE);
                   });
                   findViewById(R.id.btnSaveConfig).setOnClickListener(v -> {
-                      Spinner spnGpu = findViewById(R.id.spnGraphics);
-                      Spinner spnProton = findViewById(R.id.spnProton);
-                      selectedGpu = spnGpu.getSelectedItem().toString();
-                      selectedProton = spnProton.getSelectedItem().toString();
-                      txtCardSub.setText(selectedProton + " • 1280x720");
+                      Spinner spn = findViewById(R.id.spnProton);
+                      if (spn != null && spn.getSelectedItem() != null) txtCardSub.setText(spn.getSelectedItem().toString() + " • 1280x720");
                       containerEditScreen.setVisibility(View.GONE);
                       containersScreen.setVisibility(View.VISIBLE);
-                      Toast.makeText(this, "Container-1 Saved!", Toast.LENGTH_SHORT).show();
+                      Toast.makeText(this, "Saved!", Toast.LENGTH_SHORT).show();
                   });
-
-                  findViewById(R.id.btnProperties).setOnClickListener(v -> Toast.makeText(this, "Container-1: Ready", Toast.LENGTH_SHORT).show());
-                  findViewById(R.id.btnMore).setOnClickListener(v -> Toast.makeText(this, "Duplicate / Export Container", Toast.LENGTH_SHORT).show());
-                  findViewById(R.id.fabAdd).setOnClickListener(v -> Toast.makeText(this, "Create New Container", Toast.LENGTH_SHORT).show());
 
                   findViewById(R.id.btnExit).setOnClickListener(v -> {
                       desktopContainer.setVisibility(View.GONE);
@@ -321,64 +268,28 @@ jobs:
 
                   findViewById(R.id.treeComputer).setOnClickListener(v -> loadComputerRoot());
                   findViewById(R.id.treeDriveC).setOnClickListener(v -> loadDir(new File(getExternalFilesDir(null), "drive_c"), "Computer > C:"));
-                  findViewById(R.id.treeDriveD).setOnClickListener(v -> loadDir(new File(getExternalFilesDir(null), "drive_c/windows"), "Computer > D:"));
+                  findViewById(R.id.treeDriveD).setOnClickListener(v -> loadDir(new File(getExternalFilesDir(null), "drive_d"), "Computer > D:"));
                   findViewById(R.id.treeDriveZ).setOnClickListener(v -> loadDir(getExternalFilesDir(null), "Computer > Z:"));
 
                   findViewById(R.id.toolUp).setOnClickListener(v -> {
-                      if (currentDir != null && currentDir.getParentFile() != null) {
-                          loadDir(currentDir.getParentFile(), "Computer > " + currentDir.getParentFile().getName());
-                      } else {
-                          loadComputerRoot();
-                      }
+                      if (currentDir != null && currentDir.getParentFile() != null) loadDir(currentDir.getParentFile(), "Computer > " + currentDir.getParentFile().getName());
+                      else loadComputerRoot();
                   });
 
-                  findViewById(R.id.toolNewFolder).setOnClickListener(v -> {
-                      if (currentDir != null) {
-                          new File(currentDir, "NewFolder_" + (System.currentTimeMillis() % 1000)).mkdirs();
-                          loadDir(currentDir, txtAddressPath.getText().toString());
-                      }
-                  });
-
-                  imgMouseCursor.setX(240); imgMouseCursor.setY(160);
                   desktopContainer.setOnTouchListener((v, e) -> {
-                      if (!mouseActive) return false;
-                      if (e.getAction() == MotionEvent.ACTION_DOWN || e.getAction() == MotionEvent.ACTION_MOVE) {
+                      if (imgMouseCursor != null && (e.getAction() == MotionEvent.ACTION_MOVE || e.getAction() == MotionEvent.ACTION_DOWN)) {
                           imgMouseCursor.setX(e.getX()); imgMouseCursor.setY(e.getY());
                       }
                       return false;
                   });
-                  findViewById(R.id.btnLeftClick).setOnClickListener(v -> { if (vibrator != null) vibrator.vibrate(15); });
-                  findViewById(R.id.btnRightClick).setOnClickListener(v -> { if (vibrator != null) vibrator.vibrate(25); });
-
-                  setupJoy(R.id.joyL, R.id.knobL);
-                  setupJoy(R.id.joyR, R.id.knobR);
-
-                  int[] btns = {R.id.btnKeyA, R.id.btnKeyB, R.id.btnKeyX, R.id.btnKeyY, R.id.btnL1, R.id.btnL2, R.id.btnR1, R.id.btnR2};
-                  for (int id : btns) {
-                      View v = findViewById(id);
-                      if (v != null) v.setOnTouchListener((view, event) -> {
-                          if (event.getAction() == MotionEvent.ACTION_DOWN && vibrator != null) vibrator.vibrate(20);
-                          return false;
-                      });
-                  }
-
-                  findViewById(R.id.btnStartMenu).setOnClickListener(v -> {
-                      String[] m = {"💻 Computer", "⚙ Container Settings", "🎮 Toggle Controls", "❌ Exit Desktop"};
-                      new AlertDialog.Builder(this, android.R.style.Theme_DeviceDefault_Dialog_Alert).setTitle("Start").setItems(m, (d, w) -> {
-                          if (w == 0) loadComputerRoot();
-                          else if (w == 1) { desktopContainer.setVisibility(View.GONE); containerEditScreen.setVisibility(View.VISIBLE); }
-                          else if (w == 2) { showControls = !showControls; gameControlsGroup.setVisibility(showControls ? View.VISIBLE : View.GONE); }
-                          else if (w == 3) { desktopContainer.setVisibility(View.GONE); containersScreen.setVisibility(View.VISIBLE); }
-                      }).show();
-                  });
 
                   Choreographer.getInstance().postFrameCallback(new Choreographer.FrameCallback() {
                       @Override public void doFrame(long time) {
-                          if (lastTime == 0) lastTime = time; frames++; long diff = time - lastTime;
-                          if (diff >= 1000000000L) {
-                              fpsCounter.setText(String.format("FPS: %.1f", (frames * 1000000000.0) / diff));
+                          if (lastTime == 0) lastTime = time; frames++;
+                          if (time - lastTime >= 1000000000L) {
+                              if (fpsCounter != null) fpsCounter.setText(String.format("FPS: %.1f", (frames * 1000000000.0) / (time - lastTime)));
                               frames = 0; lastTime = time;
-                              txtTaskClock.setText(new SimpleDateFormat("hh:mm a", Locale.getDefault()).format(new Date()));
+                              if (txtTaskClock != null) txtTaskClock.setText(new SimpleDateFormat("hh:mm a", Locale.getDefault()).format(new Date()));
                           }
                           Choreographer.getInstance().postFrameCallback(this);
                       }
@@ -386,116 +297,68 @@ jobs:
               }
 
               private void initDriveFileSystem() {
-                  File c = new File(getExternalFilesDir(null), "drive_c");
-                  File win = new File(c, "windows/system32");
-                  File prog = new File(c, "Program Files/Games");
-                  win.mkdirs(); prog.mkdirs();
                   try {
-                      new File(win, "kernel32.dll").createNewFile();
-                      new File(win, "d3d11.dll").createNewFile();
-                      new File(win, "dxgi.dll").createNewFile();
-                      new File(prog, "GTA_V.exe").createNewFile();
+                      File c = new File(getExternalFilesDir(null), "drive_c/windows/system32");
+                      File g = new File(getExternalFilesDir(null), "drive_c/Games");
+                      c.mkdirs(); g.mkdirs();
+                      new File(c, "kernel32.dll").createNewFile();
+                      new File(g, "GTA_V.exe").createNewFile();
                   } catch (Exception ignored) {}
               }
 
               private void loadComputerRoot() {
                   currentDir = null;
-                  txtAddressPath.setText("Computer > ");
-                  txtStatusBar.setText("4 Items");
+                  if (txtAddressPath != null) txtAddressPath.setText("Computer > ");
+                  if (txtStatusBar != null) txtStatusBar.setText("4 Drives Ready");
 
-                  ArrayList<String[]> drives = new ArrayList<>();
-                  drives.add(new String[]{"💾 C:", "Local Drive", "", ""});
-                  drives.add(new String[]{"💾 D:", "Local Drive", "", ""});
-                  drives.add(new String[]{"💾 E:", "Local Drive", "", ""});
-                  drives.add(new String[]{"💾 Z:", "Local Drive", "", ""});
-
-                  renderList(drives, true);
+                  String[] drives = {"💾 C: Local Drive (Windows)", "💾 D: Local Drive (Games)", "💾 E: CD-ROM", "💾 Z: Linux Root / System"};
+                  renderSafeList(drives, true, null);
               }
 
               private void loadDir(File dir, String displayPath) {
                   if (dir == null) return;
                   if (!dir.exists()) dir.mkdirs();
                   currentDir = dir;
-                  txtAddressPath.setText(displayPath + " > ");
+                  if (txtAddressPath != null) txtAddressPath.setText(displayPath + " > ");
 
                   File[] files = dir.listFiles();
                   int count = (files != null) ? files.length : 0;
-                  txtStatusBar.setText(count + " Items");
+                  if (txtStatusBar != null) txtStatusBar.setText(count + " Items");
 
-                  ArrayList<String[]> list = new ArrayList<>();
-                  if (files != null) {
-                      for (File f : files) {
-                          String type = f.isDirectory() ? "File Folder" : "Application";
-                          String size = f.isDirectory() ? "" : (f.length() / 1024) + " KB";
-                          list.add(new String[]{(f.isDirectory() ? "📁 " : "📄 ") + f.getName(), type, size, "2026"});
-                      }
+                  ArrayList<String> list = new ArrayList<>();
+                  if (files != null && files.length > 0) {
+                      for (File f : files) list.add((f.isDirectory() ? "📁 " : "📄 ") + f.getName());
+                  } else {
+                      list.add("(Empty Folder)");
                   }
-                  renderList(list, false);
+                  renderSafeList(list.toArray(new String[0]), false, files);
               }
 
-              private void renderList(ArrayList<String[]> data, boolean isRoot) {
-                  BaseAdapter adapter = new BaseAdapter() {
-                      @Override public int getCount() { return data.size(); }
-                      @Override public Object getItem(int p) { return data.get(p); }
-                      @Override public long getItemId(int p) { return p; }
-                      @Override public View getView(int p, View cv, ViewGroup parent) {
-                          LinearLayout row = new LinearLayout(MainActivity.this);
-                          row.setOrientation(LinearLayout.HORIZONTAL);
-                          row.setPadding(6, 4, 6, 4);
-
-                          TextView colName = new TextView(MainActivity.this);
-                          colName.setLayoutParams(new LinearLayout.LayoutParams(120, ViewGroup.LayoutParams.WRAP_CONTENT));
-                          colName.setText(data.get(p)[0]); colName.setTextColor(Color.WHITE); colName.setTextSize(9);
-
-                          TextView colType = new TextView(MainActivity.this);
-                          colType.setLayoutParams(new LinearLayout.LayoutParams(70, ViewGroup.LayoutParams.WRAP_CONTENT));
-                          colType.setText(data.get(p)[1]); colType.setTextColor(Color.LTGRAY); colType.setTextSize(8);
-
-                          TextView colSize = new TextView(MainActivity.this);
-                          colSize.setLayoutParams(new LinearLayout.LayoutParams(50, ViewGroup.LayoutParams.WRAP_CONTENT));
-                          colSize.setText(data.get(p)[2]); colSize.setTextColor(Color.GRAY); colSize.setTextSize(8);
-
-                          row.addView(colName); row.addView(colType); row.addView(colSize);
-                          return row;
+              private void renderSafeList(String[] data, boolean isRoot, File[] files) {
+                  ArrayAdapter<String> adapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, data) {
+                      @Override public View getView(int pos, View cv, ViewGroup p) {
+                          TextView tv = (TextView) super.getView(pos, cv, p);
+                          tv.setTextColor(Color.WHITE);
+                          tv.setTextSize(11);
+                          return tv;
                       }
                   };
-                  pcListView.setAdapter(adapter);
-                  pcListView.setOnItemClickListener((p, v, pos, id) -> {
-                      if (isRoot) {
-                          if (pos == 0) loadDir(new File(getExternalFilesDir(null), "drive_c"), "Computer > C:");
-                          else if (pos == 1) loadDir(new File(getExternalFilesDir(null), "drive_c/windows"), "Computer > D:");
-                          else loadDir(getExternalFilesDir(null), "Computer > Z:");
-                      } else {
-                          File[] files = currentDir.listFiles();
-                          if (files != null && pos < files.length) {
-                              File sel = files[pos];
-                              if (sel.isDirectory()) loadDir(sel, txtAddressPath.getText().toString() + sel.getName());
-                              else Toast.makeText(this, "Loaded: " + sel.getName(), Toast.LENGTH_SHORT).show();
+                  if (pcListView != null) {
+                      pcListView.setAdapter(adapter);
+                      pcListView.setOnItemClickListener((p, v, pos, id) -> {
+                          if (isRoot) {
+                              if (pos == 0) loadDir(new File(getExternalFilesDir(null), "drive_c"), "Computer > C:");
+                              else if (pos == 1) loadDir(new File(getExternalFilesDir(null), "drive_c/Games"), "Computer > D:");
+                              else loadDir(getExternalFilesDir(null), "Computer > Z:");
+                          } else {
+                              if (files != null && pos < files.length && files[pos].isDirectory()) {
+                                  loadDir(files[pos], txtAddressPath.getText().toString() + files[pos].getName());
+                              } else if (files != null && pos < files.length) {
+                                  Toast.makeText(this, "Launched: " + files[pos].getName(), Toast.LENGTH_SHORT).show();
+                              }
                           }
-                      }
-                  });
-              }
-
-              private void openDesktop() {
-                  containersScreen.setVisibility(View.GONE);
-                  containerEditScreen.setVisibility(View.GONE);
-                  desktopContainer.setVisibility(View.VISIBLE);
-                  loadComputerRoot();
-              }
-
-              private void setupJoy(int cId, int kId) {
-                  RelativeLayout c = findViewById(cId); View k = findViewById(kId);
-                  c.setOnTouchListener((v, e) -> {
-                      float cx = c.getWidth() / 2f, cy = c.getHeight() / 2f, maxR = cx - k.getWidth() / 2f;
-                      if (e.getAction() == MotionEvent.ACTION_DOWN || e.getAction() == MotionEvent.ACTION_MOVE) {
-                          float dx = e.getX() - cx, dy = e.getY() - cy, dist = (float) Math.sqrt(dx * dx + dy * dy);
-                          if (dist > maxR && dist > 0) { dx = (dx * maxR) / dist; dy = (dy * maxR) / dist; }
-                          k.setTranslationX(dx); k.setTranslationY(dy);
-                      } else if (e.getAction() == MotionEvent.ACTION_UP || e.getAction() == MotionEvent.ACTION_CANCEL) {
-                          k.animate().translationX(0).translationY(0).setDuration(80).start();
-                      }
-                      return true;
-                  });
+                      });
+                  }
               }
           }
           EOF
@@ -514,8 +377,8 @@ jobs:
                   applicationId "com.vortexps3.emu"
                   minSdk 24
                   targetSdk 34
-                  versionCode 740
-                  versionName "54.0"
+                  versionCode 800
+                  versionName "60.0"
               }
           }
           EOF
